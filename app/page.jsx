@@ -542,7 +542,7 @@ export default function FrameCustomizer() {
           .menu-toggle { display: flex; }
           .sidebar-overlay { display: block; }
           .sidebar-overlay.hidden { display: none; }
-          .canvas-area { padding: 24px 16px 16px; }
+          .canvas-area { padding: 32px 24px 24px; }
           .bottom-bar { padding: 10px 14px; }
           .btn-primary { padding: 10px 16px; font-size: 12px; }
           .btn-ghost { padding: 10px 14px; font-size: 12px; }
@@ -731,8 +731,9 @@ export default function FrameCustomizer() {
               <div
                 className="frame-border"
                 style={{
-                  width: 420,
-                  height: 560,
+                  width: "100%",
+                  maxWidth: 420,
+                  aspectRatio: "3/4",
                   background: selectedFrame.color,
                   boxShadow: `${selectedFrame.outerShadow}, ${selectedFrame.innerShadow}`,
                   padding: selectedFrame.border,
