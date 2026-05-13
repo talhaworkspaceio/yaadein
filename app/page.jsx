@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 const FRAMES = [
   {
@@ -63,13 +63,35 @@ const FRAMES = [
     outerShadow: "0 10px 38px rgba(0,0,0,0.3)",
     grain: true,
   },
+  {
+    id: "maple",
+    name: "Natural Maple",
+    border: "22px",
+    color: "#D2B48C",
+    accent: "#BC8F8F",
+    innerShadow: "inset 0 0 6px rgba(0,0,0,0.2)",
+    outerShadow: "0 8px 30px rgba(0,0,0,0.15)",
+    grain: true,
+  },
+  {
+    id: "obsidian",
+    name: "Obsidian Steel",
+    border: "12px",
+    color: "#2C2C2C",
+    accent: "#111",
+    innerShadow: "inset 0 0 4px rgba(255,255,255,0.05)",
+    outerShadow: "0 10px 35px rgba(0,0,0,0.5)",
+    grain: false,
+  },
 ];
 
 const SAMPLE_PHOTOS = [
   "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop",
-  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop",
   "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&h=800&fit=crop",
-  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1500622345618-204b68019a71?w=800&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1518091043644-c1d445bcc97a?w=800&h=600&fit=crop",
 ];
 
 export default function FrameCustomizer() {
@@ -78,7 +100,16 @@ export default function FrameCustomizer() {
   const [uploadedImage, setUploadedImage] = useState(SAMPLE_PHOTOS[0]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("frame");
+  const [aspectRatio, setAspectRatio] = useState(3 / 4);
   const fileRef = useRef();
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setAspectRatio(img.naturalWidth / img.naturalHeight);
+    };
+    img.src = uploadedImage;
+  }, [uploadedImage]);
 
   const handleUpload = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -736,7 +767,7 @@ export default function FrameCustomizer() {
                 className="frame-border"
                 style={{
                   width: "100%",
-                  aspectRatio: "3/4",
+                  aspectRatio: aspectRatio,
                   background: selectedFrame.color,
                   boxShadow: `${selectedFrame.outerShadow}, ${selectedFrame.innerShadow}`,
                   padding: selectedFrame.border,
