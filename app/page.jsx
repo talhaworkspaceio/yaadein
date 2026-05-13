@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import html2canvas from "html2canvas";
 
 const FRAMES = [
   {
@@ -124,6 +125,7 @@ export default function FrameCustomizer() {
   const [activeTab, setActiveTab] = useState("frame");
   const [aspectRatio, setAspectRatio] = useState(3 / 4);
   const fileRef = useRef();
+  const frameRef = useRef();
 
   useEffect(() => {
     if (selectedFrame.orientation === "landscape" && aspectRatio < 1) {
@@ -137,6 +139,24 @@ export default function FrameCustomizer() {
       img.src = uploadedImage;
     }
   }, [selectedFrame, uploadedImage]);
+
+  const handleDownload = async () => {
+    if (!frameRef.current) return;
+    try {
+      const canvas = await html2canvas(frameRef.current, {
+        backgroundColor: null,
+        useCORS: true,
+        scale: 3, // Higher quality for saving
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `frame-studio-${selectedFrame.id}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Error generating image:", err);
+    }
+  };
 
   const handleUpload = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -620,8 +640,7 @@ export default function FrameCustomizer() {
           >
             ☰
           </button>
-          <button className="btn-icon" title="Undo">↩</button>
-          <button className="btn-icon" title="Download">⬇</button>
+          <button className="btn-icon" title="Download" onClick={handleDownload}>⬇</button>
         </div>
       </header>
 
@@ -793,6 +812,7 @@ export default function FrameCustomizer() {
               }}
             >
               <div
+                ref={frameRef}
                 className="frame-border"
                 style={{
                   width: "100%",
