@@ -83,6 +83,28 @@ const FRAMES = [
     outerShadow: "0 10px 35px rgba(0,0,0,0.5)",
     grain: false,
   },
+  {
+    id: "classic-landscape",
+    name: "Landscape Oak",
+    orientation: "landscape",
+    border: "24px",
+    color: "#8B5E3C",
+    accent: "#6B4423",
+    innerShadow: "inset 0 0 8px rgba(0,0,0,0.35)",
+    outerShadow: "0 8px 32px rgba(0,0,0,0.28)",
+    grain: true,
+  },
+  {
+    id: "modern-landscape",
+    name: "Landscape Black",
+    orientation: "landscape",
+    border: "16px",
+    color: "#1A1A1A",
+    accent: "#333",
+    innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)",
+    outerShadow: "0 12px 40px rgba(0,0,0,0.4)",
+    grain: false,
+  },
 ];
 
 const SAMPLE_PHOTOS = [
@@ -104,12 +126,17 @@ export default function FrameCustomizer() {
   const fileRef = useRef();
 
   useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      setAspectRatio(img.naturalWidth / img.naturalHeight);
-    };
-    img.src = uploadedImage;
-  }, [uploadedImage]);
+    if (selectedFrame.orientation === "landscape" && aspectRatio < 1) {
+      setAspectRatio(1.33); // Force landscape for landscape-specific frames
+    } else if (selectedFrame.orientation !== "landscape") {
+      // Re-detect from photo if not a forced landscape frame
+      const img = new Image();
+      img.onload = () => {
+        setAspectRatio(img.naturalWidth / img.naturalHeight);
+      };
+      img.src = uploadedImage;
+    }
+  }, [selectedFrame, uploadedImage]);
 
   const handleUpload = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -640,6 +667,8 @@ export default function FrameCustomizer() {
                         boxShadow: `inset 0 0 2px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.2)`,
                         padding: `${Math.max(3, parseInt(f.border) / 5)}px`,
                         display: "flex",
+                        width: f.orientation === "landscape" ? 60 : 48,
+                        height: f.orientation === "landscape" ? 48 : 60,
                       }}
                     >
                       <div
