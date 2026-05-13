@@ -726,13 +726,16 @@ export default function FrameCustomizer() {
             {/* FRAME */}
             <div
               className="frame-outer"
-              style={{ transform: `rotate(${rotation}deg)` }}
+              style={{ 
+                transform: `rotate(${rotation}deg)`,
+                width: "min(480px, 85vw)",
+                margin: "0 auto"
+              }}
             >
               <div
                 className="frame-border"
                 style={{
                   width: "100%",
-                  maxWidth: 420,
                   aspectRatio: "3/4",
                   background: selectedFrame.color,
                   boxShadow: `${selectedFrame.outerShadow}, ${selectedFrame.innerShadow}`,
