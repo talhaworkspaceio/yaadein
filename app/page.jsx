@@ -1,876 +1,1095 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import html2canvas from "html2canvas";
+import { useState, useEffect, useCallback } from "react";
+import { db } from "../lib/firebase";
+import { ref, onValue } from "firebase/database";
 
-const FRAMES = [
-  {
-    id: "classic",
-    name: "Classic Oak",
-    border: "24px",
-    color: "#8B5E3C",
-    accent: "#6B4423",
-    innerShadow: "inset 0 0 8px rgba(0,0,0,0.35)",
-    outerShadow: "0 8px 32px rgba(0,0,0,0.28)",
-    grain: true,
-  },
-  {
-    id: "modern",
-    name: "Matte Black",
-    border: "16px",
-    color: "#1A1A1A",
-    accent: "#333",
-    innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)",
-    outerShadow: "0 12px 40px rgba(0,0,0,0.4)",
-    grain: false,
-  },
-  {
-    id: "gold",
-    name: "Antique Gold",
-    border: "28px",
-    color: "#C9A84C",
-    accent: "#A07830",
-    innerShadow: "inset 0 0 10px rgba(0,0,0,0.3)",
-    outerShadow: "0 10px 36px rgba(180,140,40,0.3)",
-    grain: false,
-  },
-  {
-    id: "white",
-    name: "Gallery White",
-    border: "20px",
-    color: "#F0EDE8",
-    accent: "#D5D0C8",
-    innerShadow: "inset 0 0 6px rgba(0,0,0,0.12)",
-    outerShadow: "0 8px 28px rgba(0,0,0,0.18)",
-    grain: false,
-  },
-  {
-    id: "silver",
-    name: "Brushed Silver",
-    border: "18px",
-    color: "#B8BCC4",
-    accent: "#8E9298",
-    innerShadow: "inset 0 0 8px rgba(0,0,0,0.2)",
-    outerShadow: "0 8px 30px rgba(0,0,0,0.22)",
-    grain: false,
-  },
-  {
-    id: "rustic",
-    name: "Rustic Walnut",
-    border: "30px",
-    color: "#5C3D2E",
-    accent: "#3E2417",
-    innerShadow: "inset 0 0 12px rgba(0,0,0,0.4)",
-    outerShadow: "0 10px 38px rgba(0,0,0,0.3)",
-    grain: true,
-  },
-  {
-    id: "maple",
-    name: "Natural Maple",
-    border: "22px",
-    color: "#D2B48C",
-    accent: "#BC8F8F",
-    innerShadow: "inset 0 0 6px rgba(0,0,0,0.2)",
-    outerShadow: "0 8px 30px rgba(0,0,0,0.15)",
-    grain: true,
-  },
-  {
-    id: "obsidian",
-    name: "Obsidian Steel",
-    border: "12px",
-    color: "#2C2C2C",
-    accent: "#111",
-    innerShadow: "inset 0 0 4px rgba(255,255,255,0.05)",
-    outerShadow: "0 10px 35px rgba(0,0,0,0.5)",
-    grain: false,
-  },
-  {
-    id: "classic-landscape",
-    name: "Landscape Oak",
-    orientation: "landscape",
-    border: "24px",
-    color: "#8B5E3C",
-    accent: "#6B4423",
-    innerShadow: "inset 0 0 8px rgba(0,0,0,0.35)",
-    outerShadow: "0 8px 32px rgba(0,0,0,0.28)",
-    grain: true,
-  },
-  {
-    id: "modern-landscape",
-    name: "Landscape Black",
-    orientation: "landscape",
-    border: "16px",
-    color: "#1A1A1A",
-    accent: "#333",
-    innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)",
-    outerShadow: "0 12px 40px rgba(0,0,0,0.4)",
-    grain: false,
-  },
-];
+// Persistent Cart LocalStorage Helpers
+const getCart = () => {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("fs_cart") || "[]");
+  } catch (e) {
+    return [];
+  }
+};
 
-const SAMPLE_PHOTOS = [
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop",
-  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop",
-  "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&h=800&fit=crop",
-  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop",
-  "https://images.unsplash.com/photo-1500622345618-204b68019a71?w=800&h=600&fit=crop",
-  "https://images.unsplash.com/photo-1518091043644-c1d445bcc97a?w=800&h=600&fit=crop",
-];
+const saveCart = (cart) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("fs_cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("fs-cart-updated"));
+};
 
-export default function FrameCustomizer() {
-  const [selectedFrame, setSelectedFrame] = useState(FRAMES[0]);
-  const [rotation, setRotation] = useState(0);
-  const [uploadedImage, setUploadedImage] = useState(SAMPLE_PHOTOS[0]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("frame");
-  const [aspectRatio, setAspectRatio] = useState(3 / 4);
-  const fileRef = useRef();
-  const frameRef = useRef();
+export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [filter, setFilter] = useState("portrait");
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    if (selectedFrame.orientation === "landscape" && aspectRatio < 1) {
-      setAspectRatio(1.33); // Force landscape for landscape-specific frames
-    } else if (selectedFrame.orientation !== "landscape") {
-      // Re-detect from photo if not a forced landscape frame
-      const img = new Image();
-      img.onload = () => {
-        setAspectRatio(img.naturalWidth / img.naturalHeight);
-      };
-      img.src = uploadedImage;
-    }
-  }, [selectedFrame, uploadedImage]);
+    const framesRef = ref(db, "frames");
+    const unsub = onValue(framesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const framesList = Object.entries(data).map(([key, val]) => ({
+          id: key,
+          ...val
+        }));
+        setProducts(framesList);
+      } else {
+        setProducts([]);
+      }
+    });
+    return () => unsub();
+  }, []);
 
-  const handleDownload = async () => {
-    if (!frameRef.current) return;
-    try {
-      const canvas = await html2canvas(frameRef.current, {
-        backgroundColor: null,
-        useCORS: true,
-        scale: 3, // Higher quality for saving
-        logging: false,
-      });
-      const link = document.createElement("a");
-      link.download = `frame-studio-${selectedFrame.id}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (err) {
-      console.error("Error generating image:", err);
-    }
+  const loadCart = useCallback(() => {
+    const rawCart = getCart();
+    // Normalize any old cart items that still have $ from previous session
+    const normalizedCart = rawCart.map(item => {
+      if (item.price && item.price.includes("$")) {
+        const numeric = parseInt(item.price.replace(/[^0-9]/g, "")) || 0;
+        return { ...item, price: `Rs. ${(numeric * 100).toLocaleString()}` };
+      }
+      return item;
+    });
+    setCartItems(normalizedCart);
+  }, []);
+
+  useEffect(() => {
+    loadCart();
+    window.addEventListener("fs-cart-updated", loadCart);
+    return () => {
+      window.removeEventListener("fs-cart-updated", loadCart);
+    };
+  }, [loadCart]);
+
+  const updateQuantity = (index, delta) => {
+    const cart = getCart();
+    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
+    saveCart(cart);
   };
 
-  const handleUpload = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setUploadedImage(url);
-  }, []);
+  const removeCartItem = (index) => {
+    const cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+  };
 
-  const handleRotate = useCallback((deg) => {
-    setRotation((r) => (r + deg + 360) % 360);
-  }, []);
+  const getCartSubtotal = () => {
+    return cartItems.reduce((acc, item) => {
+      const priceVal = parseInt((item.price || "0").replace(/[^0-9]/g, "")) || 0;
+      return acc + (priceVal * item.quantity);
+    }, 0);
+  };
 
-  const borderInt = parseInt(selectedFrame.border);
+  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  const displayedProducts = products.filter(p => p.orientation === filter);
 
   return (
-    <div className="app-root">
+    <div className="home-root">
+      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
           --bg: #0F0D0B;
-          --surface: #1A1714;
-          --surface2: #231F1B;
+          --surface: #171512;
+          --surface2: #211E1A;
           --surface3: #2D2822;
-          --border: rgba(255,255,255,0.07);
-          --border2: rgba(255,255,255,0.13);
+          --border: rgba(255,255,255,0.06);
+          --border2: rgba(255,255,255,0.12);
           --text: #F5F0E8;
-          --text2: #A09880;
+          --text2: #A8A08C;
           --accent: #C9A84C;
           --accent2: #E8C96A;
-          --radius: 12px;
-          --sidebar: 280px;
+          --radius: 16px;
         }
 
-        .app-root {
+        .home-root {
           font-family: 'DM Sans', sans-serif;
           background: var(--bg);
           color: var(--text);
           min-height: 100vh;
-          display: flex;
-          flex-direction: column;
+          overflow-x: hidden;
+          scroll-behavior: smooth;
         }
 
-        /* HEADER */
-        .header {
-          height: 56px;
-          background: var(--surface);
+        /* NAVBAR */
+        .navbar {
+          position: sticky;
+          top: 0;
+          height: 68px;
+          background: rgba(15, 13, 11, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 20px;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          flex-shrink: 0;
+          padding: 0 40px;
+          z-index: 1000;
         }
-        .header-brand {
+        .nav-brand {
           font-family: 'DM Serif Display', serif;
-          font-size: 18px;
+          font-size: 22px;
           letter-spacing: 0.02em;
           color: var(--accent);
           display: flex;
           align-items: center;
           gap: 8px;
+          text-decoration: none;
+          transition: transform 0.2s ease;
         }
-        .header-brand span { color: var(--text); font-size: 16px; }
-        .header-actions { display: flex; gap: 8px; }
-        .btn-icon {
-          width: 36px; height: 36px;
-          background: var(--surface2);
-          border: 1px solid var(--border2);
-          border-radius: 8px;
-          color: var(--text2);
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 18px;
-          transition: all 0.15s;
+        .nav-brand:hover {
+          transform: scale(1.02);
         }
-        .btn-icon:hover { background: var(--surface3); color: var(--text); }
-        .menu-toggle {
-          display: none;
-        }
-
-        /* LAYOUT */
-        .layout {
-          flex: 1;
+        .nav-brand span { color: var(--text); font-size: 19px; }
+        
+        .nav-links {
           display: flex;
-          overflow: hidden;
-          position: relative;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-          width: var(--sidebar);
-          background: var(--surface);
-          border-right: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          overflow-y: auto;
-          flex-shrink: 0;
-          transition: transform 0.3s ease, width 0.3s ease;
-        }
-        .sidebar-closed {
-          transform: translateX(calc(-1 * var(--sidebar)));
-          width: 0;
-          overflow: hidden;
-          border: none;
-        }
-
-        .sidebar-tabs {
-          display: flex;
-          border-bottom: 1px solid var(--border);
-          flex-shrink: 0;
-        }
-        .tab-btn {
-          flex: 1;
-          padding: 14px 0;
-          background: none;
-          border: none;
-          color: var(--text2);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          font-weight: 500;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          cursor: pointer;
-          position: relative;
-          transition: color 0.15s;
-        }
-        .tab-btn.active { color: var(--accent); }
-        .tab-btn.active::after {
-          content: '';
-          position: absolute;
-          bottom: 0; left: 20%; right: 20%;
-          height: 2px;
-          background: var(--accent);
-          border-radius: 2px 2px 0 0;
-        }
-
-        .sidebar-section { padding: 20px 16px; }
-        .section-label {
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--text2);
-          margin-bottom: 12px;
-        }
-
-        /* FRAME GRID */
-        .frame-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-        .frame-card {
-          background: var(--surface2);
-          border: 1.5px solid var(--border);
-          border-radius: var(--radius);
-          padding: 12px 10px;
-          cursor: pointer;
-          transition: all 0.15s;
-          display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 32px;
         }
-        .frame-card:hover { border-color: var(--border2); background: var(--surface3); }
-        .frame-card.selected { border-color: var(--accent); background: rgba(201,168,76,0.07); }
-        .frame-thumb {
-          width: 48px; height: 60px;
-          border-radius: 4px;
-          position: relative;
-          overflow: hidden;
-          flex-shrink: 0;
-        }
-        .frame-thumb-inner {
-          position: absolute;
-          inset: 0;
-          background: #888;
-        }
-        .frame-name {
-          font-size: 11px;
-          font-weight: 400;
+        .nav-link {
           color: var(--text2);
-          text-align: center;
-          line-height: 1.3;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: color 0.2s ease;
         }
-        .frame-card.selected .frame-name { color: var(--accent); }
-
-        /* ROTATE CONTROLS */
-        .rotate-controls {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .rotate-display {
-          background: var(--surface2);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          padding: 16px;
-          text-align: center;
-        }
-        .rotate-value {
-          font-family: 'DM Serif Display', serif;
-          font-size: 32px;
+        .nav-link:hover {
           color: var(--accent);
-          line-height: 1;
         }
-        .rotate-unit {
-          font-size: 11px;
-          color: var(--text2);
-          margin-top: 4px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
+
+        .nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 20px;
         }
-        .rotate-btns {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-        .rotate-btn {
-          background: var(--surface2);
-          border: 1px solid var(--border2);
-          border-radius: 10px;
+        .btn-nav-cart {
+          background: none;
+          border: none;
           color: var(--text);
-          padding: 12px;
+          font-size: 20px;
           cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          font-weight: 500;
-          transition: all 0.15s;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          transition: transform 0.2s ease;
+        }
+        .btn-nav-cart:hover {
+          transform: scale(1.1);
+          color: var(--accent);
+        }
+        .cart-badge {
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          background: var(--accent);
+          color: #1A1100;
+          font-size: 9px;
+          font-weight: 700;
+          min-width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 3px;
+          box-shadow: 0 2px 6px rgba(201,168,76,0.4);
+        }
+
+        .btn-nav-primary {
+          background: var(--accent);
+          color: #1A1100;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 10px 20px;
+          border-radius: 30px;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
+        }
+        .btn-nav-primary:hover {
+          background: var(--accent2);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(201, 168, 76, 0.35);
+        }
+
+        .menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--text);
+          font-size: 24px;
+          cursor: pointer;
+        }
+
+        /* HERO BANNER */
+        .hero {
+          padding: 100px 40px 80px;
+          max-width: 1300px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 60px;
+          align-items: center;
+        }
+        .hero-content {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 6px;
+          align-items: flex-start;
+          gap: 24px;
         }
-        .rotate-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--accent); }
-        .rotate-btn-icon { font-size: 20px; }
-        .rotate-reset {
-          background: none;
-          border: 1px solid var(--border);
-          border-radius: 10px;
+        .hero-tag {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--accent);
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          background: rgba(201, 168, 76, 0.08);
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid rgba(201, 168, 76, 0.15);
+        }
+        .hero-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: 56px;
+          line-height: 1.1;
+          color: var(--text);
+          letter-spacing: -0.01em;
+        }
+        .hero-title span {
+          color: var(--accent);
+        }
+        .hero-desc {
+          font-size: 16px;
+          line-height: 1.6;
           color: var(--text2);
-          padding: 10px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          transition: all 0.15s;
-          text-align: center;
+          max-width: 540px;
         }
-        .rotate-reset:hover { border-color: var(--border2); color: var(--text); }
-
-        /* SLIDER */
-        .slider-wrap { padding: 8px 0; }
-        .slider-row { display: flex; align-items: center; gap: 12px; }
-        .slider-row label { font-size: 11px; color: var(--text2); min-width: 64px; text-transform: uppercase; letter-spacing: 0.07em; }
-        .slider-row input[type=range] {
-          flex: 1;
-          accent-color: var(--accent);
-          height: 4px;
-          cursor: pointer;
-        }
-        .slider-val { font-size: 11px; color: var(--accent); min-width: 28px; text-align: right; }
-
-        /* UPLOAD */
-        .upload-btn {
-          width: 100%;
-          background: var(--surface2);
-          border: 1.5px dashed var(--border2);
-          border-radius: var(--radius);
-          color: var(--text2);
-          padding: 20px;
-          cursor: pointer;
-          text-align: center;
-          transition: all 0.15s;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
-        }
-        .upload-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(201,168,76,0.05); }
-        .upload-icon { font-size: 24px; margin-bottom: 6px; }
-
-        /* SAMPLE PHOTOS */
-        .photo-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 6px;
+        .hero-btns {
+          display: flex;
+          gap: 16px;
           margin-top: 12px;
         }
-        .photo-thumb {
-          aspect-ratio: 3/4;
-          border-radius: 6px;
-          overflow: hidden;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: border-color 0.15s;
+        .btn-hero-primary {
+          background: var(--accent);
+          color: #1A1100;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 700;
+          padding: 14px 32px;
+          border-radius: 30px;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          box-shadow: 0 8px 24px rgba(201, 168, 76, 0.2);
         }
-        .photo-thumb.active { border-color: var(--accent); }
-        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .btn-hero-primary:hover {
+          background: var(--accent2);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(201, 168, 76, 0.3);
+        }
+        .btn-hero-ghost {
+          background: rgba(255,255,255,0.02);
+          color: var(--text);
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 700;
+          padding: 14px 30px;
+          border-radius: 30px;
+          border: 1px solid var(--border2);
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+        }
+        .btn-hero-ghost:hover {
+          background: rgba(255,255,255,0.06);
+          border-color: var(--accent);
+          color: var(--accent);
+          transform: translateY(-2px);
+        }
 
-        /* CANVAS AREA */
-        .canvas-area {
+        /* HERO GRAPHIC */
+        .hero-graphic-container {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .hero-frame-wrap {
+          border-radius: 8px;
+          overflow: hidden;
+          background: #8B5E3C;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.4);
+          padding: 24px;
+          width: 100%;
+          max-width: 500px;
+          aspect-ratio: 1;
+          display: flex;
+          position: relative;
+        }
+        .hero-frame-inner {
           flex: 1;
+          border-radius: 3px;
+          overflow: hidden;
+          box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+          position: relative;
+        }
+        .hero-frame-inner img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .hero-frame-overlay {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+          background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.15) 100%);
+        }
+
+        /* CATALOG SECTION */
+        .catalog-section {
+          background: var(--surface);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+          padding: 100px 40px;
+        }
+        .catalog-container {
+          max-width: 1300px;
+          margin: 0 auto;
+        }
+        .section-header {
+          text-align: center;
+          margin-bottom: 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
+        .section-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: 42px;
+          color: var(--text);
+        }
+        .section-desc {
+          font-size: 15px;
+          color: var(--text2);
+          max-width: 600px;
+          line-height: 1.6;
+        }
+        
+        /* FILTERS */
+        .catalog-filters {
+          display: flex;
+          justify-content: center;
+          gap: 16px;
+          margin-bottom: 40px;
+        }
+        .filter-btn {
+          background: var(--surface2);
+          border: 1px solid var(--border2);
+          color: var(--text2);
+          padding: 10px 24px;
+          border-radius: 30px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .filter-btn:hover {
+          color: var(--text);
+          border-color: var(--text);
+        }
+        .filter-btn.active {
+          background: var(--accent);
+          color: #1A1100;
+          border-color: var(--accent);
+        }
+
+        /* GRID */
+        .catalog-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 30px;
+        }
+
+        /* PRODUCT CARD */
+        .product-card {
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          position: relative;
+          overflow: hidden;
+        }
+        .product-card:hover {
+          transform: translateY(-8px);
+          border-color: var(--accent);
+          box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        
+        .card-thumb-wrap {
+          aspect-ratio: 4/5;
+          background: var(--bg);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+          padding: 16px;
+        }
+        .card-frame {
+          border-radius: 4px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          display: flex;
+          position: relative;
+        }
+        .card-frame-inner {
+          flex: 1;
+          background: #2D2822;
+          box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .card-frame-inner::after {
+          content: '❧';
+          font-size: 32px;
+          color: rgba(201, 168, 76, 0.12);
+        }
+        
+        .product-info {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          flex: 1;
+        }
+        .product-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .product-name {
+          font-family: 'DM Serif Display', serif;
+          font-size: 20px;
+          color: var(--text);
+        }
+        .product-price {
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--accent);
+        }
+        .product-tag {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--text2);
+          align-self: flex-start;
+          border-bottom: 1.5px solid var(--accent);
+          padding-bottom: 2px;
+        }
+        .product-desc {
+          font-size: 13px;
+          line-height: 1.5;
+          color: var(--text2);
+        }
+        .btn-card {
+          width: 100%;
+          text-align: center;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid var(--border2);
+          color: var(--text);
+          padding: 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: all 0.2s ease;
+          margin-top: auto;
+        }
+        .product-card:hover .btn-card {
+          background: var(--accent);
+          border-color: var(--accent);
+          color: #1A1100;
+          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+        }
+
+        /* FOOTER */
+        .footer {
+          background: #090807;
+          border-top: 1px solid var(--border);
+          padding: 80px 40px 40px;
+        }
+        .footer-grid {
+          max-width: 1300px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr 1fr;
+          gap: 60px;
+          padding-bottom: 60px;
+          border-bottom: 1px solid var(--border);
+        }
+        .footer-brand-col {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .footer-brand {
+          font-family: 'DM Serif Display', serif;
+          font-size: 24px;
+          color: var(--accent);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          text-decoration: none;
+        }
+        .footer-brand span { color: var(--text); font-size: 20px; }
+        .footer-tagline {
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--text2);
+          max-width: 320px;
+        }
+        .footer-title {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--text);
+          margin-bottom: 24px;
+        }
+        .footer-links {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .footer-link {
+          color: var(--text2);
+          text-decoration: none;
+          font-size: 13px;
+          transition: color 0.15s ease;
+        }
+        .footer-link:hover {
+          color: var(--accent);
+        }
+        .footer-bottom {
+          max-width: 1300px;
+          margin: 40px auto 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 12px;
+          color: var(--text2);
+          letter-spacing: 0.05em;
+        }
+        .footer-bottom span {
+          color: var(--accent);
+        }
+
+        /* CART DRAWER SLIDE-OVER */
+        .cart-drawer-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 2000;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+        .cart-drawer-overlay.open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .cart-drawer {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 380px;
+          max-width: 100vw;
+          background: var(--bg);
+          border-left: 1px solid var(--border);
+          z-index: 2001;
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+        }
+        .cart-drawer.open {
+          transform: translateX(0);
+        }
+        .cart-drawer-header {
+          padding: 24px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .cart-drawer-header h3 {
+          font-family: 'DM Serif Display', serif;
+          font-size: 20px;
+          color: var(--text);
+        }
+        .cart-close-btn {
+          background: none;
+          border: none;
+          color: var(--text2);
+          font-size: 28px;
+          cursor: pointer;
+          line-height: 1;
+          transition: color 0.15s ease;
+        }
+        .cart-close-btn:hover {
+          color: var(--text);
+        }
+        .cart-drawer-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+        }
+        .cart-empty {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 40px 24px;
-          overflow: hidden;
-          background: var(--bg);
-          position: relative;
-          min-width: 0;
+          height: 100%;
+          text-align: center;
+          gap: 12px;
+          color: var(--text2);
         }
-
-        /* Subtle grid bg */
-        .canvas-area::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-          background-size: 32px 32px;
-          pointer-events: none;
+        .cart-empty-icon {
+          font-size: 48px;
         }
-
-        .canvas-inner {
-          position: relative;
+        
+        .cart-items-list {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 32px;
-          z-index: 1;
-          max-width: 800px;
-          width: 100%;
+          gap: 20px;
         }
-
-        /* FRAME WRAPPER */
-        .frame-outer {
+        .cart-item {
+          display: flex;
+          gap: 16px;
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 12px;
           position: relative;
-          transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
-          cursor: grab;
         }
-        .frame-border {
+        .cart-item-thumb {
+          width: 70px;
+          height: 70px;
+          border-radius: 6px;
+          overflow: hidden;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          display: flex;
           position: relative;
-          border-radius: 4px;
-          overflow: hidden;
+          padding: 6px;
         }
-        .frame-image-wrap {
-          position: absolute;
-          overflow: hidden;
-          background: #333;
-        }
-        .frame-image-wrap img {
+        .cart-item-thumb img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: center;
-          display: block;
-          user-select: none;
-          pointer-events: none;
+          border-radius: 2px;
         }
-        .frame-grain {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-          border-radius: 4px;
-          mix-blend-mode: overlay;
-        }
-
-        /* CAPTION */
-        .canvas-caption {
-          font-size: 12px;
-          color: var(--text2);
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          text-align: center;
-        }
-        .canvas-caption strong {
-          color: var(--accent);
-          font-weight: 500;
-          font-family: 'DM Serif Display', serif;
-          font-size: 14px;
-          display: block;
-          margin-bottom: 4px;
-          text-transform: none;
-          letter-spacing: 0.04em;
-        }
-
-        /* BOTTOM BAR */
-        .bottom-bar {
-          flex-shrink: 0;
-          background: var(--surface);
-          border-top: 1px solid var(--border);
-          padding: 12px 20px;
+        .cart-item-thumb-placeholder {
+          flex: 1;
+          background: #2D2822;
           display: flex;
           align-items: center;
-          gap: 10px;
-          z-index: 10;
+          justify-content: center;
+          color: rgba(201, 168, 76, 0.2);
+          font-size: 24px;
         }
-        .btn-primary {
+        
+        .cart-item-details {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .cart-item-name {
+          font-family: 'DM Serif Display', serif;
+          font-size: 15px;
+          color: var(--text);
+        }
+        .cart-item-meta {
+          font-size: 10px;
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .cart-item-price {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--accent);
+        }
+        .cart-item-qty-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 4px;
+        }
+        .qty-btn {
+          width: 24px;
+          height: 24px;
+          background: var(--surface3);
+          border: 1px solid var(--border2);
+          border-radius: 6px;
+          color: var(--text);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          line-height: 1;
+          transition: all 0.15s ease;
+        }
+        .qty-btn:hover {
           background: var(--accent);
           color: #1A1100;
-          border: none;
-          border-radius: 10px;
-          padding: 10px 22px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
+          border-color: var(--accent);
+        }
+        .qty-val {
+          font-size: 12px;
           font-weight: 500;
-          cursor: pointer;
-          transition: background 0.15s;
+          color: var(--text);
         }
-        .btn-primary:hover { background: var(--accent2); }
-        .btn-ghost {
-          background: var(--surface2);
+        
+        .cart-item-remove {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: none;
+          border: none;
           color: var(--text2);
-          border: 1px solid var(--border2);
-          border-radius: 10px;
-          padding: 10px 18px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
+          font-size: 18px;
           cursor: pointer;
-          transition: all 0.15s;
-          margin-left: auto;
+          line-height: 1;
+          transition: color 0.15s ease;
         }
-        .btn-ghost:hover { color: var(--text); background: var(--surface3); }
+        .cart-item-remove:hover {
+          color: #FF5A5A;
+        }
+        
+        .cart-drawer-footer {
+          padding: 24px;
+          border-top: 1px solid var(--border);
+          background: var(--surface);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .cart-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 14px;
+          color: var(--text2);
+        }
+        .cart-summary-total {
+          font-family: 'DM Serif Display', serif;
+          font-size: 24px;
+          color: var(--accent);
+        }
+        .cart-footer-note {
+          font-size: 11px;
+          color: var(--text2);
+          text-align: center;
+        }
+        .btn-checkout-primary {
+          background: var(--accent);
+          color: #1A1100;
+          text-decoration: none;
+          text-align: center;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 14px;
+          border-radius: 12px;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
+          display: block;
+        }
+        .btn-checkout-primary:hover {
+          background: var(--accent2);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(201, 168, 76, 0.35);
+        }
 
-        /* MOBILE OVERLAY */
-        .sidebar-overlay {
-          display: none;
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.6);
-          z-index: 90;
+        /* MOBILE STYLES */
+        @media (max-width: 1024px) {
+          .catalog-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 768px) {
-          :root { --sidebar: 100vw; }
-
-          .sidebar {
-            position: fixed;
-            top: 56px;
-            left: 0;
-            bottom: 0;
-            z-index: 95;
-            width: 320px !important;
-            transform: translateX(-320px);
-            transition: transform 0.3s ease;
+          .navbar { padding: 0 20px; }
+          .nav-links, .nav-actions { display: none; }
+          .menu-btn { display: block; }
+          .hero {
+            grid-template-columns: 1fr;
+            padding: 60px 20px 40px;
+            gap: 40px;
+            text-align: center;
           }
-          .sidebar:not(.sidebar-closed) {
-            transform: translateX(0);
-          }
-          .sidebar.sidebar-closed {
-            transform: translateX(-320px);
-            width: 320px !important;
-          }
-          .menu-toggle { display: flex; }
-          .sidebar-overlay { display: block; }
-          .sidebar-overlay.hidden { display: none; }
-          .canvas-area { padding: 32px 24px 24px; }
-          .bottom-bar { padding: 10px 14px; }
-          .btn-primary { padding: 10px 16px; font-size: 12px; }
-          .btn-ghost { padding: 10px 14px; font-size: 12px; }
+          .hero-content { align-items: center; }
+          .hero-title { font-size: 40px; }
+          .hero-btns { flex-direction: column; width: 100%; }
+          .btn-hero-primary, .btn-hero-ghost { text-align: center; width: 100%; }
+          .catalog-section { padding: 60px 20px; }
+          .section-title { font-size: 32px; }
+          .catalog-grid { grid-template-columns: 1fr; gap: 20px; }
+          .footer { padding: 60px 20px 20px; }
+          .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+          .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
         }
       `}</style>
 
-      {/* HEADER */}
-      <header className="header">
-        <div className="header-brand">
+      {/* NAVBAR */}
+      <nav className="navbar">
+        <a href="/" className="nav-brand">
           ❧ <span>Frame</span>Studio
+        </a>
+        
+        <div className="nav-links">
+          <a href="/" className="nav-link">Home</a>
+          <a href="#catalog" className="nav-link">Catalog</a>
+          <a href="/customize" className="nav-link">Customize</a>
         </div>
-        <div className="header-actions">
-          <button
-            className="btn-icon menu-toggle"
-            onClick={() => setSidebarOpen((s) => !s)}
-            aria-label="Toggle sidebar"
-          >
-            ☰
+
+        <div className="nav-actions">
+          <button className="btn-nav-cart" onClick={() => setCartOpen(true)} title="View Cart">
+            👜 <span className="cart-badge">{cartCount}</span>
           </button>
-          <button className="btn-icon" title="Download" onClick={handleDownload}>⬇</button>
+          <a href="/customize" className="btn-nav-primary">Start Framing</a>
         </div>
-      </header>
 
-      <div className="layout">
-        {/* SIDEBAR OVERLAY (mobile) */}
-        <div
-          className={`sidebar-overlay ${sidebarOpen ? "" : "hidden"}`}
-          onClick={() => setSidebarOpen(false)}
-        />
+        <button className="menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          ☰
+        </button>
+      </nav>
 
-        {/* SIDEBAR */}
-        <aside className={`sidebar ${sidebarOpen ? "" : "sidebar-closed"}`}>
-          <div className="sidebar-tabs">
-            <button
-              className={`tab-btn ${activeTab === "frame" ? "active" : ""}`}
-              onClick={() => setActiveTab("frame")}
-            >Frame</button>
-            <button
-              className={`tab-btn ${activeTab === "rotate" ? "active" : ""}`}
-              onClick={() => setActiveTab("rotate")}
-            >Rotate</button>
-            <button
-              className={`tab-btn ${activeTab === "photo" ? "active" : ""}`}
-              onClick={() => setActiveTab("photo")}
-            >Photo</button>
+      {/* HERO BANNER */}
+      <section className="hero">
+        <div className="hero-content">
+          <span className="hero-tag">Premium Custom Framing</span>
+          <h1 className="hero-title">
+            Turn Your Moments Into <span>Museum Art</span>
+          </h1>
+          <p className="hero-desc">
+            Experience bespoke picture framing handcrafted for your specific style. Drop your own photo, customize details with premium frames in real-time, and let our master artisans deliver it ready to hang.
+          </p>
+          <div className="hero-btns">
+            <a href="/customize" className="btn-hero-primary">Start Customizing</a>
+            <a href="#catalog" className="btn-hero-ghost">Explore Collections</a>
+          </div>
+        </div>
+
+        <div className="hero-graphic-container">
+          <div className="hero-frame-wrap" style={{ padding: "28px" }}>
+            <div className="hero-frame-inner">
+              <img src="/images/hero.png" alt="Exhibition Art Gallery Banner" />
+              <div className="hero-frame-overlay" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CURATED PRODUCTS CATALOG */}
+      <section className="catalog-section" id="catalog">
+        <div className="catalog-container">
+          <div className="section-header">
+            <span className="hero-tag">Curated Collections</span>
+            <h2 className="section-title">The Product Catalog</h2>
+            <p className="section-desc">
+              Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
+            </p>
+          </div>
+          
+          <div className="catalog-filters">
+            <button className={`filter-btn ${filter === 'portrait' ? 'active' : ''}`} onClick={() => setFilter('portrait')}>Portrait Frames</button>
+            <button className={`filter-btn ${filter === 'landscape' ? 'active' : ''}`} onClick={() => setFilter('landscape')}>Landscape Frames</button>
           </div>
 
-          {/* FRAME TAB */}
-          {activeTab === "frame" && (
-            <div className="sidebar-section">
-              <p className="section-label">Choose Frame</p>
-              <div className="frame-grid">
-                {FRAMES.map((f) => (
-                  <div
-                    key={f.id}
-                    className={`frame-card ${selectedFrame.id === f.id ? "selected" : ""}`}
-                    onClick={() => setSelectedFrame(f)}
-                  >
-                    <div
-                      className="frame-thumb"
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0" }}>
+              Loading catalog from database...
+            </div>
+          ) : (
+            <div className="catalog-grid">
+              {displayedProducts.map((p) => (
+                <div key={p.id} className="product-card">
+                  <div className="card-thumb-wrap">
+                    <div 
+                      className="card-frame"
                       style={{
-                        background: f.color,
-                        boxShadow: `inset 0 0 2px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.2)`,
-                        padding: `${Math.max(3, parseInt(f.border) / 5)}px`,
-                        display: "flex",
-                        width: f.orientation === "landscape" ? 60 : 48,
-                        height: f.orientation === "landscape" ? 48 : 60,
+                        background: p.color,
+                        padding: "16px",
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.3)",
+                        aspectRatio: p.orientation === "landscape" ? "4/3" : "3/4",
+                        height: p.orientation === "landscape" ? "auto" : "100%",
+                        width: p.orientation === "landscape" ? "100%" : "auto"
                       }}
                     >
-                      <div
-                        className="frame-thumb-inner"
-                        style={{
-                          flex: 1,
-                          backgroundImage: `url(${uploadedImage})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          borderRadius: "1px",
-                          boxShadow: "inset 0 0 4px rgba(0,0,0,0.3)",
-                          position: "relative",
-                        }}
-                      />
-                      {f.grain && (
-                        <div 
-                          className="frame-grain" 
-                          style={{ 
-                            opacity: 0.15, 
-                            borderRadius: "4px",
-                            pointerEvents: "none"
-                          }} 
-                        />
-                      )}
+                      <div className="card-frame-inner" />
                     </div>
-                    <span className="frame-name">{f.name}</span>
                   </div>
-                ))}
-              </div>
+
+                  <div className="product-info">
+                    <div className="product-header-row">
+                      <h3 className="product-name">{p.name}</h3>
+                      <span className="product-price">{p.price}</span>
+                    </div>
+                    <span className="product-tag">{p.tag}</span>
+                    <p className="product-desc">{p.desc}</p>
+                  </div>
+
+                  <a href={`/customize?frame=${p.id}`} className="btn-card">
+                    Customize
+                  </a>
+                </div>
+              ))}
             </div>
           )}
+        </div>
+      </section>
 
-          {/* ROTATE TAB */}
-          {activeTab === "rotate" && (
-            <div className="sidebar-section">
-              <p className="section-label">Rotation</p>
-              <div className="rotate-controls">
-                <div className="rotate-display">
-                  <div className="rotate-value">{rotation}°</div>
-                  <div className="rotate-unit">Current angle</div>
-                </div>
-                <div className="rotate-btns">
-                  <button className="rotate-btn" onClick={() => handleRotate(-90)}>
-                    <span className="rotate-btn-icon">↺</span>
-                    <span>–90°</span>
-                  </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(90)}>
-                    <span className="rotate-btn-icon">↻</span>
-                    <span>+90°</span>
-                  </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(-45)}>
-                    <span className="rotate-btn-icon">↺</span>
-                    <span>–45°</span>
-                  </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(45)}>
-                    <span className="rotate-btn-icon">↻</span>
-                    <span>+45°</span>
-                  </button>
-                </div>
-                <div className="slider-wrap">
-                  <div className="slider-row">
-                    <label>Fine</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="359"
-                      step="1"
-                      value={rotation}
-                      onChange={(e) => setRotation(Number(e.target.value))}
-                    />
-                    <span className="slider-val">{rotation}°</span>
-                  </div>
-                </div>
-                <button className="rotate-reset" onClick={() => setRotation(0)}>
-                  Reset to 0°
-                </button>
-              </div>
-            </div>
-          )}
+      {/* FOOTER */}
+      <footer className="footer">
+        <div className="footer-grid">
+          <div className="footer-brand-col">
+            <a href="/" className="footer-brand">
+              ❧ <span>Frame</span>Studio
+            </a>
+            <p className="footer-tagline">
+              Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.
+            </p>
+          </div>
 
-          {/* PHOTO TAB */}
-          {activeTab === "photo" && (
-            <div className="sidebar-section">
-              <p className="section-label">Upload Photo</p>
-              <button className="upload-btn" onClick={() => fileRef.current?.click()}>
-                <div className="upload-icon">📷</div>
-                Click to upload your photo
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={handleUpload}
-              />
-              <p className="section-label" style={{ marginTop: 20 }}>Sample Photos</p>
-              <div className="photo-grid">
-                {SAMPLE_PHOTOS.map((src, i) => (
-                  <div
-                    key={i}
-                    className={`photo-thumb ${uploadedImage === src ? "active" : ""}`}
-                    onClick={() => setUploadedImage(src)}
-                  >
-                    <img src={src} alt={`Sample ${i + 1}`} loading="lazy" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
-
-        {/* CANVAS */}
-        <main className="canvas-area">
-          <div className="canvas-inner">
-            {/* FRAME */}
-            <div
-              className="frame-outer"
-              style={{ 
-                transform: `rotate(${rotation}deg)`,
-                width: "min(480px, 85vw)",
-                margin: "0 auto"
-              }}
-            >
-              <div
-                ref={frameRef}
-                className="frame-border"
-                style={{
-                  width: "100%",
-                  aspectRatio: aspectRatio,
-                  background: selectedFrame.color,
-                  boxShadow: `${selectedFrame.outerShadow}, ${selectedFrame.innerShadow}`,
-                  padding: selectedFrame.border,
-                  position: "relative",
-                }}
-              >
-                {/* Inner bevel highlight */}
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: 4,
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.3)",
-                    pointerEvents: "none",
-                    zIndex: 3,
-                  }}
-                />
-                {/* Image */}
-                <div
-                  className="frame-image-wrap"
-                  style={{
-                    top: selectedFrame.border,
-                    left: selectedFrame.border,
-                    right: selectedFrame.border,
-                    bottom: selectedFrame.border,
-                    borderRadius: 2,
-                    boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
-                  }}
-                >
-                  <img src={uploadedImage} alt="Framed photo" draggable={false} />
-                </div>
-                {/* Grain overlay */}
-                {selectedFrame.grain && <div className="frame-grain" />}
-              </div>
-            </div>
-
-            {/* CAPTION */}
-            <div className="canvas-caption">
-              <strong>{selectedFrame.name}</strong>
-              {rotation !== 0 ? `Rotated ${rotation}°` : "Portrait orientation"}
+          <div>
+            <h4 className="footer-title">Explore</h4>
+            <div className="footer-links">
+              <a href="/" className="footer-link">Home</a>
+              <a href="#catalog" className="footer-link">Frame Catalog</a>
+              <a href="/customize" className="footer-link">Customizer Studio</a>
             </div>
           </div>
-        </main>
-      </div>
 
-      {/* BOTTOM BAR */}
-      <div className="bottom-bar">
-        <button className="btn-primary">Save Design</button>
-        <button className="btn-primary" style={{ background: "#2A2420", color: "#C9A84C", border: "1px solid #C9A84C" }}>
-          Add to Cart
-        </button>
-        <button className="btn-ghost" onClick={() => { setSelectedFrame(FRAMES[0]); setRotation(0); setUploadedImage(SAMPLE_PHOTOS[0]); }}>
-          Reset All
-        </button>
+          <div>
+            <h4 className="footer-title">Collections</h4>
+            <div className="footer-links">
+              <a href="/customize?frame=classic" className="footer-link">Classic Oak</a>
+              <a href="/customize?frame=gold" className="footer-link">Antique Gold</a>
+              <a href="/customize?frame=obsidian" className="footer-link">Obsidian Steel</a>
+              <a href="/customize?frame=modern" className="footer-link">Matte Black</a>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="footer-title">Studio Info</h4>
+            <div className="footer-links">
+              <span className="footer-link" style={{ cursor: "default" }}>Mon - Fri: 9:00 AM - 6:00 PM</span>
+              <span className="footer-link" style={{ cursor: "default" }}>Support: team@framestudio.com</span>
+              <span className="footer-link" style={{ cursor: "default" }}>Designed in Pakistan</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <p>© {new Date().getFullYear()} Frame Studio. All rights reserved.</p>
+          <p>Crafted with <span>❧</span> for timeless galleries.</p>
+        </div>
+      </footer>
+
+      {/* CART DRAWER SLIDE-OVER */}
+      <div className={`cart-drawer-overlay ${cartOpen ? "open" : ""}`} onClick={() => setCartOpen(false)} />
+      <div className={`cart-drawer ${cartOpen ? "open" : ""}`}>
+        <div className="cart-drawer-header">
+          <h3>Shopping Cart</h3>
+          <button className="cart-close-btn" onClick={() => setCartOpen(false)}>×</button>
+        </div>
+        <div className="cart-drawer-body">
+          {cartItems.length === 0 ? (
+            <div className="cart-empty">
+              <span className="cart-empty-icon">👜</span>
+              <p>Your shopping cart is empty.</p>
+              <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
+                Explore Collections
+              </button>
+            </div>
+          ) : (
+            <div className="cart-items-list">
+              {cartItems.map((item, idx) => (
+                <div key={idx} className="cart-item">
+                  <div className="cart-item-thumb" style={{ background: item.frameColor }}>
+                    {item.image ? (
+                      <img src={item.image} alt={item.frameName} />
+                    ) : (
+                      <div className="cart-item-thumb-placeholder">❧</div>
+                    )}
+                  </div>
+                  <div className="cart-item-details">
+                    <div className="cart-item-name">{item.frameName}</div>
+                    <div className="cart-item-meta">
+                      {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+                    </div>
+                    <div className="cart-item-price">{item.price}</div>
+                    <div className="cart-item-qty-row">
+                      <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
+                      <span className="qty-val">{item.quantity}</span>
+                      <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
+                    </div>
+                  </div>
+                  <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {cartItems.length > 0 && (
+          <div className="cart-drawer-footer">
+            <div className="cart-summary-row">
+              <span>Subtotal</span>
+              <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
+            </div>
+            <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
+            <a href="/checkout" className="btn-checkout-primary">
+              Proceed to Checkout
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
