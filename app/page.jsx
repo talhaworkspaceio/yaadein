@@ -918,7 +918,14 @@ export default function HomePage() {
         <div className="hero-graphic-container">
           <div className="hero-frame-wrap" style={{ padding: "28px" }}>
             <div className="hero-frame-inner">
-              <img src="/images/hero.png" alt="Exhibition Art Gallery Banner" />
+              <video 
+                src="/videos/yaadein.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} 
+              />
               <div className="hero-frame-overlay" />
             </div>
           </div>
@@ -953,15 +960,48 @@ export default function HomePage() {
                     <div 
                       className="card-frame"
                       style={{
-                        background: p.color,
-                        padding: "16px",
-                        boxShadow: "0 10px 24px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.3)",
-                        aspectRatio: p.orientation === "landscape" ? "4/3" : "3/4",
+                        position: "relative",
+                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3/2 : 2/3),
+                        width: p.orientation === "landscape" ? "100%" : "auto",
                         height: p.orientation === "landscape" ? "auto" : "100%",
-                        width: p.orientation === "landscape" ? "100%" : "auto"
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden"
                       }}
                     >
-                      <div className="card-frame-inner" />
+                      {/* Frame image background */}
+                      {p.imageUrl && (
+                        <img 
+                          src={p.imageUrl} 
+                          alt={p.name} 
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "fill",
+                            position: "absolute",
+                            inset: 0,
+                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                            pointerEvents: "none"
+                          }}
+                        />
+                      )}
+                      
+                      {/* Inner matted print opening */}
+                      <div 
+                        className="card-frame-inner"
+                        style={{
+                          position: "absolute",
+                          top: `${p.paddingTop || 0}%`,
+                          left: `${p.paddingLeft || 0}%`,
+                          bottom: `${p.paddingBottom || 0}%`,
+                          right: `${p.paddingRight || 0}%`,
+                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                          background: "#2D2822",
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.6)"
+                        }}
+                      />
                     </div>
                   </div>
 

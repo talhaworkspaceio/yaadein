@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { db, storage } from "../../lib/firebase";
+import { db } from "../../lib/firebase";
 import { ref, push, set } from "firebase/database";
-import { ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
+
+const CLOUDINARY_CLOUD = "hpikhwjw";
+const CLOUDINARY_PRESET = "ml_default";
+
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -100,21 +103,25 @@ export default function CheckoutPage() {
         cartItems.map(async (item) => {
           if (item.image && item.image.startsWith("data:image")) {
             try {
-              // Create a unique file path in Firebase Storage
-              const fileId = `${item.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-              const imgRef = storageRef(storage, `custom-images/${fileId}.png`);
-              
-              // Upload the data URL string
-              await uploadString(imgRef, item.image, "data_url");
-              
-              // Get live download link
-              const downloadUrl = await getDownloadURL(imgRef);
-              
-              // Replace the massive Base64 data URL with the live link!
-              return { ...item, image: downloadUrl };
+              const dataUpload = new FormData();
+              dataUpload.append("file", item.image);
+              dataUpload.append("upload_preset", CLOUDINARY_PRESET);
+
+              const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+                method: "POST",
+                body: dataUpload,
+              });
+
+              if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error?.message || "Failed to upload image to Cloudinary");
+              }
+
+              const result = await res.json();
+              return { ...item, image: result.secure_url };
             } catch (err) {
-              console.error("Error uploading image to storage:", err);
-              // Fallback to saving without image or keeping base64 if it failed
+              console.error("Error uploading image to Cloudinary:", err);
+              // Fallback to saving as-is (keeping base64 or empty) if it failed
               return item;
             }
           }

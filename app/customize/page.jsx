@@ -87,7 +87,7 @@ function FrameCustomizer() {
     };
   }, [loadCart]);
 
-  const aspectRatio = selectedFrame ? (selectedFrame.orientation === "landscape" ? 4 / 3 : 3 / 4) : 3/4;
+  const aspectRatio = selectedFrame ? (selectedFrame.aspectRatio || (selectedFrame.orientation === "landscape" ? 3 / 2 : 2 / 3)) : 2 / 3;
 
   const processFile = (file) => {
     const reader = new FileReader();
@@ -1047,37 +1047,49 @@ function FrameCustomizer() {
                       <div
                         className="frame-thumb"
                         style={{
-                          background: f.color,
-                          boxShadow: `inset 0 0 2px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.2)`,
-                          padding: `${Math.max(3, parseInt(f.border || "16px") / 5)}px`,
+                          position: "relative",
                           display: "flex",
                           width: f.orientation === "landscape" ? 60 : 48,
                           height: f.orientation === "landscape" ? 48 : 60,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          overflow: "hidden",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
                         }}
                       >
+                        {/* Frame image background */}
+                        {f.imageUrl && (
+                          <img 
+                            src={f.imageUrl} 
+                            alt={f.name} 
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "fill",
+                              position: "absolute",
+                              inset: 0,
+                              zIndex: f.imageUrl.endsWith('.png') ? 2 : 4,
+                              pointerEvents: "none"
+                            }}
+                          />
+                        )}
+                        {/* Inner thumbnail photo preview */}
                         <div
                           className="frame-thumb-inner"
                           style={{
-                            flex: 1,
+                            position: "absolute",
+                            top: `${f.paddingTop || 0}%`,
+                            left: `${f.paddingLeft || 0}%`,
+                            bottom: `${f.paddingBottom || 0}%`,
+                            right: `${f.paddingRight || 0}%`,
+                            zIndex: f.imageUrl && f.imageUrl.endsWith('.png') ? 4 : 2,
                             backgroundColor: "#3E352F",
                             backgroundImage: uploadedImage ? `url(${uploadedImage})` : "none",
                             backgroundSize: "cover",
                             backgroundPosition: "center",
-                            borderRadius: "1px",
-                            boxShadow: "inset 0 0 4px rgba(0,0,0,0.3)",
-                            position: "relative",
+                            boxShadow: "inset 0 0 2px rgba(0,0,0,0.3)"
                           }}
                         />
-                        {f.grain && (
-                          <div 
-                            className="frame-grain" 
-                            style={{ 
-                              opacity: 0.15, 
-                              borderRadius: "4px",
-                              pointerEvents: "none"
-                            }} 
-                          />
-                        )}
                       </div>
                       <span className="frame-name">{f.name}</span>
                     </div>
@@ -1161,46 +1173,52 @@ function FrameCustomizer() {
                   margin: "0 auto"
                 }}
               >
-                <div
+                 <div
                   ref={frameRef}
                   className="frame-border"
                   style={{
                     width: "100%",
                     aspectRatio: aspectRatio,
-                    background: selectedFrame.color,
-                    boxShadow: `${selectedFrame.outerShadow || "0 8px 32px rgba(0,0,0,0.3)"}, ${selectedFrame.innerShadow || "inset 0 0 8px rgba(0,0,0,0.3)"}`,
-                    padding: selectedFrame.border || "16px",
                     position: "relative",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+                    overflow: "hidden",
+                    backgroundColor: "transparent"
                   }}
                 >
-                  {/* Inner bevel highlight */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      borderRadius: 4,
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.3)",
-                      pointerEvents: "none",
-                      zIndex: 3,
-                    }}
-                  />
+                  {/* Actual Frame Image Overlay */}
+                  {selectedFrame.imageUrl && (
+                    <img 
+                      src={selectedFrame.imageUrl} 
+                      alt={selectedFrame.name} 
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "fill",
+                        position: "absolute",
+                        inset: 0,
+                        zIndex: selectedFrame.imageUrl.endsWith('.png') ? 2 : 4,
+                        pointerEvents: "none"
+                      }}
+                    />
+                  )}
+
                   {/* Image or Placeholder */}
                   {uploadedImage ? (
                     <div
                       className="frame-image-wrap"
                       style={{
-                        top: selectedFrame.border || "16px",
-                        left: selectedFrame.border || "16px",
-                        right: selectedFrame.border || "16px",
-                        bottom: selectedFrame.border || "16px",
-                        borderRadius: 2,
-                        boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
+                        position: "absolute",
+                        top: `${selectedFrame.paddingTop || 0}%`,
+                        left: `${selectedFrame.paddingLeft || 0}%`,
+                        bottom: `${selectedFrame.paddingBottom || 0}%`,
+                        right: `${selectedFrame.paddingRight || 0}%`,
+                        zIndex: selectedFrame.imageUrl && selectedFrame.imageUrl.endsWith('.png') ? 4 : 2,
                         cursor: "pointer",
                       }}
                       onClick={() => fileRef.current?.click()}
                     >
                       <img src={uploadedImage} alt="Framed photo" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div className="change-photo-overlay">
+                      <div className="change-photo-overlay" style={{ zIndex: 10 }}>
                         <span className="change-photo-btn">📸 Change Photo</span>
                       </div>
                     </div>
@@ -1208,12 +1226,12 @@ function FrameCustomizer() {
                     <div
                       className="frame-image-wrap"
                       style={{
-                        top: selectedFrame.border || "16px",
-                        left: selectedFrame.border || "16px",
-                        right: selectedFrame.border || "16px",
-                        bottom: selectedFrame.border || "16px",
-                        borderRadius: 2,
-                        boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
+                        position: "absolute",
+                        top: `${selectedFrame.paddingTop || 0}%`,
+                        left: `${selectedFrame.paddingLeft || 0}%`,
+                        bottom: `${selectedFrame.paddingBottom || 0}%`,
+                        right: `${selectedFrame.paddingRight || 0}%`,
+                        zIndex: selectedFrame.imageUrl && selectedFrame.imageUrl.endsWith('.png') ? 4 : 2,
                         background: "#181512",
                         cursor: "pointer",
                       }}
@@ -1226,8 +1244,6 @@ function FrameCustomizer() {
                       </div>
                     </div>
                   )}
-                  {/* Grain overlay */}
-                  {selectedFrame.grain && <div className="frame-grain" />}
                 </div>
               </div>
             )}

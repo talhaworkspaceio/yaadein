@@ -5,29 +5,95 @@ import { useRouter } from "next/navigation";
 import { db } from "../../../lib/firebase";
 import { ref, onValue, set, push, remove } from "firebase/database";
 
+const AVAILABLE_FRAME_IMAGES = [
+  { value: "/frames/portrait/frame-01-correct-size.webp", label: "Portrait - Frame 01 (Oak)", orientation: "portrait", top: 8.97, left: 12.04, bottom: 9.03, right: 12.33, ratio: 0.6667 },
+  { value: "/frames/portrait/frame-02-correct-size.webp", label: "Portrait - Frame 02 (Black)", orientation: "portrait", top: 12.61, left: 15.08, bottom: 13.19, right: 15.54, ratio: 0.6667 },
+  { value: "/frames/portrait/frame-03-correct-size.webp", label: "Portrait - Frame 03 (Gold)", orientation: "portrait", top: 9.11, left: 10.94, bottom: 9.29, right: 11.20, ratio: 0.6667 },
+  { value: "/frames/landscape/frame-04-correct-size.webp", label: "Landscape - Frame 04 (Oak)", orientation: "landscape", top: 7.22, left: 6.04, bottom: 7.06, right: 6.07, ratio: 1.5 },
+  { value: "/frames/landscape/Irrelevant Image.png", label: "Landscape - Irrelevant Image", orientation: "landscape", top: 21.48, left: 12.89, bottom: 21.39, right: 12.89, ratio: 1.0 }
+];
+
 const BASE_FRAMES = [
-  { id: "classic", name: "Classic Oak", price: "Rs. 4,900", color: "#8B5E3C", desc: "Warm traditional solid oak, showcasing rich organic grain patterns.", tag: "Artisanal Wood", orientation: "portrait", border: "24px", accent: "#6B4423", innerShadow: "inset 0 0 8px rgba(0,0,0,0.35)", outerShadow: "0 8px 32px rgba(0,0,0,0.28)", grain: true },
-  { id: "modern", name: "Matte Black", price: "Rs. 3,900", color: "#1A1A1A", desc: "Sleek, minimalist exhibition profile for modern photographic art.", tag: "Gallery Classic", orientation: "portrait", border: "16px", accent: "#333", innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)", outerShadow: "0 12px 40px rgba(0,0,0,0.4)", grain: false },
-  { id: "gold", name: "Antique Gold", price: "Rs. 7,900", color: "#C9A84C", desc: "Luxury baroque detailing finished with gold-leaf accents.", tag: "Heritage Luxury", orientation: "portrait", border: "28px", accent: "#A07830", innerShadow: "inset 0 0 10px rgba(0,0,0,0.3)", outerShadow: "0 10px 36px rgba(180,140,40,0.3)", grain: false },
-  { id: "white", name: "Gallery White", price: "Rs. 4,500", color: "#F0EDE8", desc: "Clean, pristine warm white profile for bright architectural prints.", tag: "Contemporary", orientation: "portrait", border: "20px", accent: "#D5D0C8", innerShadow: "inset 0 0 6px rgba(0,0,0,0.12)", outerShadow: "0 8px 28px rgba(0,0,0,0.18)", grain: false },
-  { id: "silver", name: "Brushed Silver", price: "Rs. 5,500", color: "#B8BCC4", desc: "Sleek, industrial anodized steel look with a fine brushed texture.", tag: "Industrial Modern", orientation: "portrait", border: "18px", accent: "#8E9298", innerShadow: "inset 0 0 8px rgba(0,0,0,0.2)", outerShadow: "0 8px 30px rgba(0,0,0,0.22)", grain: false },
-  { id: "rustic", name: "Rustic Walnut", price: "Rs. 5,900", color: "#5C3D2E", desc: "Textured dark country walnut, adding rustic depth to landscapes.", tag: "Rustic Elegance", orientation: "portrait", border: "30px", accent: "#3E2417", innerShadow: "inset 0 0 12px rgba(0,0,0,0.4)", outerShadow: "0 10px 38px rgba(0,0,0,0.3)", grain: true },
-  { id: "maple", name: "Natural Maple", price: "Rs. 4,900", color: "#D2B48C", desc: "Light blonde scandinavian maple wood, organic and minimalist.", tag: "Scandinavian", orientation: "portrait", border: "22px", accent: "#BC8F8F", innerShadow: "inset 0 0 6px rgba(0,0,0,0.2)", outerShadow: "0 8px 30px rgba(0,0,0,0.15)", grain: true },
-  { id: "obsidian", name: "Obsidian Steel", price: "Rs. 6,900", color: "#2C2C2C", desc: "Deep dark graphite steel finish with a matte metallic feel.", tag: "Industrial Luxe", orientation: "portrait", border: "12px", accent: "#111", innerShadow: "inset 0 0 4px rgba(255,255,255,0.05)", outerShadow: "0 10px 35px rgba(0,0,0,0.5)", grain: false },
-  { id: "classic-landscape", name: "Landscape Oak", price: "Rs. 4,900", color: "#8B5E3C", desc: "Warm traditional solid oak, wide landscape orientation.", tag: "Artisanal Wood", orientation: "landscape", border: "24px", accent: "#6B4423", innerShadow: "inset 0 0 8px rgba(0,0,0,0.35)", outerShadow: "0 8px 32px rgba(0,0,0,0.28)", grain: true },
-  { id: "modern-landscape", name: "Landscape Black", price: "Rs. 3,900", color: "#1A1A1A", desc: "Sleek, minimalist exhibition profile, wide landscape orientation.", tag: "Gallery Classic", orientation: "landscape", border: "16px", accent: "#333", innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)", outerShadow: "0 12px 40px rgba(0,0,0,0.4)", grain: false },
-  { id: "gold-landscape", name: "Landscape Gold", price: "Rs. 7,900", color: "#C9A84C", desc: "Luxury baroque detailing, wide landscape orientation.", tag: "Heritage Luxury", orientation: "landscape", border: "28px", accent: "#A07830", innerShadow: "inset 0 0 10px rgba(0,0,0,0.3)", outerShadow: "0 10px 36px rgba(180,140,40,0.3)", grain: false },
-  { id: "white-landscape", name: "Landscape White", price: "Rs. 4,500", color: "#F0EDE8", desc: "Clean, pristine warm white profile, wide landscape orientation.", tag: "Contemporary", orientation: "landscape", border: "20px", accent: "#D5D0C8", innerShadow: "inset 0 0 6px rgba(0,0,0,0.12)", outerShadow: "0 8px 28px rgba(0,0,0,0.18)", grain: false },
-  { id: "silver-landscape", name: "Landscape Silver", price: "Rs. 5,500", color: "#B8BCC4", desc: "Sleek, industrial anodized steel look, wide landscape orientation.", tag: "Industrial Modern", orientation: "landscape", border: "18px", accent: "#8E9298", innerShadow: "inset 0 0 8px rgba(0,0,0,0.2)", outerShadow: "0 8px 30px rgba(0,0,0,0.22)", grain: false },
-  { id: "rustic-landscape", name: "Landscape Walnut", price: "Rs. 5,900", color: "#5C3D2E", desc: "Textured dark country walnut, wide landscape orientation.", tag: "Rustic Elegance", orientation: "landscape", border: "30px", accent: "#3E2417", innerShadow: "inset 0 0 12px rgba(0,0,0,0.4)", outerShadow: "0 10px 38px rgba(0,0,0,0.3)", grain: true },
-  { id: "maple-landscape", name: "Landscape Maple", price: "Rs. 4,900", color: "#D2B48C", desc: "Light blonde scandinavian maple wood, wide landscape orientation.", tag: "Scandinavian", orientation: "landscape", border: "22px", accent: "#BC8F8F", innerShadow: "inset 0 0 6px rgba(0,0,0,0.2)", outerShadow: "0 8px 30px rgba(0,0,0,0.15)", grain: true },
-  { id: "obsidian-landscape", name: "Landscape Steel", price: "Rs. 6,900", color: "#2C2C2C", desc: "Deep dark graphite steel finish, wide landscape orientation.", tag: "Industrial Luxe", orientation: "landscape", border: "12px", accent: "#111", innerShadow: "inset 0 0 4px rgba(255,255,255,0.05)", outerShadow: "0 10px 35px rgba(0,0,0,0.5)", grain: false }
+  { 
+    id: "classic-oak", 
+    name: "Classic Oak", 
+    price: "Rs. 4,900", 
+    color: "#8B5E3C", 
+    desc: "Warm traditional solid oak, showcasing rich organic grain patterns.", 
+    tag: "Artisanal Wood", 
+    orientation: "portrait", 
+    imageUrl: "/frames/portrait/frame-01-correct-size.webp",
+    paddingTop: 8.97,
+    paddingLeft: 12.04,
+    paddingBottom: 9.03,
+    paddingRight: 12.33,
+    aspectRatio: 0.6667
+  },
+  { 
+    id: "matte-black", 
+    name: "Matte Black", 
+    price: "Rs. 3,900", 
+    color: "#1A1A1A", 
+    desc: "Sleek, minimalist exhibition profile for modern photographic art.", 
+    tag: "Gallery Classic", 
+    orientation: "portrait", 
+    imageUrl: "/frames/portrait/frame-02-correct-size.webp",
+    paddingTop: 12.61,
+    paddingLeft: 15.08,
+    paddingBottom: 13.19,
+    paddingRight: 15.54,
+    aspectRatio: 0.6667
+  },
+  { 
+    id: "antique-gold", 
+    name: "Antique Gold", 
+    price: "Rs. 7,900", 
+    color: "#C9A84C", 
+    desc: "Luxury baroque detailing finished with gold-leaf accents.", 
+    tag: "Heritage Luxury", 
+    orientation: "portrait", 
+    imageUrl: "/frames/portrait/frame-03-correct-size.webp",
+    paddingTop: 9.11,
+    paddingLeft: 10.94,
+    paddingBottom: 9.29,
+    paddingRight: 11.20,
+    aspectRatio: 0.6667
+  },
+  { 
+    id: "landscape-oak", 
+    name: "Landscape Oak", 
+    price: "Rs. 4,900", 
+    color: "#8B5E3C", 
+    desc: "Warm traditional solid oak, wide landscape orientation.", 
+    tag: "Artisanal Wood", 
+    orientation: "landscape", 
+    imageUrl: "/frames/landscape/frame-04-correct-size.webp",
+    paddingTop: 7.22,
+    paddingLeft: 6.04,
+    paddingBottom: 7.06,
+    paddingRight: 6.07,
+    aspectRatio: 1.5
+  },
+  { 
+    id: "gallery-landscape", 
+    name: "Gallery Landscape", 
+    price: "Rs. 5,900", 
+    color: "#777570", 
+    desc: "A wide landscape frame mockup set against a clean room background.", 
+    tag: "Contemporary", 
+    orientation: "landscape", 
+    imageUrl: "/frames/landscape/Irrelevant Image.png",
+    paddingTop: 21.48,
+    paddingLeft: 12.89,
+    paddingBottom: 21.39,
+    paddingRight: 12.89,
+    aspectRatio: 1.0
+  }
 ];
 
 const INITIAL_FORM = {
-  id: "", name: "", price: "Rs. ", color: "#000000", desc: "", tag: "", 
-  orientation: "portrait", border: "16px", accent: "#333", 
-  innerShadow: "inset 0 0 6px rgba(0,0,0,0.5)", outerShadow: "0 8px 24px rgba(0,0,0,0.3)", grain: false
+  id: "", name: "", price: "Rs. ", color: "#8B5E3C", desc: "", tag: "", 
+  orientation: "portrait", imageUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 1.0
 };
 
 export default function AdminDashboard() {
@@ -43,6 +109,77 @@ export default function AdminDashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+
+  // Cloudinary Upload Config (hardcoded)
+  const cloudinaryCloud = "hpikhwjw";
+  const cloudinaryPreset = "ml_default";
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const dataUpload = new FormData();
+    dataUpload.append("file", file);
+    dataUpload.append("upload_preset", cloudinaryPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`, {
+        method: "POST",
+        body: dataUpload,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error?.message || "Failed to upload image to Cloudinary");
+      }
+
+      const result = await res.json();
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: result.secure_url
+      }));
+      alert("Image uploaded to Cloudinary successfully! URL stored in form.");
+    } catch (err) {
+      console.error("Cloudinary upload failed:", err);
+      alert(`Cloudinary upload failed: ${err.message}`);
+      e.target.value = "";
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDeleteOrder = async (docId) => {
+    if (!confirm("Are you sure you want to delete this order permanently?")) return;
+    try {
+      const orderRef = ref(db, `orders/${docId}`);
+      await remove(orderRef);
+      alert("Order deleted successfully.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete order.");
+    }
+  };
+
+  const handleSelectTemplate = (e) => {
+    const val = e.target.value;
+    setSelectedTemplate(val);
+    if (!val) return;
+    const template = AVAILABLE_FRAME_IMAGES.find(x => x.value === val);
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        orientation: template.orientation,
+        paddingTop: template.top,
+        paddingLeft: template.left,
+        paddingBottom: template.bottom,
+        paddingRight: template.right,
+        aspectRatio: template.ratio
+      }));
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -113,6 +250,10 @@ export default function AdminDashboard() {
 
   const handleSaveFrame = async (e) => {
     e.preventDefault();
+    if (!formData.imageUrl) {
+      alert("Please upload a local image to Cloudinary first!");
+      return;
+    }
     try {
       if (isEditing) {
         const frameRef = ref(db, `frames/${editId}`);
@@ -148,12 +289,15 @@ export default function AdminDashboard() {
     setFormData(f);
     setEditId(f.docId);
     setIsEditing(true);
+    const match = AVAILABLE_FRAME_IMAGES.find(img => img.value === f.imageUrl);
+    setSelectedTemplate(match ? match.value : "");
   };
 
   const resetForm = () => {
     setFormData(INITIAL_FORM);
     setIsEditing(false);
     setEditId(null);
+    setSelectedTemplate("");
   };
 
   if (!authChecked) return null;
@@ -236,6 +380,7 @@ export default function AdminDashboard() {
               <div className="grid">
                 <div className="card">
                   <h3 style={{ marginBottom: "20px" }}>{isEditing ? "Edit Frame" : "Add New Frame"}</h3>
+
                   <form onSubmit={handleSaveFrame}>
                     <div className="form-row">
                       <div className="form-group"><label>Unique ID</label><input required className="form-control" name="id" value={formData.id} onChange={handleFormChange} disabled={isEditing} /></div>
@@ -251,23 +396,101 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="form-group" style={{ marginBottom: "16px" }}><label>Description</label><textarea required className="form-control" name="desc" value={formData.desc} onChange={handleFormChange} /></div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Hex Color</label><input required className="form-control" name="color" value={formData.color} onChange={handleFormChange} /></div>
+                     <div className="form-row">
+                      <div className="form-group"><label>Fallback Hex Color</label><input required className="form-control" name="color" value={formData.color} onChange={handleFormChange} /></div>
                       <div className="form-group"><label>Tag</label><input required className="form-control" name="tag" value={formData.tag} onChange={handleFormChange} /></div>
                     </div>
                     <div className="form-row">
-                      <div className="form-group"><label>Border Thickness</label><input required className="form-control" name="border" value={formData.border} onChange={handleFormChange} placeholder="24px" /></div>
-                      <div className="form-group"><label>Accent Color</label><input required className="form-control" name="accent" value={formData.accent} onChange={handleFormChange} /></div>
+                      <div className="form-group">
+                        <label>Select Image Template (Prefills Margins)</label>
+                        <select className="form-control" onChange={handleSelectTemplate} value={selectedTemplate}>
+                          <option value="">-- Custom / Select Image --</option>
+                          {AVAILABLE_FRAME_IMAGES.map(img => (
+                            <option key={img.value} value={img.value}>{img.label}</option>
+                          ))}
+                        </select>
+                        <span style={{ fontSize: "10px", color: "var(--text2)", marginTop: "4px" }}>Note: This pre-fills dimension settings. You must still select the file below to upload to Cloudinary.</span>
+                      </div>
+                      <div className="form-group">
+                        <label>Select Local Image file (Upload to Cloudinary)</label>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="form-control" 
+                          onChange={handleFileChange}
+                          disabled={uploadingImage}
+                          style={{ background: "var(--surface2)", color: "var(--text)" }}
+                        />
+                        {uploadingImage && <div style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>Uploading image to Cloudinary... ⌛</div>}
+                      </div>
                     </div>
-                    <div className="form-group" style={{ marginBottom: "16px" }}>
-                      <label><input type="checkbox" name="grain" checked={formData.grain} onChange={handleFormChange} /> Wood Grain Texture overlay</label>
+                    {formData.imageUrl && (
+                      <div style={{
+                        marginTop: "16px",
+                        marginBottom: "16px",
+                        padding: "12px",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid var(--border2)",
+                        borderRadius: "8px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "8px"
+                      }}>
+                        <span style={{ fontSize: "11px", color: "var(--text2)", alignSelf: "flex-start", textTransform: "uppercase" }}>Uploaded Image Preview</span>
+                        <div style={{
+                          width: "100%",
+                          maxHeight: "150px",
+                          overflow: "hidden",
+                          borderRadius: "4px",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          background: "#000"
+                        }}>
+                          <img 
+                            src={formData.imageUrl} 
+                            alt="Frame Preview" 
+                            style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain" }} 
+                          />
+                        </div>
+                        <button 
+                          type="button" 
+                          className="btn-secondary" 
+                          style={{ fontSize: "11px", padding: "4px 10px", color: "#FF5A5A", borderColor: "rgba(255, 90, 90, 0.2)" }} 
+                          onClick={() => setFormData(prev => ({ ...prev, imageUrl: "" }))}
+                        >
+                          Remove Image
+                        </button>
+                      </div>
+                    )}
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Uploaded Live URL (From Cloudinary - Read Only)</label>
+                        <input readOnly className="form-control" name="imageUrl" value={formData.imageUrl || ""} placeholder="No image uploaded yet" style={{ opacity: 0.7, cursor: "not-allowed" }} />
+                      </div>
+                      <div className="form-group"><label>Aspect Ratio (W/H)</label><input required type="number" step="any" className="form-control" name="aspectRatio" value={formData.aspectRatio || ""} onChange={handleFormChange} placeholder="0.6667" /></div>
                     </div>
                     <div className="form-row">
-                      <div className="form-group"><label>Inner Shadow</label><input required className="form-control" name="innerShadow" value={formData.innerShadow} onChange={handleFormChange} /></div>
-                      <div className="form-group"><label>Outer Shadow</label><input required className="form-control" name="outerShadow" value={formData.outerShadow} onChange={handleFormChange} /></div>
+                      <div className="form-group"><label>Padding Top (%)</label><input required type="number" step="any" className="form-control" name="paddingTop" value={formData.paddingTop || 0} onChange={handleFormChange} /></div>
+                      <div className="form-group"><label>Padding Left (%)</label><input required type="number" step="any" className="form-control" name="paddingLeft" value={formData.paddingLeft || 0} onChange={handleFormChange} /></div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group"><label>Padding Bottom (%)</label><input required type="number" step="any" className="form-control" name="paddingBottom" value={formData.paddingBottom || 0} onChange={handleFormChange} /></div>
+                      <div className="form-group"><label>Padding Right (%)</label><input required type="number" step="any" className="form-control" name="paddingRight" value={formData.paddingRight || 0} onChange={handleFormChange} /></div>
                     </div>
                     <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-                      <button type="submit" className="btn-primary">{isEditing ? "Update Frame" : "Create Frame"}</button>
+                      <button 
+                        type="submit" 
+                        className="btn-primary" 
+                        disabled={uploadingImage || !formData.imageUrl}
+                        style={{
+                          opacity: (uploadingImage || !formData.imageUrl) ? 0.5 : 1,
+                          cursor: (uploadingImage || !formData.imageUrl) ? "not-allowed" : "pointer"
+                        }}
+                      >
+                        {uploadingImage ? "Uploading image..." : isEditing ? "Update Frame" : "Create Frame"}
+                      </button>
                       {isEditing && <button type="button" className="btn-secondary" onClick={resetForm}>Cancel</button>}
                     </div>
                   </form>
@@ -331,6 +554,28 @@ export default function AdminDashboard() {
                           <option value="Cancelled">Cancelled</option>
                         </select>
                         <strong style={{ color: "#FFF" }}>Grand Total: Rs. {o.total?.toLocaleString()} (COD)</strong>
+                        
+                        {/* Delete Order button */}
+                        <button
+                          onClick={() => handleDeleteOrder(o.docId)}
+                          style={{
+                            background: "none",
+                            border: "1px solid #FF5A5A",
+                            color: "#FF5A5A",
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            textTransform: "uppercase",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            marginLeft: "10px"
+                          }}
+                          onMouseEnter={(e) => { e.target.style.background = "#FF5A5A"; e.target.style.color = "#111"; }}
+                          onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.color = "#FF5A5A"; }}
+                        >
+                          Delete 🗑️
+                        </button>
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
