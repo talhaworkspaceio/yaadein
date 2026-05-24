@@ -11,7 +11,7 @@ export default function AdminLogin() {
 
   const handleLogin = (e) => {
     if (e) e.preventDefault();
-    if (email.trim() === "admin@yaadein.com" && password === "admin123") {
+    if (email.trim() === "yaadein.pk@gmail.com" && password === "Yaadein@123") {
       sessionStorage.setItem("fs_admin", "authenticated");
       window.location.href = "/admin/dashboard";
     } else {
@@ -152,7 +152,7 @@ export default function AdminLogin() {
               className="form-control" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@yaadein.com"
+              placeholder="yaadein.pk@gmail.com"
             />
           </div>
           <div className="form-group">
