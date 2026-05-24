@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "FrameStudio — Photo Frame Customizer",
+  title: "Yaadein — Photo Frame Customizer",
   description: "Customize your perfect photo frame with real-time preview",
 };
 

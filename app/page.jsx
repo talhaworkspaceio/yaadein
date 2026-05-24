@@ -878,9 +878,9 @@ export default function HomePage() {
       {/* NAVBAR */}
       <nav className="navbar">
         <a href="/" className="nav-brand">
-          ❧ <span>Frame</span>Studio
+          ❧ Yaadein
         </a>
-        
+
         <div className="nav-links">
           <a href="/" className="nav-link">Home</a>
           <a href="#catalog" className="nav-link">Catalog</a>
@@ -918,13 +918,13 @@ export default function HomePage() {
         <div className="hero-graphic-container">
           <div className="hero-frame-wrap" style={{ padding: "28px" }}>
             <div className="hero-frame-inner">
-              <video 
-                src="/videos/yaadein.mp4" 
-                autoPlay 
-                loop 
-                muted 
-                playsInline 
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} 
+              <video
+                src="/videos/yaadein.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
               <div className="hero-frame-overlay" />
             </div>
@@ -942,7 +942,7 @@ export default function HomePage() {
               Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
             </p>
           </div>
-          
+
           <div className="catalog-filters">
             <button className={`filter-btn ${filter === 'portrait' ? 'active' : ''}`} onClick={() => setFilter('portrait')}>Portrait Frames</button>
             <button className={`filter-btn ${filter === 'landscape' ? 'active' : ''}`} onClick={() => setFilter('landscape')}>Landscape Frames</button>
@@ -957,11 +957,11 @@ export default function HomePage() {
               {displayedProducts.map((p) => (
                 <div key={p.id} className="product-card">
                   <div className="card-thumb-wrap">
-                    <div 
+                    <div
                       className="card-frame"
                       style={{
                         position: "relative",
-                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3/2 : 2/3),
+                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
                         width: p.orientation === "landscape" ? "100%" : "auto",
                         height: p.orientation === "landscape" ? "auto" : "100%",
                         boxShadow: "0 10px 24px rgba(0,0,0,0.4)",
@@ -973,9 +973,9 @@ export default function HomePage() {
                     >
                       {/* Frame image background */}
                       {p.imageUrl && (
-                        <img 
-                          src={p.imageUrl} 
-                          alt={p.name} 
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
                           style={{
                             width: "100%",
                             height: "100%",
@@ -987,9 +987,9 @@ export default function HomePage() {
                           }}
                         />
                       )}
-                      
+
                       {/* Inner matted print opening */}
-                      <div 
+                      <div
                         className="card-frame-inner"
                         style={{
                           position: "absolute",
@@ -1029,7 +1029,7 @@ export default function HomePage() {
         <div className="footer-grid">
           <div className="footer-brand-col">
             <a href="/" className="footer-brand">
-              ❧ <span>Frame</span>Studio
+              ❧ Yaadein
             </a>
             <p className="footer-tagline">
               Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.
@@ -1059,14 +1059,14 @@ export default function HomePage() {
             <h4 className="footer-title">Studio Info</h4>
             <div className="footer-links">
               <span className="footer-link" style={{ cursor: "default" }}>Mon - Fri: 9:00 AM - 6:00 PM</span>
-              <span className="footer-link" style={{ cursor: "default" }}>Support: team@framestudio.com</span>
+              <span className="footer-link" style={{ cursor: "default" }}>Support: team@yaadein.com</span>
               <span className="footer-link" style={{ cursor: "default" }}>Designed in Pakistan</span>
             </div>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Frame Studio. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Yaadein. All rights reserved.</p>
           <p>Crafted with <span>❧</span> for timeless galleries.</p>
         </div>
       </footer>

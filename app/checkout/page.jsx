@@ -579,7 +579,7 @@ export default function CheckoutPage() {
       {/* NAVBAR */}
       <nav className="navbar">
         <a href="/" className="nav-brand">
-          ❧ <span>Frame</span>Studio
+          ❧ Yaadein
         </a>
         <a href="/customize" className="btn-back">
           ← Return to Customizer

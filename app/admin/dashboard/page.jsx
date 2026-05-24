@@ -360,7 +360,7 @@ export default function AdminDashboard() {
       `}</style>
 
       <header className="admin-header">
-        <div className="admin-brand">❧ <span>Frame</span>Studio Admin</div>
+        <div className="admin-brand">❧ Yaadein Admin</div>
         <button className="admin-logout" onClick={() => { sessionStorage.clear(); router.push('/admin'); }}>Logout</button>
       </header>
 

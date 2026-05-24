@@ -990,7 +990,7 @@ function FrameCustomizer() {
       {/* HEADER / NAVBAR */}
       <header className="header">
         <a href="/" className="header-brand">
-          ❧ <span>Frame</span>Studio
+          ❧ Yaadein
         </a>
         <div className="header-actions">
           <button

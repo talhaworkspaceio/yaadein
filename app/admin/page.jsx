@@ -11,7 +11,7 @@ export default function AdminLogin() {
 
   const handleLogin = (e) => {
     if (e) e.preventDefault();
-    if (email.trim() === "admin@framestudio.com" && password === "admin123") {
+    if (email.trim() === "admin@yaadein.com" && password === "admin123") {
       sessionStorage.setItem("fs_admin", "authenticated");
       window.location.href = "/admin/dashboard";
     } else {
@@ -138,7 +138,7 @@ export default function AdminLogin() {
 
       <div className="login-card">
         <div className="login-header">
-          <div className="login-brand">❧ <span>Frame</span>Studio</div>
+          <div className="login-brand">❧ Yaadein</div>
           <div className="login-subtitle">Admin Portal</div>
         </div>
 
@@ -152,7 +152,7 @@ export default function AdminLogin() {
               className="form-control" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@framestudio.com"
+              placeholder="admin@yaadein.com"
             />
           </div>
           <div className="form-group">
