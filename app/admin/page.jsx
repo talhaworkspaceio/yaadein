@@ -22,7 +22,7 @@ export default function AdminLogin() {
   return (
     <div className="admin-login-root">
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -134,7 +134,7 @@ export default function AdminLogin() {
         .btn-login:hover {
           background: #E8C96A;
         }
-      `}</style>
+      ` }} />
 
       <div className="login-card">
         <div className="login-header">
