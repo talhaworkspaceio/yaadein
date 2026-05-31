@@ -26,6 +26,7 @@ export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [filter, setFilter] = useState("portrait");
   const [products, setProducts] = useState([]);
+  const [catalogEntered, setCatalogEntered] = useState(false);
 
   useEffect(() => {
     const framesRef = ref(db, "frames");
@@ -43,6 +44,58 @@ export default function HomePage() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const catalogSec = document.getElementById("catalog");
+    if (!catalogSec) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setCatalogEntered(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(catalogSec);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const catalogSec = document.getElementById("catalog");
+    const glowEl = document.getElementById("catalog-glow");
+    if (!catalogSec || !glowEl) return;
+
+    const handleMouseMove = (e) => {
+      const rect = catalogSec.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      window.requestAnimationFrame(() => {
+        glowEl.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+      });
+    };
+
+    const handleMouseEnter = () => {
+      glowEl.style.opacity = "1";
+    };
+
+    const handleMouseLeave = () => {
+      glowEl.style.opacity = "0";
+    };
+
+    catalogSec.addEventListener("mousemove", handleMouseMove);
+    catalogSec.addEventListener("mouseenter", handleMouseEnter);
+    catalogSec.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      catalogSec.removeEventListener("mousemove", handleMouseMove);
+      catalogSec.removeEventListener("mouseenter", handleMouseEnter);
+      catalogSec.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, [products]);
 
   const loadCart = useCallback(() => {
     const rawCart = getCart();
@@ -90,26 +143,10 @@ export default function HomePage() {
 
   return (
     <div className="home-root">
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-          --bg: #0F0D0B;
-          --surface: #171512;
-          --surface2: #211E1A;
-          --surface3: #2D2822;
-          --border: rgba(255,255,255,0.06);
-          --border2: rgba(255,255,255,0.12);
-          --text: #F5F0E8;
-          --text2: #A8A08C;
-          --accent: #C9A84C;
-          --accent2: #E8C96A;
-          --radius: 16px;
-        }
-
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .home-root {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
           min-height: 100vh;
@@ -119,63 +156,42 @@ export default function HomePage() {
 
         /* NAVBAR */
         .navbar {
-          position: sticky;
+          position: absolute;
           top: 0;
-          height: 68px;
-          background: rgba(15, 13, 11, 0.85);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
+          left: 0;
+          right: 0;
+          height: 80px;
+          background: linear-gradient(to bottom, rgba(12, 10, 8, 0.8) 0%, rgba(12, 10, 8, 0) 100%);
+          border-bottom: none;
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 0 40px;
           z-index: 1000;
+          box-shadow: none;
         }
         .nav-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 22px;
-          letter-spacing: 0.02em;
-          color: var(--accent);
           display: flex;
           align-items: center;
-          gap: 8px;
-          text-decoration: none;
           transition: transform 0.2s ease;
         }
         .nav-brand:hover {
-          transform: scale(1.02);
+          transform: scale(1.03);
         }
-        .nav-brand span { color: var(--text); font-size: 19px; }
+        .nav-logo-img {
+          height: 38px;
+          width: auto;
+          display: block;
+        }
         
-        .nav-links {
-          display: flex;
-          align-items: center;
-          gap: 32px;
-        }
-        .nav-link {
-          color: var(--text2);
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: color 0.2s ease;
-        }
-        .nav-link:hover {
-          color: var(--accent);
-        }
-
         .nav-actions {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 24px;
         }
         .btn-nav-cart {
           background: none;
           border: none;
-          color: var(--text);
-          font-size: 20px;
           cursor: pointer;
           position: relative;
           display: flex;
@@ -183,6 +199,8 @@ export default function HomePage() {
           justify-content: center;
           padding: 8px;
           transition: transform 0.2s ease;
+          font-size: 20px;
+          color: var(--text);
         }
         .btn-nav-cart:hover {
           transform: scale(1.1);
@@ -191,38 +209,42 @@ export default function HomePage() {
         .cart-badge {
           position: absolute;
           top: -2px;
-          right: -2px;
-          background: var(--accent);
+          right: -4px;
+          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
+          border: 1px solid #7E631F;
           color: #1A1100;
-          font-size: 9px;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
           font-weight: 700;
-          min-width: 15px;
-          height: 15px;
+          min-width: 16px;
+          height: 16px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 3px;
-          box-shadow: 0 2px 6px rgba(201,168,76,0.4);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .btn-nav-primary {
-          background: var(--accent);
+          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
           color: #1A1100;
           text-decoration: none;
-          font-size: 13px;
+          font-family: var(--font-display);
+          font-size: 12px;
           font-weight: 700;
-          padding: 10px 20px;
-          border-radius: 30px;
+          padding: 8px 18px;
+          border: 1px solid #7E631F;
+          outline: 3px solid #D4AF37;
+          outline-offset: -4px;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .btn-nav-primary:hover {
-          background: var(--accent2);
+          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
           transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(201, 168, 76, 0.35);
+          box-shadow: 0 6px 14px rgba(212, 175, 55, 0.25);
         }
 
         .menu-btn {
@@ -234,142 +256,114 @@ export default function HomePage() {
           cursor: pointer;
         }
 
-        /* HERO BANNER */
-        .hero {
-          padding: 100px 40px 80px;
-          max-width: 1300px;
-          margin: 0 auto;
-          display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
-          gap: 60px;
-          align-items: center;
-        }
-        .hero-content {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 24px;
-        }
-        .hero-tag {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--accent);
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          background: rgba(201, 168, 76, 0.08);
-          padding: 6px 14px;
-          border-radius: 20px;
-          border: 1px solid rgba(201, 168, 76, 0.15);
-        }
-        .hero-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: 56px;
-          line-height: 1.1;
-          color: var(--text);
-          letter-spacing: -0.01em;
-        }
-        .hero-title span {
-          color: var(--accent);
-        }
-        .hero-desc {
-          font-size: 16px;
-          line-height: 1.6;
-          color: var(--text2);
-          max-width: 540px;
-        }
-        .hero-btns {
-          display: flex;
-          gap: 16px;
-          margin-top: 12px;
-        }
-        .btn-hero-primary {
-          background: var(--accent);
-          color: #1A1100;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 700;
-          padding: 14px 32px;
-          border-radius: 30px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 8px 24px rgba(201, 168, 76, 0.2);
-        }
-        .btn-hero-primary:hover {
-          background: var(--accent2);
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(201, 168, 76, 0.3);
-        }
-        .btn-hero-ghost {
-          background: rgba(255,255,255,0.02);
-          color: var(--text);
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 700;
-          padding: 14px 30px;
-          border-radius: 30px;
-          border: 1px solid var(--border2);
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-        }
-        .btn-hero-ghost:hover {
-          background: rgba(255,255,255,0.06);
-          border-color: var(--accent);
-          color: var(--accent);
-          transform: translateY(-2px);
-        }
-
-        /* HERO GRAPHIC */
-        .hero-graphic-container {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        .hero-frame-wrap {
-          border-radius: 8px;
-          overflow: hidden;
-          background: #8B5E3C;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.4);
-          padding: 24px;
-          width: 100%;
-          max-width: 500px;
-          aspect-ratio: 1;
-          display: flex;
-          position: relative;
-        }
-        .hero-frame-inner {
-          flex: 1;
-          border-radius: 3px;
-          overflow: hidden;
-          box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
-          position: relative;
-        }
-        .hero-frame-inner img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-        .hero-frame-overlay {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
-          background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.15) 100%);
-        }
-
         /* CATALOG SECTION */
         .catalog-section {
-          background: var(--surface);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
+          background: #080605;
           padding: 100px 40px;
+          position: relative;
+          overflow: hidden;
         }
+        
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(12, 10, 8, 0.45);
+          backdrop-filter: blur(35px) saturate(140%);
+          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
+          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+
         .catalog-container {
           max-width: 1300px;
           margin: 0 auto;
+          position: relative;
+          z-index: 3;
+        }
+
+        .catalog-glow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 700px;
+          height: 700px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.25) 0%, rgba(139, 94, 60, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          will-change: transform, opacity;
+        }
+
+        /* LIQUID BLOBS */
+        .liquid-blob-1 {
+          position: absolute;
+          top: -10%;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .liquid-blob-2 {
+          position: absolute;
+          bottom: -15%;
+          right: 5%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes liquid-move-1 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+          33% {
+            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
+            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
+          }
+          66% {
+            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
+            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
+          }
+          100% {
+            transform: translate(0, 0) scale(1) rotate(180deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+        }
+
+        @keyframes liquid-move-2 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+          50% {
+            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
+            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
+          }
+          100% {
+            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
         }
         .section-header {
           text-align: center;
@@ -380,15 +374,17 @@ export default function HomePage() {
           gap: 16px;
         }
         .section-title {
-          font-family: 'DM Serif Display', serif;
+          font-family: var(--font-display);
           font-size: 42px;
-          color: var(--text);
+          color: var(--accent);
+          letter-spacing: 0.05em;
         }
         .section-desc {
-          font-size: 15px;
+          font-family: var(--font-serif);
+          font-size: 16px;
           color: var(--text2);
           max-width: 600px;
-          line-height: 1.6;
+          line-height: 1.7;
         }
         
         /* FILTERS */
@@ -403,37 +399,42 @@ export default function HomePage() {
           border: 1px solid var(--border2);
           color: var(--text2);
           padding: 10px 24px;
-          border-radius: 30px;
-          font-family: 'DM Sans', sans-serif;
+          border-radius: 2px;
+          font-family: var(--font-display);
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.2s ease;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .filter-btn:hover {
-          color: var(--text);
-          border-color: var(--text);
+          color: var(--accent);
+          border-color: var(--accent);
         }
         .filter-btn.active {
           background: var(--accent);
           color: #1A1100;
           border-color: var(--accent);
+          box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
         }
 
         /* GRID */
         .catalog-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
           gap: 30px;
         }
 
-        /* PRODUCT CARD */
+        /* PRODUCT CARD - MINI WOODEN FRAME */
         .product-card {
-          background: var(--surface2);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
+          width: 290px;
+          background: linear-gradient(135deg, var(--surface2) 0%, #15110D 100%);
+          border: 6px solid #1C0F07; /* dark wood border */
+          outline: 1px solid var(--accent);
+          outline-offset: -5px;
           padding: 24px;
           display: flex;
           flex-direction: column;
@@ -441,35 +442,104 @@ export default function HomePage() {
           transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           position: relative;
           overflow: hidden;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
         .product-card:hover {
           transform: translateY(-8px);
-          border-color: var(--accent);
-          box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+          border-color: #2D1A0F;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 10px rgba(212,175,55,0.25);
+        }
+
+        /* HANGING LAMPS */
+        .lamp-wrapper {
+          position: absolute;
+          top: -10px;
+          z-index: 5;
+          transform-origin: top center;
+          transform: rotate(45deg);
+          pointer-events: none;
+        }
+        .catalog-section.animate-lamps .lamp-wrapper {
+          animation: lamp-swing 3s forwards;
+        }
+        .lamp-wrapper.left {
+          left: 40px;
+        }
+        .lamp-wrapper.right {
+          right: 40px;
+        }
+
+        .lamp {
+          width: 5.5em;
+          height: auto;
+          display: block;
+        }
+        .bulb {
+          fill: #fbf8ca;
+          fill-opacity: 0.1;
+        }
+        .catalog-section.animate-lamps .bulb {
+          animation: bulb-glow 0.3s 0.3s 5 cubic-bezier(0.26, 1.17, 0.89, -0.74) alternate forwards;
+        }
+        .lamp-glow {
+          position: absolute;
+          top: 175px; /* adjusted to line up below bulb */
+          left: 50%;
+          transform: translateX(-50%);
+          width: 180px;
+          height: 380px;
+          background: linear-gradient(to bottom, rgba(251, 248, 202, 0.3) 0%, rgba(251, 248, 202, 0.08) 55%, rgba(251, 248, 202, 0) 100%);
+          clip-path: polygon(48% 0%, 52% 0%, 100% 100%, 0% 100%);
+          opacity: 0;
+          pointer-events: none;
+          mix-blend-mode: screen;
+        }
+        .catalog-section.animate-lamps .lamp-glow {
+          animation: bulb-glow 0.3s 0.3s 5 cubic-bezier(0.26, 1.17, 0.89, -0.74) alternate forwards;
+        }
+
+        @keyframes bulb-glow {
+          to {
+            fill-opacity: 1;
+            fill: #fbf8ca;
+            opacity: 1;
+          }
+        }
+        @keyframes lamp-swing {
+          5% { transform: rotate(-45deg); }
+          10% { transform: rotate(35deg); }
+          15% { transform: rotate(-35deg); }
+          25% { transform: rotate(15deg); }
+          40% { transform: rotate(-15deg); }
+          65% { transform: rotate(3deg); }
+          85% { transform: rotate(-1deg); }
+          100% { transform: rotate(0deg); }
         }
         
         .card-thumb-wrap {
           aspect-ratio: 4/5;
-          background: var(--bg);
-          border-radius: 10px;
+          background: #080605;
+          border-radius: 2px;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
           overflow: hidden;
-          box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+          box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
           padding: 16px;
         }
         .card-frame {
-          border-radius: 4px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          border: 8px solid #2D1A0F; /* antique dark wood */
+          outline: 1px solid var(--accent);
+          outline-offset: -3px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.6);
           display: flex;
           position: relative;
         }
         .card-frame-inner {
           flex: 1;
           background: #2D2822;
-          box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+          box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
           position: relative;
           display: flex;
           align-items: center;
@@ -478,7 +548,7 @@ export default function HomePage() {
         .card-frame-inner::after {
           content: '❧';
           font-size: 32px;
-          color: rgba(201, 168, 76, 0.12);
+          color: rgba(212, 175, 55, 0.15);
         }
         
         .product-info {
@@ -494,38 +564,39 @@ export default function HomePage() {
           gap: 8px;
         }
         .product-name {
-          font-family: 'DM Serif Display', serif;
-          font-size: 20px;
+          font-family: var(--font-display);
+          font-size: 19px;
           color: var(--text);
         }
         .product-price {
-          font-size: 16px;
+          font-family: var(--font-typewriter);
+          font-size: 15px;
           font-weight: 700;
           color: var(--accent);
         }
         .product-tag {
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
           color: var(--text2);
           align-self: flex-start;
           border-bottom: 1.5px solid var(--accent);
           padding-bottom: 2px;
         }
         .product-desc {
-          font-size: 13px;
-          line-height: 1.5;
+          font-family: var(--font-serif);
+          font-size: 14px;
+          line-height: 1.6;
           color: var(--text2);
         }
         .btn-card {
           width: 100%;
           text-align: center;
-          background: rgba(255,255,255,0.03);
+          background: linear-gradient(to bottom, #1E1A15, #14110E);
           border: 1px solid var(--border2);
           color: var(--text);
           padding: 12px;
-          border-radius: 12px;
+          border-radius: 2px;
+          font-family: var(--font-display);
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.05em;
@@ -533,18 +604,21 @@ export default function HomePage() {
           text-decoration: none;
           transition: all 0.2s ease;
           margin-top: auto;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
         .product-card:hover .btn-card {
-          background: var(--accent);
-          border-color: var(--accent);
+          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
+          border-color: #7E631F;
           color: #1A1100;
-          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+          outline: 3px solid #D4AF37;
+          outline-offset: -4px;
+          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
         }
 
         /* FOOTER */
         .footer {
-          background: #090807;
-          border-top: 1px solid var(--border);
+          background: #080605;
+          border-top: 2px solid #1C0F07;
           padding: 80px 40px 40px;
         }
         .footer-grid {
@@ -562,27 +636,32 @@ export default function HomePage() {
           gap: 20px;
         }
         .footer-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 24px;
-          color: var(--accent);
           display: flex;
           align-items: center;
-          gap: 8px;
-          text-decoration: none;
+          transition: transform 0.2s ease;
         }
-        .footer-brand span { color: var(--text); font-size: 20px; }
+        .footer-brand:hover {
+          transform: scale(1.03);
+        }
+        .footer-logo-img {
+          height: 38px;
+          width: auto;
+          display: block;
+        }
         .footer-tagline {
-          font-size: 14px;
-          line-height: 1.6;
+          font-family: var(--font-serif);
+          font-size: 15px;
+          line-height: 1.7;
           color: var(--text2);
           max-width: 320px;
         }
         .footer-title {
-          font-size: 12px;
+          font-family: var(--font-display);
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--text);
+          color: var(--accent);
           margin-bottom: 24px;
         }
         .footer-links {
@@ -593,7 +672,7 @@ export default function HomePage() {
         .footer-link {
           color: var(--text2);
           text-decoration: none;
-          font-size: 13px;
+          font-size: 14px;
           transition: color 0.15s ease;
         }
         .footer-link:hover {
@@ -605,6 +684,7 @@ export default function HomePage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          font-family: var(--font-typewriter);
           font-size: 12px;
           color: var(--text2);
           letter-spacing: 0.05em;
@@ -617,9 +697,9 @@ export default function HomePage() {
         .cart-drawer-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+          background: rgba(0,0,0,0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           z-index: 2000;
           opacity: 0;
           pointer-events: none;
@@ -634,31 +714,33 @@ export default function HomePage() {
           top: 0;
           right: 0;
           bottom: 0;
-          width: 380px;
+          width: 400px;
           max-width: 100vw;
-          background: var(--bg);
-          border-left: 1px solid var(--border);
+          background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+          border-left: 3px solid #1C0F07;
+          outline: 1px solid var(--border);
+          outline-offset: -4px;
           z-index: 2001;
           transform: translateX(100%);
           transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           display: flex;
           flex-direction: column;
-          box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+          box-shadow: -10px 0 40px rgba(0,0,0,0.8);
         }
         .cart-drawer.open {
           transform: translateX(0);
         }
         .cart-drawer-header {
           padding: 24px;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 2px solid #1C0F07;
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
         .cart-drawer-header h3 {
-          font-family: 'DM Serif Display', serif;
+          font-family: var(--font-display);
           font-size: 20px;
-          color: var(--text);
+          color: var(--accent);
         }
         .cart-close-btn {
           background: none;
@@ -670,7 +752,7 @@ export default function HomePage() {
           transition: color 0.15s ease;
         }
         .cart-close-btn:hover {
-          color: var(--text);
+          color: var(--accent);
         }
         .cart-drawer-body {
           flex: 1;
@@ -684,7 +766,7 @@ export default function HomePage() {
           justify-content: center;
           height: 100%;
           text-align: center;
-          gap: 12px;
+          gap: 16px;
           color: var(--text2);
         }
         .cart-empty-icon {
@@ -700,17 +782,20 @@ export default function HomePage() {
           display: flex;
           gap: 16px;
           background: var(--surface2);
-          border: 1px solid var(--border);
-          border-radius: 12px;
+          border: 3px solid #1C0F07;
+          outline: 1px solid var(--border);
+          outline-offset: -3px;
+          border-radius: 2px;
           padding: 12px;
           position: relative;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .cart-item-thumb {
           width: 70px;
           height: 70px;
-          border-radius: 6px;
+          border-radius: 2px;
           overflow: hidden;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
           display: flex;
           position: relative;
           padding: 6px;
@@ -738,17 +823,18 @@ export default function HomePage() {
           gap: 4px;
         }
         .cart-item-name {
-          font-family: 'DM Serif Display', serif;
+          font-family: var(--font-display);
           font-size: 15px;
           color: var(--text);
         }
         .cart-item-meta {
+          font-family: var(--font-typewriter);
           font-size: 10px;
           color: var(--text2);
           text-transform: uppercase;
-          letter-spacing: 0.05em;
         }
         .cart-item-price {
+          font-family: var(--font-typewriter);
           font-size: 14px;
           font-weight: 700;
           color: var(--accent);
@@ -764,7 +850,7 @@ export default function HomePage() {
           height: 24px;
           background: var(--surface3);
           border: 1px solid var(--border2);
-          border-radius: 6px;
+          border-radius: 2px;
           color: var(--text);
           cursor: pointer;
           display: flex;
@@ -780,6 +866,7 @@ export default function HomePage() {
           border-color: var(--accent);
         }
         .qty-val {
+          font-family: var(--font-typewriter);
           font-size: 12px;
           font-weight: 500;
           color: var(--text);
@@ -803,7 +890,7 @@ export default function HomePage() {
         
         .cart-drawer-footer {
           padding: 24px;
-          border-top: 1px solid var(--border);
+          border-top: 2px solid #1C0F07;
           background: var(--surface);
           display: flex;
           flex-direction: column;
@@ -817,68 +904,65 @@ export default function HomePage() {
           color: var(--text2);
         }
         .cart-summary-total {
-          font-family: 'DM Serif Display', serif;
-          font-size: 24px;
+          font-family: var(--font-typewriter);
+          font-size: 22px;
           color: var(--accent);
         }
         .cart-footer-note {
+          font-family: var(--font-serif);
           font-size: 11px;
           color: var(--text2);
           text-align: center;
+          font-style: italic;
         }
         .btn-checkout-primary {
-          background: var(--accent);
+          display: block;
+          width: 100%;
+          text-align: center;
+          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
           color: #1A1100;
           text-decoration: none;
-          text-align: center;
+          font-family: var(--font-display);
           font-size: 13px;
           font-weight: 700;
           padding: 14px;
-          border-radius: 12px;
+          border: 1px solid #7E631F;
+          outline: 3px solid #D4AF37;
+          outline-offset: -4px;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
-          display: block;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
         }
         .btn-checkout-primary:hover {
-          background: var(--accent2);
+          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
           transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(201, 168, 76, 0.35);
         }
 
         /* MOBILE STYLES */
         @media (max-width: 1024px) {
-          .catalog-grid { grid-template-columns: repeat(2, 1fr); }
+          .catalog-grid { justify-content: center; }
         }
 
         @media (max-width: 768px) {
           .navbar { padding: 0 20px; }
           .nav-links, .nav-actions { display: none; }
           .menu-btn { display: block; }
-          .hero {
-            grid-template-columns: 1fr;
-            padding: 60px 20px 40px;
-            gap: 40px;
-            text-align: center;
-          }
-          .hero-content { align-items: center; }
-          .hero-title { font-size: 40px; }
-          .hero-btns { flex-direction: column; width: 100%; }
-          .btn-hero-primary, .btn-hero-ghost { text-align: center; width: 100%; }
           .catalog-section { padding: 60px 20px; }
           .section-title { font-size: 32px; }
-          .catalog-grid { grid-template-columns: 1fr; gap: 20px; }
+          .catalog-grid { gap: 20px; }
+          .product-card { width: 100%; max-width: 320px; }
+          .lamp-wrapper { display: none; }
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
           .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
         }
-      `}</style>
+      ` }} />
 
       {/* NAVBAR */}
       <nav className="navbar">
         <a href="/" className="nav-brand">
-          ❧ Yaadein
+          <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
         </a>
 
         <div className="nav-links">
@@ -891,7 +975,6 @@ export default function HomePage() {
           <button className="btn-nav-cart" onClick={() => setCartOpen(true)} title="View Cart">
             👜 <span className="cart-badge">{cartCount}</span>
           </button>
-          <a href="/customize" className="btn-nav-primary">Start Framing</a>
         </div>
 
         <button className="menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -899,44 +982,79 @@ export default function HomePage() {
         </button>
       </nav>
 
-      {/* HERO BANNER */}
-      <section className="hero">
-        <div className="hero-content">
-          <span className="hero-tag">Premium Custom Framing</span>
-          <h1 className="hero-title">
-            Turn Your Moments Into <span>Museum Art</span>
-          </h1>
-          <p className="hero-desc">
-            Experience bespoke picture framing handcrafted for your specific style. Drop your own photo, customize details with premium frames in real-time, and let our master artisans deliver it ready to hang.
-          </p>
-          <div className="hero-btns">
-            <a href="/customize" className="btn-hero-primary">Start Customizing</a>
-            <a href="#catalog" className="btn-hero-ghost">Explore Collections</a>
-          </div>
-        </div>
+      {/* FULLSCREEN VIDEO HERO BANNER */}
+      <section className="hero-fullscreen-frame">
+        <video
+          src="/videos/yaadein.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="hero-video-bg"
+        />
+        <div className="hero-video-overlay" />
 
-        <div className="hero-graphic-container">
-          <div className="hero-frame-wrap" style={{ padding: "28px" }}>
-            <div className="hero-frame-inner">
-              <video
-                src="/videos/yaadein.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-              <div className="hero-frame-overlay" />
-            </div>
-          </div>
+        <div className="hero-fullscreen-content">
+
+          <h1 className="hero-fullscreen-title">
+            Turn Your Moments Into <br />
+            <span>Museum Art</span>
+          </h1>
+          <p className="hero-fullscreen-desc">
+            Experience bespoke picture framing handcrafted for your specific style. Customize details in real-time, and let our master artisans deliver it ready to hang.
+          </p>
         </div>
       </section>
 
       {/* CURATED PRODUCTS CATALOG */}
-      <section className="catalog-section" id="catalog">
+      <section className={`catalog-section ${catalogEntered ? "animate-lamps" : ""}`} id="catalog">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div id="catalog-glow" className="catalog-glow" />
+        </div>
+        
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        {/* Hanging Lamp Left */}
+        <div className="lamp-wrapper left">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 130" className="lamp" height="210">
+            <g>
+              <circle className="bulb" cx="30" cy="109.3" r="10.7" />
+              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="28.1" y1="108.1" x2="27.4" y2="113.4" />
+              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="32" y1="108.1" x2="32.6" y2="113.4" />
+              <polyline style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} points="27.8,113.5 28.3,112.8 28.8,113.5 29.6,112.8 30,113.5 30.7,112.9 31.2,113.5 31.8,112.8 32.3,113.5" />
+            </g>
+            <rect x="20.7" y="66.7" style={{ fill: "#2D2D2F" }} width="18.6" height="15.6" />
+            <rect x="28.5" y="0" style={{ fill: "#2D2D2F" }} width="3" height="66.7" />
+            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
+            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
+          </svg>
+          <div className="lamp-glow" />
+        </div>
+
+        {/* Hanging Lamp Right */}
+        <div className="lamp-wrapper right">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 130" className="lamp" height="210">
+            <g>
+              <circle className="bulb" cx="30" cy="109.3" r="10.7" />
+              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="28.1" y1="108.1" x2="27.4" y2="113.4" />
+              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="32" y1="108.1" x2="32.6" y2="113.4" />
+              <polyline style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} points="27.8,113.5 28.3,112.8 28.8,113.5 29.6,112.8 30,113.5 30.7,112.9 31.2,113.5 31.8,112.8 32.3,113.5" />
+            </g>
+            <rect x="20.7" y="66.7" style={{ fill: "#2D2D2F" }} width="18.6" height="15.6" />
+            <rect x="28.5" y="0" style={{ fill: "#2D2D2F" }} width="3" height="66.7" />
+            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
+            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
+          </svg>
+          <div className="lamp-glow" />
+        </div>
+
         <div className="catalog-container">
           <div className="section-header">
-            <span className="hero-tag">Curated Collections</span>
+
             <h2 className="section-title">The Product Catalog</h2>
             <p className="section-desc">
               Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
@@ -949,7 +1067,7 @@ export default function HomePage() {
           </div>
 
           {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0" }}>
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0", fontFamily: "var(--font-typewriter)" }}>
               Loading catalog from database...
             </div>
           ) : (
@@ -964,7 +1082,7 @@ export default function HomePage() {
                         aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
                         width: p.orientation === "landscape" ? "100%" : "auto",
                         height: p.orientation === "landscape" ? "auto" : "100%",
-                        boxShadow: "0 10px 24px rgba(0,0,0,0.4)",
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -999,7 +1117,7 @@ export default function HomePage() {
                           right: `${p.paddingRight || 0}%`,
                           zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
                           background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.6)"
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
                         }}
                       />
                     </div>
@@ -1029,7 +1147,7 @@ export default function HomePage() {
         <div className="footer-grid">
           <div className="footer-brand-col">
             <a href="/" className="footer-brand">
-              ❧ Yaadein
+              <img src="/images/logo-white.png" alt="Yaadein Logo" className="footer-logo-img" />
             </a>
             <p className="footer-tagline">
               Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.

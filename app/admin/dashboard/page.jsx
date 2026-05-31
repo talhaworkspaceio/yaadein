@@ -305,7 +305,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-root">
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
           --bg: #0F0D0B; --surface: #171512; --surface2: #211E1A;
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
         
         .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
         .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
-      `}</style>
+      ` }} />
 
       <header className="admin-header">
         <div className="admin-brand">❧ Yaadein Admin</div>

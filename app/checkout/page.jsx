@@ -147,26 +147,11 @@ export default function CheckoutPage() {
 
   return (
     <div className="checkout-root">
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-          --bg: #0F0D0B;
-          --surface: #171512;
-          --surface2: #211E1A;
-          --surface3: #2D2822;
-          --border: rgba(255,255,255,0.06);
-          --border2: rgba(255,255,255,0.12);
-          --text: #F5F0E8;
-          --text2: #A8A08C;
-          --accent: #C9A84C;
-          --accent2: #E8C96A;
-          --radius: 16px;
-        }
-
         .checkout-root {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
           min-height: 100vh;
@@ -176,11 +161,9 @@ export default function CheckoutPage() {
 
         /* ── NAVBAR ── */
         .navbar {
-          height: 60px;
-          background: rgba(15, 13, 11, 0.95);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
+          height: 72px;
+          background: linear-gradient(to bottom, #14110E, #0C0A08);
+          border-bottom: 2px solid #1C0F07;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -188,22 +171,27 @@ export default function CheckoutPage() {
           z-index: 1000;
           position: sticky;
           top: 0;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
         }
         .nav-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 20px;
-          letter-spacing: 0.02em;
-          color: var(--accent);
           display: flex;
           align-items: center;
-          gap: 8px;
-          text-decoration: none;
+          transition: transform 0.2s ease;
+        }
+        .nav-brand:hover {
+          transform: scale(1.03);
+        }
+        .nav-logo-img {
+          height: 38px;
+          width: auto;
+          display: block;
         }
         .btn-back {
           color: var(--text2);
           text-decoration: none;
+          font-family: var(--font-display);
           font-size: 12px;
-          font-weight: 500;
+          font-weight: 700;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           transition: color 0.15s ease;
@@ -220,7 +208,7 @@ export default function CheckoutPage() {
           padding: 52px 40px;
         }
 
-        /* ── GRID (desktop: 2 cols) ── */
+        /* ── GRID ── */
         .checkout-grid {
           display: grid;
           grid-template-columns: 1.2fr 0.8fr;
@@ -235,18 +223,22 @@ export default function CheckoutPage() {
           gap: 28px;
         }
         .checkout-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
+          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
+          border: 6px solid #1C0F07;
+          outline: 1px solid var(--accent);
+          outline-offset: -5px;
+          border-radius: 2px;
           padding: 32px;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
         .card-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: 22px;
-          color: var(--text);
+          font-family: var(--font-display);
+          font-size: 20px;
+          color: var(--accent);
           margin-bottom: 22px;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 2px solid #1C0F07;
           padding-bottom: 12px;
+          letter-spacing: 0.05em;
         }
 
         .form-row {
@@ -262,21 +254,21 @@ export default function CheckoutPage() {
           margin-bottom: 16px;
         }
         .form-group label {
+          font-family: var(--font-display);
           font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: var(--text2);
         }
-        /* font-size 16px prevents iOS auto-zoom on input focus */
         .form-control {
           background: var(--surface2);
           border: 1px solid var(--border2);
-          border-radius: 8px;
+          border-radius: 2px;
           color: var(--text);
           padding: 12px 16px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 16px;
+          font-family: var(--font-typewriter);
+          font-size: 15px;
           outline: none;
           transition: border-color 0.2s ease;
           width: 100%;
@@ -285,7 +277,7 @@ export default function CheckoutPage() {
         }
         .form-control:focus { border-color: var(--accent); }
 
-        /* sub-grid for Province + ZIP side-by-side */
+        /* sub-row */
         .sub-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -295,9 +287,9 @@ export default function CheckoutPage() {
 
         /* ── COD ── */
         .cod-badge {
-          background: rgba(201, 168, 76, 0.03);
-          border: 1px dashed var(--accent);
-          border-radius: 12px;
+          background: rgba(212, 175, 55, 0.03);
+          border: 1.5px dashed var(--accent);
+          border-radius: 2px;
           padding: 18px;
           display: flex;
           gap: 14px;
@@ -306,58 +298,64 @@ export default function CheckoutPage() {
         }
         .cod-icon { font-size: 26px; color: var(--accent); line-height: 1; flex-shrink: 0; }
         .cod-details h4 {
-          font-family: 'DM Serif Display', serif;
+          font-family: var(--font-display);
           font-size: 15px;
           color: var(--accent);
           margin-bottom: 4px;
         }
-        .cod-details p { font-size: 12px; line-height: 1.5; color: var(--text2); }
+        .cod-details p { font-size: 13px; line-height: 1.6; color: var(--text2); }
 
         .btn-order {
           width: 100%;
-          background: var(--accent);
+          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
           color: #1A1100;
-          border: none;
-          border-radius: 12px;
+          border: 1px solid #7E631F;
+          outline: 3px solid #D4AF37;
+          outline-offset: -4px;
+          border-radius: 2px;
           padding: 16px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-display);
           font-size: 14px;
           font-weight: 700;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.5);
           margin-top: 22px;
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
         }
         .btn-order:hover:not(:disabled) {
-          background: var(--accent2);
+          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
           transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(201, 168, 76, 0.35);
+          box-shadow: 0 8px 20px rgba(212,175,55,0.25);
         }
         .btn-order:active:not(:disabled) { transform: translateY(0); }
         .btn-order:disabled { opacity: 0.6; cursor: not-allowed; }
 
         /* ── SIDEBAR ── */
         .checkout-sidebar {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
+          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
+          border: 6px solid #1C0F07;
+          outline: 1px solid var(--accent);
+          outline-offset: -5px;
+          border-radius: 2px;
           padding: 28px;
           display: flex;
           flex-direction: column;
           gap: 22px;
           position: sticky;
-          top: 76px;
+          top: 96px;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
         .sidebar-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: 20px;
-          color: var(--text);
-          border-bottom: 1px solid var(--border);
+          font-family: var(--font-display);
+          font-size: 18px;
+          color: var(--accent);
+          border-bottom: 2px solid #1C0F07;
           padding-bottom: 12px;
+          letter-spacing: 0.05em;
         }
         .summary-items-list {
           display: flex;
@@ -366,10 +364,18 @@ export default function CheckoutPage() {
           max-height: 260px;
           overflow-y: auto;
         }
-        .summary-item { display: flex; gap: 12px; align-items: center; }
+        .summary-item { 
+          display: flex; 
+          gap: 12px; 
+          align-items: center; 
+          background: var(--surface2);
+          border: 2px solid #1C0F07;
+          padding: 8px;
+          border-radius: 2px;
+        }
         .summary-thumb {
           width: 48px; height: 48px;
-          border-radius: 6px;
+          border-radius: 2px;
           display: flex;
           flex-shrink: 0;
           padding: 3px;
@@ -387,19 +393,19 @@ export default function CheckoutPage() {
         }
         .summary-details { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .summary-name {
-          font-family: 'DM Serif Display', serif;
+          font-family: var(--font-display);
           font-size: 13px;
           color: var(--text);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .summary-meta { font-size: 9px; color: var(--text2); text-transform: uppercase; }
+        .summary-meta { font-family: var(--font-typewriter); font-size: 9px; color: var(--text2); text-transform: uppercase; }
         .summary-price-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); }
-        .summary-price { color: var(--accent); font-weight: 700; }
+        .summary-price { font-family: var(--font-typewriter); color: var(--accent); font-weight: 700; }
 
         .summary-totals {
-          border-top: 1px solid var(--border);
+          border-top: 2px solid #1C0F07;
           padding-top: 16px;
           display: flex;
           flex-direction: column;
@@ -407,57 +413,62 @@ export default function CheckoutPage() {
         }
         .totals-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); }
         .totals-row.grand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 19px;
+          font-family: var(--font-display);
+          font-size: 18px;
           color: var(--text);
-          border-top: 1px solid var(--border);
+          border-top: 2px solid #1C0F07;
           padding-top: 12px;
           margin-top: 4px;
         }
-        .totals-row.grand span:last-child { color: var(--accent); }
+        .totals-row.grand span:last-child { font-family: var(--font-typewriter); color: var(--accent); }
 
         .error-message {
           background: rgba(255, 90, 90, 0.08);
           border: 1px solid #FF5A5A;
           color: #FF7777;
-          border-radius: 8px;
+          border-radius: 2px;
           padding: 12px 16px;
           font-size: 13px;
           margin-bottom: 16px;
           text-align: center;
+          font-family: var(--font-typewriter);
         }
 
         /* ── SUCCESS ── */
         .success-card {
           max-width: 560px;
           margin: 52px auto;
-          background: var(--surface);
-          border: 1px solid var(--accent);
-          border-radius: var(--radius);
+          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
+          border: 6px solid #1C0F07;
+          outline: 1.5px solid var(--accent);
+          outline-offset: -5px;
+          border-radius: 2px;
           padding: 48px;
           text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 18px;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+          box-shadow: 0 20px 50px rgba(0,0,0,0.7);
         }
         .success-icon { font-size: 52px; color: var(--accent); animation: scaleIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
-        .success-title { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--text); }
+        .success-title { font-family: var(--font-display); font-size: 30px; color: var(--accent); letter-spacing: 0.05em; }
         .success-order-id {
-          font-size: 11px; font-weight: 700;
-          letter-spacing: 0.1em; text-transform: uppercase;
+          font-family: var(--font-typewriter);
+          font-size: 12px; font-weight: 700;
           color: var(--accent);
           background: rgba(201,168,76,0.08);
-          padding: 8px 16px; border-radius: 20px;
+          padding: 8px 16px; border-radius: 2px;
           border: 1px solid rgba(201,168,76,0.25);
         }
-        .success-desc { font-size: 13px; line-height: 1.6; color: var(--text2); max-width: 420px; }
+        .success-desc { font-size: 14px; line-height: 1.6; color: var(--text2); max-width: 420px; }
         .success-summary {
           width: 100%;
           background: var(--surface2);
-          border: 1px solid var(--border);
-          border-radius: 12px;
+          border: 3px solid #1C0F07;
+          outline: 1px solid var(--border);
+          outline-offset: -3px;
+          border-radius: 2px;
           padding: 20px;
           text-align: left;
           display: flex;
@@ -466,49 +477,51 @@ export default function CheckoutPage() {
           margin-top: 8px;
         }
         .success-summary h4 {
-          font-family: 'DM Serif Display', serif;
-          font-size: 15px; color: var(--text);
-          border-bottom: 1px solid var(--border);
+          font-family: var(--font-display);
+          font-size: 15px; color: var(--accent);
+          border-bottom: 2px solid #1C0F07;
           padding-bottom: 8px;
+          letter-spacing: 0.05em;
         }
         .success-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); gap: 12px; }
         .success-row strong { color: var(--text); text-align: right; }
         .btn-success {
-          background: var(--accent); color: #1A1100;
+          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
+          color: #1A1100 !important;
           text-decoration: none; font-size: 13px; font-weight: 700;
-          padding: 14px 28px; border-radius: 30px;
+          padding: 14px 28px; border-radius: 2px;
+          border: 1px solid #7E631F;
+          outline: 3px solid #D4AF37;
+          outline-offset: -4px;
           letter-spacing: 0.05em; text-transform: uppercase;
           transition: all 0.2s ease; margin-top: 8px;
-          box-shadow: 0 4px 14px rgba(201,168,76,0.25);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
         }
-        .btn-success:hover { background: var(--accent2); transform: translateY(-1px); }
+        .btn-success:hover { background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%); transform: translateY(-1px); }
 
         @keyframes scaleIn {
           from { transform: scale(0); }
           to   { transform: scale(1); }
         }
 
-        /* ── TABLET (≤ 900px) ── */
+        /* ── TABLET ── */
         @media (max-width: 900px) {
           .checkout-container { padding: 36px 28px; }
           .checkout-grid {
             grid-template-columns: 1fr;
             gap: 24px;
           }
-          /* Order summary above form on smaller screens */
           .checkout-sidebar {
             position: static;
             order: -1;
           }
         }
 
-        /* ── MOBILE (≤ 580px) ── */
+        /* ── MOBILE ── */
         @media (max-width: 580px) {
           .navbar { padding: 0 16px; height: 54px; }
-          .nav-brand { font-size: 18px; }
+          .nav-logo-img { height: 32px; }
           .btn-back { font-size: 11px; }
-
-          /* Centre the form in the viewport */
           .checkout-container {
             padding: 20px 16px 48px;
             display: flex;
@@ -521,44 +534,35 @@ export default function CheckoutPage() {
             grid-template-columns: 1fr;
             gap: 18px;
           }
-
-          /* Cards */
-          .checkout-card  { padding: 18px 16px; border-radius: 12px; }
-          .checkout-sidebar { padding: 18px 16px; border-radius: 12px; }
+          .checkout-card  { padding: 18px 16px; border-radius: 2px; }
+          .checkout-sidebar { padding: 18px 16px; border-radius: 2px; }
           .card-title     { font-size: 18px; margin-bottom: 16px; }
           .sidebar-title  { font-size: 17px; }
-
-          /* All two-column rows → single column */
           .form-row { grid-template-columns: 1fr !important; gap: 0; margin-bottom: 0; }
-          /* Province + ZIP stay side by side (they're short) */
           .sub-row { grid-template-columns: 1fr 1fr; gap: 10px; }
-
           .form-group { margin-bottom: 14px; }
           .form-group label { font-size: 10px; }
           .form-control { padding: 13px 14px; }
-
           .cod-badge { padding: 14px; gap: 12px; }
           .cod-icon  { font-size: 22px; }
           .cod-details h4 { font-size: 13px; }
           .cod-details p  { font-size: 11px; }
-
-          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: 10px; }
-
+          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: 2px; }
           .summary-items-list { max-height: 190px; }
           .totals-row.grand   { font-size: 17px; }
-
-          /* Success screen */
-          .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: 12px; gap: 14px; }
+          .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: 2px; gap: 14px; }
           .success-title { font-size: 24px; }
           .success-icon  { font-size: 42px; }
           .success-summary { padding: 16px; }
           .success-row   { font-size: 12px; }
         }
-      `}</style>
+      ` }} />
 
       {/* NAVBAR */}
       <nav className="navbar">
-        <a href="/" className="nav-brand">❧ Yaadein</a>
+        <a href="/" className="nav-brand">
+          <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
+        </a>
         <a href="/customize" className="btn-back">← Return to Customizer</a>
       </nav>
 

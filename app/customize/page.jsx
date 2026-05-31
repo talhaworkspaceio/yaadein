@@ -183,27 +183,11 @@ function FrameCustomizer() {
 
   return (
     <div className="app-root">
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-          --bg: #0F0D0B;
-          --surface: #1A1714;
-          --surface2: #231F1B;
-          --surface3: #2D2822;
-          --border: rgba(255,255,255,0.07);
-          --border2: rgba(255,255,255,0.13);
-          --text: #F5F0E8;
-          --text2: #A09880;
-          --accent: #C9A84C;
-          --accent2: #E8C96A;
-          --radius: 12px;
-          --sidebar: 280px;
-        }
-
         .app-root {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
           height: 100vh;
@@ -215,9 +199,9 @@ function FrameCustomizer() {
 
         /* HEADER / NAVBAR */
         .header {
-          height: 68px;
-          background: var(--surface);
-          border-bottom: 1px solid var(--border);
+          height: 72px;
+          background: linear-gradient(to bottom, #14110E, #0C0A08);
+          border-bottom: 2px solid #1C0F07;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -226,22 +210,21 @@ function FrameCustomizer() {
           top: 0;
           z-index: 100;
           flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
         }
         .header-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 22px;
-          letter-spacing: 0.02em;
-          color: var(--accent);
           display: flex;
           align-items: center;
-          gap: 8px;
-          text-decoration: none;
           transition: transform 0.2s ease;
         }
         .header-brand:hover {
-          transform: scale(1.02);
+          transform: scale(1.03);
         }
-        .header-brand span { color: var(--text); font-size: 19px; }
+        .header-logo-img {
+          height: 38px;
+          width: auto;
+          display: block;
+        }
 
         .header-actions {
           display: flex;
@@ -250,22 +233,25 @@ function FrameCustomizer() {
         }
         .btn-icon {
           width: 36px; height: 36px;
-          background: var(--surface2);
+          background: linear-gradient(to bottom, #1E1A15, #14110E);
           border: 1px solid var(--border2);
-          border-radius: 8px;
+          border-radius: 2px;
           color: var(--text2);
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           font-size: 18px;
           transition: all 0.15s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        .btn-icon:hover { background: var(--surface3); color: var(--text); }
+        .btn-icon:hover { 
+          border-color: var(--accent); 
+          color: var(--accent);
+          background: var(--surface3);
+        }
         
         .btn-nav-cart {
           background: none;
           border: none;
-          color: var(--text);
-          font-size: 20px;
           cursor: pointer;
           position: relative;
           display: flex;
@@ -273,6 +259,8 @@ function FrameCustomizer() {
           justify-content: center;
           padding: 8px;
           transition: transform 0.2s ease;
+          font-size: 20px;
+          color: var(--text);
         }
         .btn-nav-cart:hover {
           transform: scale(1.1);
@@ -281,19 +269,20 @@ function FrameCustomizer() {
         .cart-badge {
           position: absolute;
           top: -2px;
-          right: -2px;
-          background: var(--accent);
+          right: -4px;
+          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
+          border: 1px solid #7E631F;
           color: #1A1100;
-          font-size: 9px;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
           font-weight: 700;
-          min-width: 15px;
-          height: 15px;
+          min-width: 16px;
+          height: 16px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 3px;
-          box-shadow: 0 2px 6px rgba(201,168,76,0.4);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .menu-toggle {
@@ -985,12 +974,12 @@ function FrameCustomizer() {
           .btn-primary { padding: 10px 16px; font-size: 12px; }
           .btn-ghost { padding: 10px 14px; font-size: 12px; }
         }
-      `}</style>
+      ` }} />
 
       {/* HEADER / NAVBAR */}
       <header className="header">
         <a href="/" className="header-brand">
-          ❧ Yaadein
+          <img src="/images/logo-white.png" alt="Yaadein Logo" className="header-logo-img" />
         </a>
         <div className="header-actions">
           <button
