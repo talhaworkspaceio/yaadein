@@ -607,8 +607,8 @@ export default function NewArrivalsPage() {
                   <p className="product-desc">{p.desc}</p>
                 </div>
 
-                <a href={`/customize?frame=${p.id}`} className="btn-card">
-                  Customize Frame
+                <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+                  View Frame
                 </a>
               </div>
             ))}

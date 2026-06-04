@@ -1263,7 +1263,7 @@ export default function HomePage() {
 
         .exquisite-frame-component {
           position: relative;
-          padding-top: 80px;
+          padding-top: 110px;
           width: 320px;
           display: flex;
           flex-direction: column;
@@ -1273,6 +1273,25 @@ export default function HomePage() {
 
         .exquisite-frame-component:hover {
           transform: translateY(-4px) scale(1.01);
+        }
+
+        /* Ambient wall glow behind the lamp */
+        .exquisite-wall-glow {
+          position: absolute;
+          top: -20px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 360px;
+          height: 360px;
+          background: radial-gradient(circle, rgba(255, 238, 180, 0.14) 0%, rgba(255, 238, 180, 0.04) 50%, transparent 80%);
+          filter: blur(20px);
+          z-index: 1;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .exquisite-wall-glow.on {
+          opacity: 1;
         }
 
         /* Realistic Brass Picture Light Lamp */
@@ -1288,6 +1307,18 @@ export default function HomePage() {
           width: 240px;
         }
 
+        .lamp-rod {
+          width: 4px;
+          height: 150px;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 1px 0 3px rgba(0,0,0,0.4);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+        }
+
         .lamp-mount {
           width: 32px;
           height: 18px;
@@ -1295,6 +1326,8 @@ export default function HomePage() {
           border: 1px solid #1a1205;
           box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
           border-radius: 2px;
+          position: relative;
+          z-index: 12;
         }
 
         .lamp-arm {
@@ -1348,16 +1381,33 @@ export default function HomePage() {
         .lamp-head::before { left: -4px; }
         .lamp-head::after { right: -4px; }
 
+        /* The hidden light bulb source glow */
+        .lamp-bulb {
+          position: absolute;
+          bottom: 0px;
+          left: 15%;
+          right: 15%;
+          height: 4px;
+          background: #fff;
+          border-radius: 2px;
+          box-shadow: 0 0 12px 3px #fae7b5, 0 0 24px 8px #fae7b5;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          z-index: 5;
+        }
+        .lamp-bulb.on {
+          opacity: 1;
+        }
+
         .lamp-light-beam {
           position: absolute;
-          top: 78px;
+          top: 76px;
           left: 50%;
           transform: translateX(-50%);
-          width: 380px;
+          width: 480px;
           height: 480px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.42) 0%, rgba(255, 238, 180, 0.15) 40%, transparent 70%);
-          clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
-          filter: blur(12px);
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
+          filter: blur(30px);
           pointer-events: none;
           z-index: 15;
           opacity: 0;
@@ -1424,6 +1474,22 @@ export default function HomePage() {
           background: #000;
         }
 
+        /* Glossy reflection on the top outer wood border when lamp is ON */
+        .exquisite-wood-frame::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 14px;
+          background: linear-gradient(to bottom, rgba(255, 240, 180, 0.55) 0%, rgba(255, 240, 180, 0.15) 60%, transparent 100%);
+          z-index: 15;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          pointer-events: none;
+        }
+        .exquisite-wood-frame.light-on::after {
+          opacity: 1;
+        }
+
         .wood-frame-overlay {
           position: absolute;
           inset: 0;
@@ -1434,31 +1500,38 @@ export default function HomePage() {
           pointer-events: none;
         }
 
-        .exquisite-matting {
+        .exquisite-inner-photo {
           position: absolute;
-          top: 13.5%;
-          left: 13.5%;
-          bottom: 13.5%;
-          right: 13.5%;
-          background: #F4EFE6;
-          box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
-          padding: 24px;
-          display: flex;
+          top: 9%;
+          left: 9%;
+          bottom: 9%;
+          right: 9%;
+          background: #111;
+          overflow: hidden;
+          box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
           z-index: 10;
         }
 
-        .exquisite-inner-photo {
-          flex: 1;
-          background: #111;
-          position: relative;
-          overflow: hidden;
-          box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
+        /* Highlight at the top of the photo print when lamp is ON */
+        .exquisite-inner-photo::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 45px;
+          background: linear-gradient(to bottom, rgba(255, 240, 180, 0.25) 0%, transparent 100%);
+          z-index: 12;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          pointer-events: none;
+        }
+        .exquisite-wood-frame.light-on .exquisite-inner-photo::after {
+          opacity: 1;
         }
 
         .exquisite-inner-photo img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
           display: block;
           transition: filter 0.35s ease;
         }
@@ -1707,8 +1780,8 @@ export default function HomePage() {
                     <p className="product-desc">{p.desc}</p>
                   </div>
 
-                  <a href={`/customize?frame=${p.id}`} className="btn-card">
-                    Customize
+                  <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+                    View Frame
                   </a>
                 </div>
               ))}
@@ -1722,27 +1795,10 @@ export default function HomePage() {
         <div className="exquisite-container">
           {/* Left Column: Content */}
           <div className="exquisite-content">
-            <span className="exquisite-tagline">Exhibition Showcase</span>
             <h2 className="exquisite-title">Where Memories Meet Nature's Light</h2>
             <p className="exquisite-desc">
               Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments.
             </p>
-            <div className="exquisite-features">
-              <div className="feature-item">
-                <span className="feature-icon">✦</span>
-                <div>
-                  <h4>Archival Wood & Glass</h4>
-                  <p>Hand-selected premium timber combined with anti-reflective conservation glass.</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">✦</span>
-                <div>
-                  <h4>Living Shadow Integration</h4>
-                  <p>Meticulously scaled profiles designed to capture depth, shadow, and angle shifts.</p>
-                </div>
-              </div>
-            </div>
             <a href="/customize" className="btn-premium exquisite-btn">
               Create Your Frame
             </a>
@@ -1756,6 +1812,7 @@ export default function HomePage() {
 
               {/* Picture light lamp */}
               <div className="exquisite-lamp">
+                <div className="lamp-rod" />
                 <div className="lamp-mount" />
                 <div className="lamp-arm" />
                 <div className="lamp-head">
@@ -1778,17 +1835,15 @@ export default function HomePage() {
                   alt="Antique Gold Frame"
                   className="wood-frame-overlay"
                 />
-                
-                {/* Inner matting and photo area */}
-                <div className="exquisite-matting">
-                  <div className="exquisite-inner-photo">
-                    <img
-                      src="https://images.unsplash.com/photo-1542044896530-05d85be9b11a?q=80&w=600"
-                      alt="Exhibited B&W Artwork"
-                      className={lightOn ? 'light-active' : 'light-inactive'}
-                    />
-                    <div className="glass-reflection" />
-                  </div>
+
+                {/* Inner photo area filling the frame space */}
+                <div className="exquisite-inner-photo">
+                  <img
+                    src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"
+                    alt="Exhibited B&W Artwork"
+                    className={lightOn ? 'light-active' : 'light-inactive'}
+                  />
+                  <div className="glass-reflection" />
                 </div>
               </div>
             </div>

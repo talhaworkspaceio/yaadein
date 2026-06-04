@@ -27,13 +27,19 @@ function FrameCustomizer() {
   const [selectedFrame, setSelectedFrame] = useState(null);
 
   const [rotation, setRotation] = useState(0);
+  const [orientation, setOrientation] = useState("portrait");
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [imageOffset, setImageOffset] = useState({ x: 50, y: 50 }); // percentage 0-100
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("frame");
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const fileRef = useRef();
   const frameRef = useRef();
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const dragStartOffset = useRef({ x: 50, y: 50 });
+  const imageWrapRef = useRef(null);
 
   const searchParams = useSearchParams();
   const frameQuery = searchParams ? searchParams.get("frame") : null;
@@ -59,12 +65,17 @@ function FrameCustomizer() {
     if (frames.length > 0 && !selectedFrame) {
       if (frameQuery) {
         const matched = frames.find(f => f.id === frameQuery);
-        setSelectedFrame(matched || frames[0]);
+        const frame = matched || frames[0];
+        setSelectedFrame(frame);
+        // Read orientation from query params or default to frame's native orientation
+        const orientationQuery = searchParams ? searchParams.get("orientation") : null;
+        setOrientation(orientationQuery || frame.orientation || "portrait");
       } else {
         setSelectedFrame(frames[0]);
+        setOrientation(frames[0].orientation || "portrait");
       }
     }
-  }, [frames, frameQuery, selectedFrame]);
+  }, [frames, frameQuery, selectedFrame, searchParams]);
 
   const loadCart = useCallback(() => {
     const rawCart = getCart();
@@ -87,12 +98,110 @@ function FrameCustomizer() {
     };
   }, [loadCart]);
 
-  const aspectRatio = selectedFrame ? (selectedFrame.aspectRatio || (selectedFrame.orientation === "landscape" ? 3 / 2 : 2 / 3)) : 2 / 3;
+  // Compute aspect ratio based on selected orientation (not frame's native orientation)
+  const aspectRatio = orientation === "landscape" ? 3 / 2 : 2 / 3;
+
+  // Compute paddings: swap top/bottom with left/right when orientation differs from native
+  const getFramePaddings = () => {
+    if (!selectedFrame) return { top: 0, left: 0, bottom: 0, right: 0 };
+    const p = selectedFrame;
+    const nativeOrientation = p.orientation || "portrait";
+    if (orientation === nativeOrientation) {
+      return {
+        top: p.paddingTop || 0,
+        left: p.paddingLeft || 0,
+        bottom: p.paddingBottom || 0,
+        right: p.paddingRight || 0
+      };
+    } else {
+      // Swap paddings when rotating orientation
+      return {
+        top: p.paddingLeft || 0,
+        left: p.paddingTop || 0,
+        bottom: p.paddingRight || 0,
+        right: p.paddingBottom || 0
+      };
+    }
+  };
+  const framePaddings = getFramePaddings();
+
+  // Reset image offset when orientation changes
+  useEffect(() => {
+    setImageOffset({ x: 50, y: 50 });
+  }, [orientation]);
+
+  // Drag-to-reposition handlers
+  const handleDragStart = useCallback((clientX, clientY) => {
+    isDragging.current = true;
+    dragStart.current = { x: clientX, y: clientY };
+    dragStartOffset.current = { ...imageOffset };
+  }, [imageOffset]);
+
+  const handleDragMove = useCallback((clientX, clientY) => {
+    if (!isDragging.current || !imageWrapRef.current) return;
+    const rect = imageWrapRef.current.getBoundingClientRect();
+    const deltaX = clientX - dragStart.current.x;
+    const deltaY = clientY - dragStart.current.y;
+    // Convert pixel delta to percentage (sensitivity scaled by container size)
+    const sensitivity = 0.15;
+    const newX = Math.max(0, Math.min(100, dragStartOffset.current.x - (deltaX / rect.width) * 100 * sensitivity));
+    const newY = Math.max(0, Math.min(100, dragStartOffset.current.y - (deltaY / rect.height) * 100 * sensitivity));
+    setImageOffset({ x: newX, y: newY });
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    isDragging.current = false;
+  }, []);
+
+  // Mouse event wrappers
+  const onMouseDown = useCallback((e) => {
+    e.preventDefault();
+    handleDragStart(e.clientX, e.clientY);
+  }, [handleDragStart]);
+
+  const onMouseMove = useCallback((e) => {
+    handleDragMove(e.clientX, e.clientY);
+  }, [handleDragMove]);
+
+  const onMouseUp = useCallback(() => {
+    handleDragEnd();
+  }, [handleDragEnd]);
+
+  // Touch event wrappers
+  const onTouchStart = useCallback((e) => {
+    const touch = e.touches[0];
+    handleDragStart(touch.clientX, touch.clientY);
+  }, [handleDragStart]);
+
+  const onTouchMove = useCallback((e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleDragMove(touch.clientX, touch.clientY);
+  }, [handleDragMove]);
+
+  const onTouchEnd = useCallback(() => {
+    handleDragEnd();
+  }, [handleDragEnd]);
+
+  // Attach global mouse/touch listeners when dragging
+  useEffect(() => {
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [onMouseMove, onMouseUp, onTouchMove, onTouchEnd]);
 
   const processFile = (file) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setUploadedImage(reader.result);
+      setImageOffset({ x: 50, y: 50 });
     };
     reader.readAsDataURL(file);
   };
@@ -144,12 +253,13 @@ function FrameCustomizer() {
       frameColor: selectedFrame.color,
       price: selectedFrame.price || "Rs. 4,900",
       rotation: rotation,
+      orientation: orientation,
       image: uploadedImage,
     };
 
     const cart = getCart();
     const existingIndex = cart.findIndex(
-      (x) => x.id === item.id && x.rotation === item.rotation && x.image === item.image
+      (x) => x.id === item.id && x.rotation === item.rotation && x.orientation === item.orientation && x.image === item.image
     );
     if (existingIndex > -1) {
       cart[existingIndex].quantity += 1;
@@ -415,68 +525,97 @@ function FrameCustomizer() {
         }
         .frame-card.selected .frame-name { color: var(--accent); }
 
-        /* ROTATE CONTROLS */
-        .rotate-controls {
+        /* ORIENTATION CONTROLS */
+        .orientation-controls {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 14px;
         }
-        .rotate-display {
+
+        .orientation-current {
           background: var(--surface2);
           border: 1px solid var(--border);
           border-radius: 0;
           padding: 16px;
           text-align: center;
         }
-        .rotate-value {
+
+        .orientation-current-label {
           font-family: 'DM Serif Display', serif;
-          font-size: 32px;
+          font-size: 22px;
           color: var(--accent);
           line-height: 1;
+          text-transform: capitalize;
         }
-        .rotate-unit {
+
+        .orientation-current-sub {
           font-size: 11px;
           color: var(--text2);
-          margin-top: 4px;
+          margin-top: 6px;
           letter-spacing: 0.1em;
           text-transform: uppercase;
         }
-        .rotate-btns {
+
+        .orientation-btns {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 8px;
         }
-        .rotate-btn {
+
+        .orientation-btn {
           background: var(--surface2);
           border: 1px solid var(--border2);
           border-radius: 0;
           color: var(--text);
-          padding: 12px;
+          padding: 14px 12px;
           cursor: pointer;
           font-family: 'DM Sans', sans-serif;
           font-size: 12px;
           font-weight: 500;
-          transition: all 0.15s;
+          transition: all 0.2s ease;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
         }
-        .rotate-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--accent); }
-        .rotate-btn-icon { font-size: 20px; }
-        .rotate-reset {
-          background: none;
-          border: 1px solid var(--border);
-          border-radius: 0;
+        .orientation-btn:hover {
+          background: var(--surface3);
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+        .orientation-btn.active {
+          background: rgba(201, 168, 76, 0.12);
+          border-color: var(--accent);
+          color: var(--accent);
+          box-shadow: inset 0 0 8px rgba(201, 168, 76, 0.1);
+        }
+
+        .orientation-btn-icon {
+          width: 32px;
+          height: 40px;
+          border: 2px solid currentColor;
+          border-radius: 2px;
+          transition: all 0.2s ease;
+        }
+        .orientation-btn.landscape-btn .orientation-btn-icon {
+          width: 40px;
+          height: 28px;
+        }
+
+        .orientation-btn-label {
+          font-size: 11px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        .orientation-note {
+          font-size: 10px;
           color: var(--text2);
-          padding: 10px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          transition: all 0.15s;
           text-align: center;
+          line-height: 1.5;
+          padding: 0 4px;
+          opacity: 0.7;
         }
-        .rotate-reset:hover { border-color: var(--border2); color: var(--text); }
 
         /* SLIDER */
         .slider-wrap { padding: 8px 0; }
@@ -541,7 +680,7 @@ function FrameCustomizer() {
         .frame-image-wrap {
           position: absolute;
           overflow: hidden;
-          background: #333;
+          background: #0a0806;
         }
         .frame-image-wrap img {
           width: 100%;
@@ -551,6 +690,56 @@ function FrameCustomizer() {
           display: block;
           user-select: none;
           pointer-events: none;
+        }
+        .frame-image-wrap.draggable {
+          cursor: grab;
+        }
+        .frame-image-wrap.draggable:active {
+          cursor: grabbing;
+        }
+        .drag-hint {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0,0,0,0.65);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          color: var(--text);
+          font-size: 10px;
+          font-family: 'DM Sans', sans-serif;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          padding: 4px 12px;
+          border-radius: 12px;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          z-index: 8;
+          white-space: nowrap;
+        }
+        .frame-image-wrap.draggable:hover .drag-hint {
+          opacity: 1;
+        }
+        .frame-image-wrap.draggable:active .drag-hint {
+          opacity: 0;
+        }
+        .reset-position-btn {
+          background: none;
+          border: 1px solid var(--border2);
+          border-radius: 0;
+          color: var(--text2);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 11px;
+          letter-spacing: 0.05em;
+          padding: 6px 14px;
+          cursor: pointer;
+          transition: all 0.15s;
+          margin-top: 4px;
+        }
+        .reset-position-btn:hover {
+          border-color: var(--accent);
+          color: var(--accent);
         }
         .frame-grain {
           position: absolute;
@@ -667,41 +856,37 @@ function FrameCustomizer() {
           text-transform: uppercase;
         }
 
-        /* CHANGE PHOTO OVERLAY */
-        .change-photo-overlay {
+        /* CHANGE PHOTO CORNER BUTTON */
+        .change-photo-corner {
           position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+          top: 8px;
+          right: 8px;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          border: 1px solid rgba(201, 168, 76, 0.4);
+          color: var(--accent);
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          z-index: 12;
+          opacity: 0;
+          transition: all 0.2s ease;
           display: flex;
           align-items: center;
-          justify-content: center;
-          opacity: 0;
-          transition: opacity 0.2s ease;
-          z-index: 5;
+          gap: 4px;
+          pointer-events: auto;
         }
-        
-        .frame-image-wrap:hover .change-photo-overlay {
+        .frame-image-wrap:hover .change-photo-corner {
           opacity: 1;
         }
-        
-        .change-photo-btn {
-          background: var(--surface2);
-          border: 1px solid var(--accent);
-          color: var(--accent);
-          padding: 8px 16px;
-          border-radius: 0;
-          font-size: 12px;
-          font-weight: 500;
-          letter-spacing: 0.05em;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-          transition: all 0.2s ease;
-        }
-        
-        .change-photo-btn:hover {
-          background: var(--accent);
-          color: #1A1100;
+        .change-photo-corner:hover {
+          background: rgba(201, 168, 76, 0.2);
+          border-color: var(--accent);
           transform: scale(1.05);
         }
 
@@ -1018,9 +1203,9 @@ function FrameCustomizer() {
               onClick={() => setActiveTab("frame")}
             >Frame</button>
             <button
-              className={`tab-btn ${activeTab === "rotate" ? "active" : ""}`}
-              onClick={() => setActiveTab("rotate")}
-            >Rotate</button>
+              className={`tab-btn ${activeTab === "orientation" ? "active" : ""}`}
+              onClick={() => setActiveTab("orientation")}
+            >Orientation</button>
           </div>
 
           {/* FRAME TAB */}
@@ -1093,50 +1278,34 @@ function FrameCustomizer() {
             </div>
           )}
 
-          {/* ROTATE TAB */}
-          {activeTab === "rotate" && (
+          {/* ORIENTATION TAB */}
+          {activeTab === "orientation" && (
             <div className="sidebar-section">
-              <p className="section-label">Rotation</p>
-              <div className="rotate-controls">
-                <div className="rotate-display">
-                  <div className="rotate-value">{rotation}°</div>
-                  <div className="rotate-unit">Current angle</div>
+              <p className="section-label">Orientation</p>
+              <div className="orientation-controls">
+                <div className="orientation-current">
+                  <div className="orientation-current-label">{orientation}</div>
+                  <div className="orientation-current-sub">Current Orientation</div>
                 </div>
-                <div className="rotate-btns">
-                  <button className="rotate-btn" onClick={() => handleRotate(-90)}>
-                    <span className="rotate-btn-icon">↺</span>
-                    <span>–90°</span>
+                <div className="orientation-btns">
+                  <button
+                    className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
+                    onClick={() => setOrientation("portrait")}
+                  >
+                    <div className="orientation-btn-icon" />
+                    <span className="orientation-btn-label">Portrait</span>
                   </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(90)}>
-                    <span className="rotate-btn-icon">↻</span>
-                    <span>+90°</span>
-                  </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(-45)}>
-                    <span className="rotate-btn-icon">↺</span>
-                    <span>–45°</span>
-                  </button>
-                  <button className="rotate-btn" onClick={() => handleRotate(45)}>
-                    <span className="rotate-btn-icon">↻</span>
-                    <span>+45°</span>
+                  <button
+                    className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
+                    onClick={() => setOrientation("landscape")}
+                  >
+                    <div className="orientation-btn-icon" />
+                    <span className="orientation-btn-label">Landscape</span>
                   </button>
                 </div>
-                <div className="slider-wrap">
-                  <div className="slider-row">
-                    <label>Fine</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="359"
-                      step="1"
-                      value={rotation}
-                      onChange={(e) => setRotation(Number(e.target.value))}
-                    />
-                    <span className="slider-val">{rotation}°</span>
-                  </div>
-                </div>
-                <button className="rotate-reset" onClick={() => setRotation(0)}>
-                  Reset to 0°
-                </button>
+                <p className="orientation-note">
+                  All frames support both orientations. The frame texture will adapt automatically.
+                </p>
               </div>
             </div>
           )}
@@ -1163,7 +1332,7 @@ function FrameCustomizer() {
                 className="frame-outer"
                 style={{
                   transform: `rotate(${rotation}deg)`,
-                  width: selectedFrame.orientation === "landscape" ? "min(480px, 85vw, 65vh)" : "min(380px, 85vw, 48vh)",
+                  width: orientation === "landscape" ? "min(480px, 85vw, 65vh)" : "min(380px, 85vw, 48vh)",
                   margin: "0 auto"
                 }}
               >
@@ -1199,32 +1368,48 @@ function FrameCustomizer() {
                   {/* Image or Placeholder */}
                   {uploadedImage ? (
                     <div
-                      className="frame-image-wrap"
+                      ref={imageWrapRef}
+                      className="frame-image-wrap draggable"
                       style={{
                         position: "absolute",
-                        top: `${selectedFrame.paddingTop || 0}%`,
-                        left: `${selectedFrame.paddingLeft || 0}%`,
-                        bottom: `${selectedFrame.paddingBottom || 0}%`,
-                        right: `${selectedFrame.paddingRight || 0}%`,
+                        top: `${framePaddings.top}%`,
+                        left: `${framePaddings.left}%`,
+                        bottom: `${framePaddings.bottom}%`,
+                        right: `${framePaddings.right}%`,
                         zIndex: selectedFrame.imageUrl && selectedFrame.imageUrl.endsWith('.png') ? 4 : 2,
-                        cursor: "pointer",
                       }}
-                      onClick={() => fileRef.current?.click()}
+                      onMouseDown={onMouseDown}
+                      onTouchStart={onTouchStart}
                     >
-                      <img src={uploadedImage} alt="Framed photo" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div className="change-photo-overlay" style={{ zIndex: 10 }}>
-                        <span className="change-photo-btn">📸 Change Photo</span>
-                      </div>
+                      <img
+                        src={uploadedImage}
+                        alt="Framed photo"
+                        draggable={false}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: `${imageOffset.x}% ${imageOffset.y}%`
+                        }}
+                      />
+                      <div className="drag-hint">✥ Drag to reposition</div>
+                      <button
+                        className="change-photo-corner"
+                        onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        📷 Change
+                      </button>
                     </div>
                   ) : (
                     <div
                       className="frame-image-wrap"
                       style={{
                         position: "absolute",
-                        top: `${selectedFrame.paddingTop || 0}%`,
-                        left: `${selectedFrame.paddingLeft || 0}%`,
-                        bottom: `${selectedFrame.paddingBottom || 0}%`,
-                        right: `${selectedFrame.paddingRight || 0}%`,
+                        top: `${framePaddings.top}%`,
+                        left: `${framePaddings.left}%`,
+                        bottom: `${framePaddings.bottom}%`,
+                        right: `${framePaddings.right}%`,
                         zIndex: selectedFrame.imageUrl && selectedFrame.imageUrl.endsWith('.png') ? 4 : 2,
                         background: "#181512",
                         cursor: "pointer",
@@ -1246,7 +1431,7 @@ function FrameCustomizer() {
             {selectedFrame && (
               <div className="canvas-caption">
                 <strong>{selectedFrame.name}</strong>
-                {rotation !== 0 ? `Rotated ${rotation}°` : "Portrait orientation"}
+                {orientation === "landscape" ? "Landscape orientation" : "Portrait orientation"}
               </div>
             )}
           </div>
@@ -1259,7 +1444,7 @@ function FrameCustomizer() {
         <button className="btn-primary" onClick={handleAddToCart} disabled={!selectedFrame} style={{ background: "#2A2420", color: "#C9A84C", border: "1px solid #C9A84C" }}>
           Add to Cart
         </button>
-        <button className="btn-ghost" onClick={() => { if (frames.length > 0) setSelectedFrame(frames[0]); setRotation(0); setUploadedImage(null); setActiveTab("frame"); }}>
+        <button className="btn-ghost" onClick={() => { if (frames.length > 0) { setSelectedFrame(frames[0]); setOrientation(frames[0].orientation || "portrait"); } setRotation(0); setUploadedImage(null); setImageOffset({ x: 50, y: 50 }); setActiveTab("frame"); }}>
           Reset All
         </button>
       </div>
@@ -1294,7 +1479,7 @@ function FrameCustomizer() {
                   <div className="cart-item-details">
                     <div className="cart-item-name">{item.frameName}</div>
                     <div className="cart-item-meta">
-                      {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+                      {item.orientation ? (item.orientation === "landscape" ? "Landscape" : "Portrait") : (item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait")}
                     </div>
                     <div className="cart-item-price">{item.price}</div>
                     <div className="cart-item-qty-row">
