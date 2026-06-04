@@ -25,7 +25,7 @@ const saveCart = (cart) => {
 function FrameCustomizer() {
   const [frames, setFrames] = useState([]);
   const [selectedFrame, setSelectedFrame] = useState(null);
-  
+
   const [rotation, setRotation] = useState(0);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -183,10 +183,12 @@ function FrameCustomizer() {
 
   return (
     <div className="app-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .app-root {
+          --radius: 0px !important;
           font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
@@ -200,8 +202,8 @@ function FrameCustomizer() {
         /* HEADER / NAVBAR */
         .header {
           height: 72px;
-          background: linear-gradient(to bottom, #14110E, #0C0A08);
-          border-bottom: 2px solid #1C0F07;
+          background: #000000;
+          border-bottom: 1px solid #1a1a1a;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -235,7 +237,7 @@ function FrameCustomizer() {
           width: 36px; height: 36px;
           background: linear-gradient(to bottom, #1E1A15, #14110E);
           border: 1px solid var(--border2);
-          border-radius: 2px;
+          border-radius: 0;
           color: var(--text2);
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
@@ -342,7 +344,7 @@ function FrameCustomizer() {
           bottom: 0; left: 20%; right: 20%;
           height: 2px;
           background: var(--accent);
-          border-radius: 2px 2px 0 0;
+          border-radius: 0;
         }
 
         .sidebar-section {
@@ -361,7 +363,7 @@ function FrameCustomizer() {
         }
         .sidebar-section::-webkit-scrollbar-thumb {
           background: rgba(255,255,255,0.08);
-          border-radius: 2px;
+          border-radius: 0;
         }
         .section-label {
           font-size: 10px;
@@ -381,7 +383,7 @@ function FrameCustomizer() {
         .frame-card {
           background: var(--surface2);
           border: 1.5px solid var(--border);
-          border-radius: var(--radius);
+          border-radius: 0;
           padding: 12px 10px;
           cursor: pointer;
           transition: all 0.15s;
@@ -394,7 +396,7 @@ function FrameCustomizer() {
         .frame-card.selected { border-color: var(--accent); background: rgba(201,168,76,0.07); }
         .frame-thumb {
           width: 48px; height: 60px;
-          border-radius: 4px;
+          border-radius: 0;
           position: relative;
           overflow: hidden;
           flex-shrink: 0;
@@ -422,7 +424,7 @@ function FrameCustomizer() {
         .rotate-display {
           background: var(--surface2);
           border: 1px solid var(--border);
-          border-radius: var(--radius);
+          border-radius: 0;
           padding: 16px;
           text-align: center;
         }
@@ -447,7 +449,7 @@ function FrameCustomizer() {
         .rotate-btn {
           background: var(--surface2);
           border: 1px solid var(--border2);
-          border-radius: 10px;
+          border-radius: 0;
           color: var(--text);
           padding: 12px;
           cursor: pointer;
@@ -465,7 +467,7 @@ function FrameCustomizer() {
         .rotate-reset {
           background: none;
           border: 1px solid var(--border);
-          border-radius: 10px;
+          border-radius: 0;
           color: var(--text2);
           padding: 10px;
           cursor: pointer;
@@ -533,7 +535,7 @@ function FrameCustomizer() {
         }
         .frame-border {
           position: relative;
-          border-radius: 4px;
+          border-radius: 0;
           overflow: hidden;
         }
         .frame-image-wrap {
@@ -555,7 +557,7 @@ function FrameCustomizer() {
           inset: 0;
           pointer-events: none;
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-          border-radius: 4px;
+          border-radius: 0;
           mix-blend-mode: overlay;
         }
 
@@ -593,7 +595,7 @@ function FrameCustomizer() {
           background: var(--accent);
           color: #1A1100;
           border: none;
-          border-radius: 10px;
+          border-radius: 0 !important;
           padding: 10px 22px;
           font-family: 'DM Sans', sans-serif;
           font-size: 13px;
@@ -607,7 +609,7 @@ function FrameCustomizer() {
           background: var(--surface2);
           color: var(--text2);
           border: 1px solid var(--border2);
-          border-radius: 10px;
+          border-radius: 0 !important;
           padding: 10px 18px;
           font-family: 'DM Sans', sans-serif;
           font-size: 13px;
@@ -622,7 +624,7 @@ function FrameCustomizer() {
           position: absolute;
           inset: 12px;
           border: 1.5px dashed var(--accent);
-          border-radius: 6px;
+          border-radius: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -689,7 +691,7 @@ function FrameCustomizer() {
           border: 1px solid var(--accent);
           color: var(--accent);
           padding: 8px 16px;
-          border-radius: 20px;
+          border-radius: 0;
           font-size: 12px;
           font-weight: 500;
           letter-spacing: 0.05em;
@@ -800,14 +802,14 @@ function FrameCustomizer() {
           gap: 16px;
           background: var(--surface2);
           border: 1px solid var(--border);
-          border-radius: 12px;
+          border-radius: 0 !important;
           padding: 12px;
           position: relative;
         }
         .cart-item-thumb {
           width: 70px;
           height: 70px;
-          border-radius: 6px;
+          border-radius: 0;
           overflow: hidden;
           box-shadow: 0 4px 10px rgba(0,0,0,0.3);
           display: flex;
@@ -818,7 +820,7 @@ function FrameCustomizer() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          border-radius: 2px;
+          border-radius: 0;
         }
         .cart-item-thumb-placeholder {
           flex: 1;
@@ -863,7 +865,7 @@ function FrameCustomizer() {
           height: 24px;
           background: var(--surface3);
           border: 1px solid var(--border2);
-          border-radius: 6px;
+          border-radius: 0 !important;
           color: var(--text);
           cursor: pointer;
           display: flex;
@@ -933,7 +935,7 @@ function FrameCustomizer() {
           font-size: 13px;
           font-weight: 700;
           padding: 14px;
-          border-radius: 12px;
+          border-radius: 0 !important;
           letter-spacing: 0.05em;
           text-transform: uppercase;
           transition: all 0.2s ease;
@@ -989,9 +991,12 @@ function FrameCustomizer() {
           >
             ☰
           </button>
-          
+
           <button className="btn-nav-cart" onClick={() => setCartOpen(true)} title="View Cart">
-            👜 <span className="cart-badge">{cartCount}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-icon-svg" style={{ width: "22px", height: "22px", color: "#FFF", fill: "currentColor", display: "block" }}>
+              <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+            </svg>
+            <span className="cart-badge">{cartCount}</span>
           </button>
 
           <button className="btn-icon" title="Download Image" onClick={handleDownload}>⬇</button>
@@ -1022,7 +1027,7 @@ function FrameCustomizer() {
           {activeTab === "frame" && (
             <div className="sidebar-section">
               <p className="section-label">Choose Frame</p>
-              
+
               {frames.length === 0 ? (
                 <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text2)", fontSize: "12px" }}>Loading frames...</div>
               ) : (
@@ -1048,9 +1053,9 @@ function FrameCustomizer() {
                       >
                         {/* Frame image background */}
                         {f.imageUrl && (
-                          <img 
-                            src={f.imageUrl} 
-                            alt={f.name} 
+                          <img
+                            src={f.imageUrl}
+                            alt={f.name}
                             style={{
                               width: "100%",
                               height: "100%",
@@ -1146,7 +1151,7 @@ function FrameCustomizer() {
         </aside>
 
         {/* CANVAS */}
-        <main 
+        <main
           className="canvas-area"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
@@ -1156,13 +1161,13 @@ function FrameCustomizer() {
             {selectedFrame && (
               <div
                 className="frame-outer"
-                style={{ 
+                style={{
                   transform: `rotate(${rotation}deg)`,
                   width: selectedFrame.orientation === "landscape" ? "min(480px, 85vw, 65vh)" : "min(380px, 85vw, 48vh)",
                   margin: "0 auto"
                 }}
               >
-                 <div
+                <div
                   ref={frameRef}
                   className="frame-border"
                   style={{
@@ -1176,9 +1181,9 @@ function FrameCustomizer() {
                 >
                   {/* Actual Frame Image Overlay */}
                   {selectedFrame.imageUrl && (
-                    <img 
-                      src={selectedFrame.imageUrl} 
-                      alt={selectedFrame.name} 
+                    <img
+                      src={selectedFrame.imageUrl}
+                      alt={selectedFrame.name}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -1254,7 +1259,7 @@ function FrameCustomizer() {
         <button className="btn-primary" onClick={handleAddToCart} disabled={!selectedFrame} style={{ background: "#2A2420", color: "#C9A84C", border: "1px solid #C9A84C" }}>
           Add to Cart
         </button>
-        <button className="btn-ghost" onClick={() => { if(frames.length > 0) setSelectedFrame(frames[0]); setRotation(0); setUploadedImage(null); setActiveTab("frame"); }}>
+        <button className="btn-ghost" onClick={() => { if (frames.length > 0) setSelectedFrame(frames[0]); setRotation(0); setUploadedImage(null); setActiveTab("frame"); }}>
           Reset All
         </button>
       </div>
@@ -1283,7 +1288,7 @@ function FrameCustomizer() {
                     {item.image ? (
                       <img src={item.image} alt={item.frameName} />
                     ) : (
-                      <div className="cart-item-thumb-placeholder">❧</div>
+                      <div className="cart-item-thumb-placeholder">Y</div>
                     )}
                   </div>
                   <div className="cart-item-details">
@@ -1335,7 +1340,7 @@ export default function CustomizePage() {
         justifyContent: "center",
         fontFamily: "'DM Sans', sans-serif"
       }}>
-        ❧ Loading Frame Customizer...
+        Loading Frame Customizer...
       </div>
     }>
       <FrameCustomizer />

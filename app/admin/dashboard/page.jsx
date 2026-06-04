@@ -348,7 +348,7 @@ export default function AdminDashboard() {
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-size: 11px; color: var(--text2); text-transform: uppercase; }
-        .form-control { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); padding: 10px; border-radius: 6px; font-size: 13px; }
+        .form-control { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); padding: 10px; border-radius: var(--radius); font-size: 13px; }
 
         .item-list { display: flex; flex-direction: column; gap: 12px; }
         .list-item { background: var(--surface2); border: 1px solid var(--border2); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -360,7 +360,7 @@ export default function AdminDashboard() {
       ` }} />
 
       <header className="admin-header">
-        <div className="admin-brand">❧ Yaadein Admin</div>
+        <div className="admin-brand">Yaadein Admin</div>
         <button className="admin-logout" onClick={() => { sessionStorage.clear(); router.push('/admin'); }}>Logout</button>
       </header>
 
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
                                     style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "2px" }} 
                                   />
                                 ) : (
-                                  <div style={{ flex: 1, background: "#2D2822", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "rgba(201,168,76,0.15)" }}>❧</div>
+                                  <div style={{ flex: 1, background: "#2D2822", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "rgba(201,168,76,0.15)" }}>Y</div>
                                 )}
                               </div>
                               

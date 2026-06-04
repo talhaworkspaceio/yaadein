@@ -9,7 +9,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <div className="vintage-grain-overlay" />
         <div className="vintage-sepia-tint" />
         {children}
       </body>

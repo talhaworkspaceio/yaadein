@@ -138,7 +138,7 @@ export default function AdminLogin() {
 
       <div className="login-card">
         <div className="login-header">
-          <div className="login-brand">❧ Yaadein</div>
+          <div className="login-brand">Yaadein</div>
           <div className="login-subtitle">Admin Portal</div>
         </div>
 

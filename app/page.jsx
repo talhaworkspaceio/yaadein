@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { db } from "../lib/firebase";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, push, set } from "firebase/database";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -27,6 +29,76 @@ export default function HomePage() {
   const [filter, setFilter] = useState("portrait");
   const [products, setProducts] = useState([]);
   const [catalogEntered, setCatalogEntered] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoEmail, setPromoEmail] = useState("");
+  const [promoSubmitted, setPromoSubmitted] = useState(false);
+  const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [lightOn, setLightOn] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get("search");
+      if (query) {
+        setSearchQuery(query);
+        setTimeout(() => {
+          const cat = document.getElementById("catalog");
+          if (cat) cat.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const seen = localStorage.getItem("yaadein_seen_promo");
+      if (!seen) {
+        const timer = setTimeout(() => {
+          setShowPromo(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
+  const handlePromoSubmit = async (e) => {
+    e.preventDefault();
+    if (!promoEmail.trim()) return;
+    setIsSubmittingPromo(true);
+    try {
+      const newsletterRef = ref(db, "newsletter");
+      const newSubscriberRef = push(newsletterRef);
+      await set(newSubscriberRef, {
+        email: promoEmail.trim(),
+        subscribedAt: Date.now()
+      });
+      setPromoSubmitted(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("yaadein_seen_promo", "true");
+      }
+    } catch (err) {
+      console.error("Error saving newsletter subscription:", err);
+    } finally {
+      setIsSubmittingPromo(false);
+    }
+  };
+
+  const handleClosePromo = () => {
+    setShowPromo(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("yaadein_seen_promo", "true");
+    }
+  };
+
+  const handleCopyPromoCode = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText("MEMORIES10");
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
 
   useEffect(() => {
     const framesRef = ref(db, "frames");
@@ -65,37 +137,7 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    const catalogSec = document.getElementById("catalog");
-    const glowEl = document.getElementById("catalog-glow");
-    if (!catalogSec || !glowEl) return;
 
-    const handleMouseMove = (e) => {
-      const rect = catalogSec.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      window.requestAnimationFrame(() => {
-        glowEl.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
-      });
-    };
-
-    const handleMouseEnter = () => {
-      glowEl.style.opacity = "1";
-    };
-
-    const handleMouseLeave = () => {
-      glowEl.style.opacity = "0";
-    };
-
-    catalogSec.addEventListener("mousemove", handleMouseMove);
-    catalogSec.addEventListener("mouseenter", handleMouseEnter);
-    catalogSec.addEventListener("mouseleave", handleMouseLeave);
-    return () => {
-      catalogSec.removeEventListener("mousemove", handleMouseMove);
-      catalogSec.removeEventListener("mouseenter", handleMouseEnter);
-      catalogSec.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, [products]);
 
   const loadCart = useCallback(() => {
     const rawCart = getCart();
@@ -139,7 +181,13 @@ export default function HomePage() {
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  const displayedProducts = products.filter(p => p.orientation === filter);
+  const displayedProducts = products.filter(p =>
+    p.orientation === filter &&
+    (searchQuery.trim() === "" ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase())))
+  );
 
   return (
     <div className="home-root">
@@ -295,14 +343,31 @@ export default function HomePage() {
           position: absolute;
           top: 0;
           left: 0;
-          width: 700px;
-          height: 700px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.25) 0%, rgba(139, 94, 60, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
+          width: 1000px;
+          height: 1000px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
           pointer-events: none;
           z-index: 1;
-          opacity: 0;
-          transition: opacity 0.4s ease;
-          will-change: transform, opacity;
+          opacity: 1;
+          animation: catalog-glow-auto 10s infinite ease-in-out;
+        }
+
+        @keyframes catalog-glow-auto {
+          0% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+          25% {
+            transform: translate(100%, 10%) scale(1.2);
+          }
+          50% {
+            transform: translate(40%, 40%) scale(0.9);
+          }
+          75% {
+            transform: translate(-10%, 30%) scale(1.1);
+          }
+          100% {
+            transform: translate(-20%, -20%) scale(1);
+          }
         }
 
         /* LIQUID BLOBS */
@@ -399,7 +464,7 @@ export default function HomePage() {
           border: 1px solid var(--border2);
           color: var(--text2);
           padding: 10px 24px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           font-family: var(--font-display);
           font-size: 13px;
           font-weight: 700;
@@ -454,6 +519,8 @@ export default function HomePage() {
         .lamp-wrapper {
           position: absolute;
           top: -10px;
+          width: 240px;
+          height: 240px;
           z-index: 5;
           transform-origin: top center;
           transform: rotate(45deg);
@@ -463,48 +530,210 @@ export default function HomePage() {
           animation: lamp-swing 3s forwards;
         }
         .lamp-wrapper.left {
-          left: 40px;
+          left: -40px;
         }
         .lamp-wrapper.right {
-          right: 40px;
+          right: -40px;
         }
 
-        .lamp {
-          width: 5.5em;
-          height: auto;
+        .lamp-img {
+          width: 240px;
+          height: 240px;
           display: block;
-        }
-        .bulb {
-          fill: #fbf8ca;
-          fill-opacity: 0.1;
-        }
-        .catalog-section.animate-lamps .bulb {
-          animation: bulb-glow 0.3s 0.3s 5 cubic-bezier(0.26, 1.17, 0.89, -0.74) alternate forwards;
-        }
-        .lamp-glow {
-          position: absolute;
-          top: 175px; /* adjusted to line up below bulb */
-          left: 50%;
-          transform: translateX(-50%);
-          width: 180px;
-          height: 380px;
-          background: linear-gradient(to bottom, rgba(251, 248, 202, 0.3) 0%, rgba(251, 248, 202, 0.08) 55%, rgba(251, 248, 202, 0) 100%);
-          clip-path: polygon(48% 0%, 52% 0%, 100% 100%, 0% 100%);
-          opacity: 0;
-          pointer-events: none;
-          mix-blend-mode: screen;
-        }
-        .catalog-section.animate-lamps .lamp-glow {
-          animation: bulb-glow 0.3s 0.3s 5 cubic-bezier(0.26, 1.17, 0.89, -0.74) alternate forwards;
+          object-fit: contain;
+          margin-top: -10px;
         }
 
-        @keyframes bulb-glow {
-          to {
-            fill-opacity: 1;
-            fill: #fbf8ca;
-            opacity: 1;
+
+
+        /* LAMP GLOW & PARTICLE SYSTEM */
+        .lamp-glow-container {
+          position: absolute;
+          top: 200px; /* center of bulb */
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+        }
+
+        .glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          background: #fff;
+          opacity: 0;
+        }
+        .catalog-section.animate-lamps .glow {
+          opacity: 1;
+          animation: glow-warm 3s linear infinite alternate;
+        }
+
+        .particles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100px;
+          height: 100px;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        .catalog-section.animate-lamps .particles {
+          opacity: 1;
+        }
+
+        .rotate {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          animation: rotate 20s linear 0s infinite alternate;
+        }
+
+        .angle {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .size {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .position {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .pulse {
+          position: absolute;
+          top: 0;
+          left: 0;
+          animation: pulse 1.5s linear 0s infinite alternate;
+        }
+
+        .particle {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+        }
+
+        @keyframes glow-warm {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+            box-shadow: 0 0 100px 35px rgba(251, 191, 36, 0.85), 35px 20px 75px 15px #fff, -5px -35px 45px 8px #fff;
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(5deg);
+            box-shadow: 0 0 140px 35px rgba(251, 191, 36, 0.95), 50px 30px 60px 15px #fff, -45px -45px 60px 8px #fff;
           }
         }
+
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes angle {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes size {
+          0% { transform: scale(.2); }
+          100% { transform: scale(.6); }
+        }
+
+        @keyframes position {
+          0% {
+            transform: translate3d(0,0,0);
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate3d(100px,100px,0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          100% { transform: scale(.5); }
+        }
+
+        @keyframes particle-warm {
+          0% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
+          }
+          33.33% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
+          }
+          33.34% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
+          }
+          66.66% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
+          }
+          66.67% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
+          }
+          100% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
+          }
+        }
+
+        .rotate .angle:nth-child(1) {
+          animation: angle 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .size {
+          animation: size 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .particle {
+          animation: particle-warm 6s linear infinite alternate;
+        }
+        .rotate .angle:nth-child(1) .position {
+          animation: position 2s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(2) {
+          animation: angle 4.95s steps(3) -1.65s infinite;
+        }
+        .rotate .angle:nth-child(2) .size {
+          animation: size 4.95s steps(3) -1.65s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .particle {
+          animation: particle-warm 4.95s linear -3.3s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .position {
+          animation: position 1.65s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(3) {
+          animation: angle 13.76s steps(8) -6.88s infinite;
+        }
+        .rotate .angle:nth-child(3) .size {
+          animation: size 6.88s steps(4) -5.16s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .particle {
+          animation: particle-warm 5.16s linear -1.72s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .position {
+          animation: position 1.72s linear 0s infinite;
+        }
+
         @keyframes lamp-swing {
           5% { transform: rotate(-45deg); }
           10% { transform: rotate(35deg); }
@@ -518,14 +747,11 @@ export default function HomePage() {
         
         .card-thumb-wrap {
           aspect-ratio: 4/5;
-          background: #080605;
-          border-radius: 2px;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
           overflow: hidden;
-          box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
           padding: 16px;
         }
         .card-frame {
@@ -546,7 +772,7 @@ export default function HomePage() {
           justify-content: center;
         }
         .card-frame-inner::after {
-          content: '❧';
+          content: 'Y';
           font-size: 32px;
           color: rgba(212, 175, 55, 0.15);
         }
@@ -595,7 +821,7 @@ export default function HomePage() {
           border: 1px solid var(--border2);
           color: var(--text);
           padding: 12px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           font-family: var(--font-display);
           font-size: 12px;
           font-weight: 700;
@@ -785,7 +1011,7 @@ export default function HomePage() {
           border: 3px solid #1C0F07;
           outline: 1px solid var(--border);
           outline-offset: -3px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 12px;
           position: relative;
           box-shadow: 0 4px 10px rgba(0,0,0,0.4);
@@ -793,7 +1019,7 @@ export default function HomePage() {
         .cart-item-thumb {
           width: 70px;
           height: 70px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           overflow: hidden;
           box-shadow: 0 4px 10px rgba(0,0,0,0.5);
           display: flex;
@@ -804,7 +1030,7 @@ export default function HomePage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          border-radius: 2px;
+          border-radius: var(--radius);
         }
         .cart-item-thumb-placeholder {
           flex: 1;
@@ -850,7 +1076,7 @@ export default function HomePage() {
           height: 24px;
           background: var(--surface3);
           border: 1px solid var(--border2);
-          border-radius: 2px;
+          border-radius: var(--radius);
           color: var(--text);
           cursor: pointer;
           display: flex;
@@ -939,6 +1165,320 @@ export default function HomePage() {
           transform: translateY(-1px);
         }
 
+        /* EXQUISITE SHOWCASE SECTION */
+        .exquisite-section {
+          padding: 100px 40px;
+          background: #090706;
+          border-top: 2px solid #1C0F07;
+          border-bottom: 2px solid #1C0F07;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .exquisite-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 60px;
+        }
+
+        .exquisite-content {
+          flex: 1.2;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 24px;
+        }
+
+        .exquisite-tagline {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: var(--accent);
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+        }
+
+        .exquisite-title {
+          font-family: 'Instrument Sans', sans-serif;
+          font-size: 48px;
+          font-weight: 800;
+          line-height: 1.15;
+          color: var(--text);
+          letter-spacing: -0.01em;
+        }
+
+        .exquisite-desc {
+          font-family: var(--font-serif);
+          font-size: 16px;
+          line-height: 1.7;
+          color: var(--text2);
+        }
+
+        .exquisite-features {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin: 10px 0;
+        }
+
+        .feature-item {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+        }
+
+        .feature-icon {
+          color: var(--accent);
+          font-size: 18px;
+          line-height: 1.2;
+        }
+
+        .feature-item h4 {
+          font-family: var(--font-display);
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text);
+          margin-bottom: 4px;
+        }
+
+        .feature-item p {
+          font-family: var(--font-serif);
+          font-size: 13px;
+          color: var(--text2);
+          line-height: 1.5;
+        }
+
+        .exquisite-btn {
+          margin-top: 10px;
+        }
+
+        .exquisite-visual {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          position: relative;
+        }
+
+        .exquisite-frame-component {
+          position: relative;
+          padding-top: 80px;
+          width: 320px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transition: transform 0.4s ease;
+        }
+
+        .exquisite-frame-component:hover {
+          transform: translateY(-4px) scale(1.01);
+        }
+
+        /* Realistic Brass Picture Light Lamp */
+        .exquisite-lamp {
+          position: absolute;
+          top: 0px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 240px;
+        }
+
+        .lamp-mount {
+          width: 32px;
+          height: 18px;
+          background: linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b);
+          border: 1px solid #1a1205;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
+          border-radius: 2px;
+        }
+
+        .lamp-arm {
+          width: 6px;
+          height: 38px;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+          position: relative;
+        }
+        
+        .lamp-arm::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: -4px;
+          width: 14px;
+          height: 6px;
+          background: #5e461b;
+          border-radius: 2px;
+        }
+
+        .lamp-head {
+          width: 180px;
+          height: 24px;
+          background: linear-gradient(to bottom, 
+            #362710 0%, 
+            #8f723b 25%, 
+            #dfc38a 45%, 
+            #fae7b5 55%, 
+            #8f723b 75%, 
+            #362710 100%
+          );
+          border: 1px solid #1a1205;
+          border-radius: 12px;
+          box-shadow: 
+            0 8px 16px rgba(0,0,0,0.6),
+            inset 0 1px 2px rgba(255,255,255,0.3);
+          position: relative;
+        }
+
+        .lamp-head::before, .lamp-head::after {
+          content: '';
+          position: absolute;
+          top: -1px;
+          width: 8px;
+          height: 24px;
+          background: linear-gradient(to bottom, #1a1205, #5e461b, #1a1205);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+        }
+        .lamp-head::before { left: -4px; }
+        .lamp-head::after { right: -4px; }
+
+        .lamp-light-beam {
+          position: absolute;
+          top: 78px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 380px;
+          height: 480px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.42) 0%, rgba(255, 238, 180, 0.15) 40%, transparent 70%);
+          clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+          filter: blur(12px);
+          pointer-events: none;
+          z-index: 15;
+          opacity: 0;
+          transition: opacity 0.25s ease-in-out;
+        }
+        .lamp-light-beam.on {
+          opacity: 1;
+        }
+
+        /* Pull chain switch */
+        .pull-chain {
+          position: absolute;
+          top: 56px;
+          left: calc(50% + 22px);
+          width: 20px;
+          height: 180px;
+          cursor: pointer;
+          z-index: 25;
+          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .pull-chain:active {
+          transform: translateY(12px);
+        }
+        
+        .chain-wire {
+          width: 2px;
+          height: 120px;
+          background: repeating-linear-gradient(to bottom, #7a613b, #7a613b 2px, #362916 2px, #362916 4px);
+          margin: 0 auto;
+          box-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        
+        .chain-handle {
+          width: 8px;
+          height: 24px;
+          background: linear-gradient(to right, #403014, #dfc38a 50%, #2b1f0d);
+          border: 1px solid #1a1205;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.3);
+          border-radius: 4px;
+          margin: 0 auto;
+          position: relative;
+        }
+        
+        .chain-handle::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 1px;
+          width: 4px;
+          height: 4px;
+          background: #8f723b;
+          border-radius: 50%;
+        }
+
+        /* Wood Frame styling mimicking the customizer */
+        .exquisite-wood-frame {
+          position: relative;
+          z-index: 10;
+          width: 320px;
+          height: 420px;
+          box-shadow: 0 25px 50px rgba(0,0,0,0.85);
+          overflow: hidden;
+          background: #000;
+        }
+
+        .wood-frame-overlay {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: fill;
+          z-index: 12;
+          pointer-events: none;
+        }
+
+        .exquisite-matting {
+          position: absolute;
+          top: 13.5%;
+          left: 13.5%;
+          bottom: 13.5%;
+          right: 13.5%;
+          background: #F4EFE6;
+          box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+          padding: 24px;
+          display: flex;
+          z-index: 10;
+        }
+
+        .exquisite-inner-photo {
+          flex: 1;
+          background: #111;
+          position: relative;
+          overflow: hidden;
+          box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
+        }
+
+        .exquisite-inner-photo img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: filter 0.35s ease;
+        }
+
+        .exquisite-inner-photo img.light-active {
+          filter: grayscale(100%) contrast(1.1) brightness(0.95);
+        }
+
+        .exquisite-inner-photo img.light-inactive {
+          filter: grayscale(100%) contrast(1.15) brightness(0.18);
+        }
+
+        .glass-reflection {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, rgba(255,255,255,0.01) 100%);
+          z-index: 11;
+          pointer-events: none;
+        }
+
         /* MOBILE STYLES */
         @media (max-width: 1024px) {
           .catalog-grid { justify-content: center; }
@@ -953,6 +1493,13 @@ export default function HomePage() {
           .catalog-grid { gap: 20px; }
           .product-card { width: 100%; max-width: 320px; }
           .lamp-wrapper { display: none; }
+          .exquisite-section { padding: 60px 20px; }
+          .exquisite-container { flex-direction: column; gap: 40px; text-align: center; }
+          .exquisite-content { align-items: center; }
+          .exquisite-title { font-size: 32px; }
+          .feature-item { flex-direction: column; align-items: center; gap: 8px; }
+          .exquisite-frame-component { width: 300px; }
+          .exquisite-wood-frame { width: 300px; height: 394px; }
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
           .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
@@ -960,27 +1507,11 @@ export default function HomePage() {
       ` }} />
 
       {/* NAVBAR */}
-      <nav className="navbar">
-        <a href="/" className="nav-brand">
-          <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
-        </a>
-
-        <div className="nav-links">
-          <a href="/" className="nav-link">Home</a>
-          <a href="#catalog" className="nav-link">Catalog</a>
-          <a href="/customize" className="nav-link">Customize</a>
-        </div>
-
-        <div className="nav-actions">
-          <button className="btn-nav-cart" onClick={() => setCartOpen(true)} title="View Cart">
-            👜 <span className="cart-badge">{cartCount}</span>
-          </button>
-        </div>
-
-        <button className="menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          ☰
-        </button>
-      </nav>
+      <Navbar
+        onCartOpen={() => setCartOpen(true)}
+        onSearchChange={setSearchQuery}
+        initialSearchValue={searchQuery}
+      />
 
       {/* FULLSCREEN VIDEO HERO BANNER */}
       <section className="hero-fullscreen-frame">
@@ -1014,42 +1545,86 @@ export default function HomePage() {
           <div className="liquid-blob-2" />
           <div id="catalog-glow" className="catalog-glow" />
         </div>
-        
+
         {/* Frosted Glass overlay sheet */}
         <div className="catalog-glass-pane" />
 
         {/* Hanging Lamp Left */}
         <div className="lamp-wrapper left">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 130" className="lamp" height="210">
-            <g>
-              <circle className="bulb" cx="30" cy="109.3" r="10.7" />
-              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="28.1" y1="108.1" x2="27.4" y2="113.4" />
-              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="32" y1="108.1" x2="32.6" y2="113.4" />
-              <polyline style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} points="27.8,113.5 28.3,112.8 28.8,113.5 29.6,112.8 30,113.5 30.7,112.9 31.2,113.5 31.8,112.8 32.3,113.5" />
-            </g>
-            <rect x="20.7" y="66.7" style={{ fill: "#2D2D2F" }} width="18.6" height="15.6" />
-            <rect x="28.5" y="0" style={{ fill: "#2D2D2F" }} width="3" height="66.7" />
-            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
-            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
-          </svg>
-          <div className="lamp-glow" />
+          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
+          <div className="lamp-glow-container">
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Hanging Lamp Right */}
         <div className="lamp-wrapper right">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 130" className="lamp" height="210">
-            <g>
-              <circle className="bulb" cx="30" cy="109.3" r="10.7" />
-              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="28.1" y1="108.1" x2="27.4" y2="113.4" />
-              <line style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} x1="32" y1="108.1" x2="32.6" y2="113.4" />
-              <polyline style={{ fill: "none", stroke: "#D7D5AF", strokeWidth: 0.263, strokeLinecap: "round", strokeMiterlimit: 10 }} points="27.8,113.5 28.3,112.8 28.8,113.5 29.6,112.8 30,113.5 30.7,112.9 31.2,113.5 31.8,112.8 32.3,113.5" />
-            </g>
-            <rect x="20.7" y="66.7" style={{ fill: "#2D2D2F" }} width="18.6" height="15.6" />
-            <rect x="28.5" y="0" style={{ fill: "#2D2D2F" }} width="3" height="66.7" />
-            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
-            <path style={{ fill: "#2D2D2F" }} d="M30,80.3c-16.6,0-30,13.4-30,30h60C60,93.8,46.6,80.3,30,80.3z" />
-          </svg>
-          <div className="lamp-glow" />
+          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
+          <div className="lamp-glow-container">
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="catalog-container">
@@ -1142,52 +1717,87 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="footer-grid">
-          <div className="footer-brand-col">
-            <a href="/" className="footer-brand">
-              <img src="/images/logo-white.png" alt="Yaadein Logo" className="footer-logo-img" />
-            </a>
-            <p className="footer-tagline">
-              Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.
+      {/* EXQUISITE SHOWCASE SECTION */}
+      <section className="exquisite-section" id="showcase">
+        <div className="exquisite-container">
+          {/* Left Column: Content */}
+          <div className="exquisite-content">
+            <span className="exquisite-tagline">Exhibition Showcase</span>
+            <h2 className="exquisite-title">Where Memories Meet Nature's Light</h2>
+            <p className="exquisite-desc">
+              Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments.
             </p>
-          </div>
-
-          <div>
-            <h4 className="footer-title">Explore</h4>
-            <div className="footer-links">
-              <a href="/" className="footer-link">Home</a>
-              <a href="#catalog" className="footer-link">Frame Catalog</a>
-              <a href="/customize" className="footer-link">Customizer Studio</a>
+            <div className="exquisite-features">
+              <div className="feature-item">
+                <span className="feature-icon">✦</span>
+                <div>
+                  <h4>Archival Wood & Glass</h4>
+                  <p>Hand-selected premium timber combined with anti-reflective conservation glass.</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">✦</span>
+                <div>
+                  <h4>Living Shadow Integration</h4>
+                  <p>Meticulously scaled profiles designed to capture depth, shadow, and angle shifts.</p>
+                </div>
+              </div>
             </div>
+            <a href="/customize" className="btn-premium exquisite-btn">
+              Create Your Frame
+            </a>
           </div>
 
-          <div>
-            <h4 className="footer-title">Collections</h4>
-            <div className="footer-links">
-              <a href="/customize?frame=classic" className="footer-link">Classic Oak</a>
-              <a href="/customize?frame=gold" className="footer-link">Antique Gold</a>
-              <a href="/customize?frame=obsidian" className="footer-link">Obsidian Steel</a>
-              <a href="/customize?frame=modern" className="footer-link">Matte Black</a>
-            </div>
-          </div>
+          {/* Right Column: Visual */}
+          <div className="exquisite-visual">
+            <div className="exquisite-frame-component">
+              {/* Ambient wall glow behind the lamp */}
+              <div className={`exquisite-wall-glow ${lightOn ? 'on' : ''}`} />
 
-          <div>
-            <h4 className="footer-title">Studio Info</h4>
-            <div className="footer-links">
-              <span className="footer-link" style={{ cursor: "default" }}>Mon - Fri: 9:00 AM - 6:00 PM</span>
-              <span className="footer-link" style={{ cursor: "default" }}>Support: team@yaadein.com</span>
-              <span className="footer-link" style={{ cursor: "default" }}>Designed in Pakistan</span>
+              {/* Picture light lamp */}
+              <div className="exquisite-lamp">
+                <div className="lamp-mount" />
+                <div className="lamp-arm" />
+                <div className="lamp-head">
+                  <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+                </div>
+                {/* Pull chain (rope) */}
+                <div className="pull-chain" onClick={() => setLightOn(!lightOn)}>
+                  <div className="chain-wire" />
+                  <div className="chain-handle" />
+                </div>
+                {/* Light beam */}
+                <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+              </div>
+
+              {/* The frame wrapper */}
+              <div className={`exquisite-wood-frame ${lightOn ? 'light-on' : ''}`}>
+                {/* Wood Frame Texture Image */}
+                <img
+                  src="/frames/portrait/frame-01-correct-size.webp"
+                  alt="Antique Gold Frame"
+                  className="wood-frame-overlay"
+                />
+                
+                {/* Inner matting and photo area */}
+                <div className="exquisite-matting">
+                  <div className="exquisite-inner-photo">
+                    <img
+                      src="https://images.unsplash.com/photo-1542044896530-05d85be9b11a?q=80&w=600"
+                      alt="Exhibited B&W Artwork"
+                      className={lightOn ? 'light-active' : 'light-inactive'}
+                    />
+                    <div className="glass-reflection" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Yaadein. All rights reserved.</p>
-          <p>Crafted with <span>❧</span> for timeless galleries.</p>
-        </div>
-      </footer>
+      {/* FOOTER */}
+      <Footer />
 
       {/* CART DRAWER SLIDE-OVER */}
       <div className={`cart-drawer-overlay ${cartOpen ? "open" : ""}`} onClick={() => setCartOpen(false)} />
@@ -1213,7 +1823,7 @@ export default function HomePage() {
                     {item.image ? (
                       <img src={item.image} alt={item.frameName} />
                     ) : (
-                      <div className="cart-item-thumb-placeholder">❧</div>
+                      <div className="cart-item-thumb-placeholder">Y</div>
                     )}
                   </div>
                   <div className="cart-item-details">
@@ -1249,6 +1859,212 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* NEWSLETTER PROMO POPUP */}
+      {showPromo && (
+        <div className={`promo-overlay ${showPromo ? "open" : ""}`}>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            .promo-overlay {
+              position: fixed;
+              inset: 0;
+              background: rgba(0, 0, 0, 0.85);
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 9999;
+              opacity: 0;
+              pointer-events: none;
+              transition: opacity 0.4s ease;
+            }
+            .promo-overlay.open {
+              opacity: 1;
+              pointer-events: auto;
+            }
+            .promo-modal {
+              position: relative;
+              background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
+              border: 6px solid #1C0F07;
+              outline: 1.5px solid var(--accent);
+              outline-offset: -5px;
+              padding: 48px 36px;
+              max-width: 500px;
+              width: 90%;
+              box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+              transform: scale(0.9);
+              transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+              text-align: center;
+            }
+            .promo-overlay.open .promo-modal {
+              transform: scale(1);
+            }
+            .promo-close {
+              position: absolute;
+              top: 12px;
+              right: 16px;
+              background: none;
+              border: none;
+              color: var(--text2);
+              font-size: 28px;
+              cursor: pointer;
+              line-height: 1;
+              transition: color 0.15s ease;
+            }
+            .promo-close:hover {
+              color: var(--accent);
+            }
+            .promo-icon {
+              font-size: 42px;
+              color: var(--accent);
+              margin-bottom: 12px;
+            }
+            .promo-content h3 {
+              font-family: var(--font-display);
+              font-size: 26px;
+              color: var(--accent);
+              margin-bottom: 12px;
+              letter-spacing: 0.05em;
+            }
+            .promo-content p {
+              font-family: var(--font-serif);
+              font-size: 14px;
+              color: var(--text2);
+              line-height: 1.6;
+              margin-bottom: 24px;
+            }
+            .promo-form {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+            .promo-input {
+              background: var(--surface2);
+              border: 1px solid var(--border2);
+              color: var(--text);
+              padding: 14px;
+              font-family: var(--font-typewriter);
+              font-size: 14px;
+              outline: none;
+              border-radius: var(--radius);
+              text-align: center;
+            }
+            .promo-input:focus {
+              border-color: var(--accent);
+            }
+            .btn-promo-submit {
+              background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
+              color: #1A1100;
+              border: 1px solid #7E631F;
+              outline: 3px solid #D4AF37;
+              outline-offset: -4px;
+              padding: 14px;
+              font-family: var(--font-display);
+              font-weight: 700;
+              font-size: 13px;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+              cursor: pointer;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+              transition: all 0.2s ease;
+            }
+            .btn-promo-submit:hover {
+              background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
+              transform: translateY(-1px);
+            }
+            .promo-code-container {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: var(--surface2);
+              border: 1.5px dashed var(--accent);
+              padding: 12px 24px;
+              margin: 16px 0;
+              gap: 16px;
+            }
+            .promo-code {
+              font-family: var(--font-typewriter);
+              font-weight: 700;
+              font-size: 20px;
+              color: var(--accent);
+              letter-spacing: 0.05em;
+            }
+            .btn-copy-code {
+              background: var(--surface3);
+              border: 1px solid var(--border2);
+              color: var(--text);
+              padding: 6px 12px;
+              font-size: 12px;
+              font-family: var(--font-display);
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .btn-copy-code:hover {
+              background: var(--accent);
+              color: #1A1100;
+              border-color: var(--accent);
+            }
+            .btn-promo-success-close {
+              background: none;
+              border: 1px solid var(--border2);
+              color: var(--text2);
+              padding: 10px 20px;
+              font-family: var(--font-display);
+              font-size: 12px;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              margin-top: 12px;
+            }
+            .btn-promo-success-close:hover {
+              color: var(--text);
+              border-color: var(--text);
+            }
+          ` }} />
+          <div className="promo-modal">
+            <button className="promo-close" onClick={handleClosePromo}>&times;</button>
+            <div className="promo-content">
+              <img src="/images/logo-white.png" alt="Yaadein Logo" className="newsletter-logo-img" style={{ height: "42px", width: "auto", margin: "0 auto 20px", display: "block" }} />
+              {!promoSubmitted ? (
+                <>
+                  <h3>Join the Yaadein Circle</h3>
+                  <p>Subscribe to our newsletter for exclusive collections, art framing inspiration.</p>
+                  <form onSubmit={handlePromoSubmit} className="promo-form">
+                    <input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={promoEmail}
+                      onChange={(e) => setPromoEmail(e.target.value)}
+                      className="promo-input"
+                      required
+                    />
+                    <button type="submit" className="btn-promo-submit" disabled={isSubmittingPromo}>
+                      {isSubmittingPromo ? "Subscribing..." : "Subscribe"}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div className="promo-success">
+                  <h3>You're Subscribed!</h3>
+                  <p>Use code below at checkout to enjoy 10% off your first frame:</p>
+                  <div className="promo-code-container">
+                    <span className="promo-code">MEMORIES10</span>
+                    <button className="btn-copy-code" onClick={handleCopyPromoCode}>
+                      {copiedCode ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="promo-success-note">We've saved your discount. Use it whenever you are ready.</p>
+                  <button className="btn-promo-success-close" onClick={handleClosePromo}>
+                    Explore Galleries
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

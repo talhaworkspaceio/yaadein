@@ -162,8 +162,10 @@ export default function CheckoutPage() {
         /* ── NAVBAR ── */
         .navbar {
           height: 72px;
-          background: linear-gradient(to bottom, #14110E, #0C0A08);
-          border-bottom: 2px solid #1C0F07;
+          background: rgba(0, 0, 0, 0.95);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -171,7 +173,7 @@ export default function CheckoutPage() {
           z-index: 1000;
           position: sticky;
           top: 0;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .nav-brand {
           display: flex;
@@ -227,7 +229,7 @@ export default function CheckoutPage() {
           border: 6px solid #1C0F07;
           outline: 1px solid var(--accent);
           outline-offset: -5px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 32px;
           box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
@@ -264,7 +266,7 @@ export default function CheckoutPage() {
         .form-control {
           background: var(--surface2);
           border: 1px solid var(--border2);
-          border-radius: 2px;
+          border-radius: var(--radius);
           color: var(--text);
           padding: 12px 16px;
           font-family: var(--font-typewriter);
@@ -289,7 +291,7 @@ export default function CheckoutPage() {
         .cod-badge {
           background: rgba(212, 175, 55, 0.03);
           border: 1.5px dashed var(--accent);
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 18px;
           display: flex;
           gap: 14px;
@@ -312,7 +314,7 @@ export default function CheckoutPage() {
           border: 1px solid #7E631F;
           outline: 3px solid #D4AF37;
           outline-offset: -4px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 16px;
           font-family: var(--font-display);
           font-size: 14px;
@@ -340,7 +342,7 @@ export default function CheckoutPage() {
           border: 6px solid #1C0F07;
           outline: 1px solid var(--accent);
           outline-offset: -5px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 28px;
           display: flex;
           flex-direction: column;
@@ -371,17 +373,17 @@ export default function CheckoutPage() {
           background: var(--surface2);
           border: 2px solid #1C0F07;
           padding: 8px;
-          border-radius: 2px;
+          border-radius: var(--radius);
         }
         .summary-thumb {
           width: 48px; height: 48px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           display: flex;
           flex-shrink: 0;
           padding: 3px;
           box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
-        .summary-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
+        .summary-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
         .summary-thumb-placeholder {
           flex: 1;
           background: #2D2822;
@@ -426,7 +428,7 @@ export default function CheckoutPage() {
           background: rgba(255, 90, 90, 0.08);
           border: 1px solid #FF5A5A;
           color: #FF7777;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 12px 16px;
           font-size: 13px;
           margin-bottom: 16px;
@@ -442,7 +444,7 @@ export default function CheckoutPage() {
           border: 6px solid #1C0F07;
           outline: 1.5px solid var(--accent);
           outline-offset: -5px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 48px;
           text-align: center;
           display: flex;
@@ -458,7 +460,7 @@ export default function CheckoutPage() {
           font-size: 12px; font-weight: 700;
           color: var(--accent);
           background: rgba(201,168,76,0.08);
-          padding: 8px 16px; border-radius: 2px;
+          padding: 8px 16px; border-radius: var(--radius);
           border: 1px solid rgba(201,168,76,0.25);
         }
         .success-desc { font-size: 14px; line-height: 1.6; color: var(--text2); max-width: 420px; }
@@ -468,7 +470,7 @@ export default function CheckoutPage() {
           border: 3px solid #1C0F07;
           outline: 1px solid var(--border);
           outline-offset: -3px;
-          border-radius: 2px;
+          border-radius: var(--radius);
           padding: 20px;
           text-align: left;
           display: flex;
@@ -489,7 +491,7 @@ export default function CheckoutPage() {
           background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
           color: #1A1100 !important;
           text-decoration: none; font-size: 13px; font-weight: 700;
-          padding: 14px 28px; border-radius: 2px;
+          padding: 14px 28px; border-radius: var(--radius);
           border: 1px solid #7E631F;
           outline: 3px solid #D4AF37;
           outline-offset: -4px;
@@ -534,8 +536,8 @@ export default function CheckoutPage() {
             grid-template-columns: 1fr;
             gap: 18px;
           }
-          .checkout-card  { padding: 18px 16px; border-radius: 2px; }
-          .checkout-sidebar { padding: 18px 16px; border-radius: 2px; }
+          .checkout-card  { padding: 18px 16px; border-radius: var(--radius); }
+          .checkout-sidebar { padding: 18px 16px; border-radius: var(--radius); }
           .card-title     { font-size: 18px; margin-bottom: 16px; }
           .sidebar-title  { font-size: 17px; }
           .form-row { grid-template-columns: 1fr !important; gap: 0; margin-bottom: 0; }
@@ -547,10 +549,10 @@ export default function CheckoutPage() {
           .cod-icon  { font-size: 22px; }
           .cod-details h4 { font-size: 13px; }
           .cod-details p  { font-size: 11px; }
-          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: 2px; }
+          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: var(--radius); }
           .summary-items-list { max-height: 190px; }
           .totals-row.grand   { font-size: 17px; }
-          .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: 2px; gap: 14px; }
+          .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: var(--radius); gap: 14px; }
           .success-title { font-size: 24px; }
           .success-icon  { font-size: 42px; }
           .success-summary { padding: 16px; }
@@ -570,7 +572,7 @@ export default function CheckoutPage() {
       <div className="checkout-container">
         {orderSuccess ? (
           <div className="success-card">
-            <div className="success-icon">❧</div>
+            <div className="success-icon">✓</div>
             <h2 className="success-title">Order Placed!</h2>
             <div className="success-order-id">Reference: {orderId}</div>
             <p className="success-desc">
@@ -713,7 +715,7 @@ export default function CheckoutPage() {
                           {item.image ? (
                             <img src={item.image} alt={item.frameName} />
                           ) : (
-                            <div className="summary-thumb-placeholder">❧</div>
+                            <div className="summary-thumb-placeholder">Y</div>
                           )}
                         </div>
                         <div className="summary-details">
