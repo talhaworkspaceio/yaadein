@@ -339,8 +339,27 @@ export default function AdminDashboard() {
         .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         h2 { font-family: 'DM Serif Display', serif; font-size: 28px; }
 
-        .btn-primary { background: var(--accent); color: #1A1100; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .btn-primary {
+          padding: 10px 20px !important;
+          border-radius: 9999px !important;
+        }
+        .btn-secondary {
+          background: var(--surface2) !important;
+          color: var(--text) !important;
+          border: 1px solid var(--border2) !important;
+          padding: 10px 20px !important;
+          border-radius: 9999px !important;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+          background: var(--surface3) !important;
+          border-color: var(--accent) !important;
+        }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }

@@ -274,25 +274,7 @@ export default function HomePage() {
         }
 
         .btn-nav-primary {
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 12px;
-          font-weight: 700;
-          padding: 8px 18px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        .btn-nav-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 6px 14px rgba(212, 175, 55, 0.25);
+          padding: 8px 18px !important;
         }
 
         .menu-btn {
@@ -817,28 +799,8 @@ export default function HomePage() {
         .btn-card {
           width: 100%;
           text-align: center;
-          background: linear-gradient(to bottom, #1E1A15, #14110E);
-          border: 1px solid var(--border2);
-          color: var(--text);
           padding: 12px;
-          border-radius: var(--radius);
-          font-family: var(--font-display);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          text-decoration: none;
-          transition: all 0.2s ease;
           margin-top: auto;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        }
-        .product-card:hover .btn-card {
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          border-color: #7E631F;
-          color: #1A1100;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
         }
 
         /* FOOTER */
@@ -1145,24 +1107,7 @@ export default function HomePage() {
           display: block;
           width: 100%;
           text-align: center;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 13px;
-          font-weight: 700;
           padding: 14px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        }
-        .btn-checkout-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
         }
 
         /* EXQUISITE SHOWCASE SECTION */
@@ -1182,6 +1127,8 @@ export default function HomePage() {
           align-items: center;
           justify-content: space-between;
           gap: 60px;
+          position: relative;
+          z-index: 3;
         }
 
         .exquisite-content {
@@ -1307,6 +1254,19 @@ export default function HomePage() {
           width: 240px;
         }
 
+        .exquisite-glow-container {
+          top: 68px !important;
+        }
+        
+        .exquisite-glow-container.on .glow {
+          opacity: 1;
+          animation: glow-warm 3s linear infinite alternate;
+        }
+
+        .exquisite-glow-container.on .particles {
+          opacity: 1;
+        }
+
         .lamp-rod {
           width: 4px;
           height: 150px;
@@ -1417,40 +1377,7 @@ export default function HomePage() {
           opacity: 1;
         }
 
-        /* Pull chain switch */
-        .pull-chain {
-          position: absolute;
-          top: 56px;
-          left: calc(50% + 22px);
-          width: 20px;
-          height: 180px;
-          cursor: pointer;
-          z-index: 25;
-          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .pull-chain:active {
-          transform: translateY(12px);
-        }
-        
-        .chain-wire {
-          width: 2px;
-          height: 120px;
-          background: repeating-linear-gradient(to bottom, #7a613b, #7a613b 2px, #362916 2px, #362916 4px);
-          margin: 0 auto;
-          box-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-        }
-        
-        .chain-handle {
-          width: 8px;
-          height: 24px;
-          background: linear-gradient(to right, #403014, #dfc38a 50%, #2b1f0d);
-          border: 1px solid #1a1205;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.3);
-          border-radius: 4px;
-          margin: 0 auto;
-          position: relative;
-        }
+        /* Pull chain switch removed */
         
         .chain-handle::after {
           content: '';
@@ -1541,7 +1468,7 @@ export default function HomePage() {
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: grayscale(100%) contrast(1.15) brightness(0.18);
+          filter: grayscale(100%) contrast(1.1) brightness(0.95);
         }
 
         .glass-reflection {
@@ -1576,6 +1503,64 @@ export default function HomePage() {
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
           .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+        }
+
+        /* LIGHT SWITCH TOGGLE STYLING */
+        .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
+        }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
         }
       ` }} />
 
@@ -1792,6 +1777,16 @@ export default function HomePage() {
 
       {/* EXQUISITE SHOWCASE SECTION */}
       <section className="exquisite-section" id="showcase">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
         <div className="exquisite-container">
           {/* Left Column: Content */}
           <div className="exquisite-content">
@@ -1802,6 +1797,18 @@ export default function HomePage() {
             <a href="/customize" className="btn-premium exquisite-btn">
               Create Your Frame
             </a>
+
+            {/* Toggle switch panel */}
+            <div className="light-control-panel" style={{ marginTop: "24px", alignSelf: "flex-start", width: "fit-content" }}>
+              <span className="light-control-label">Studio Light</span>
+              <button 
+                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+                onClick={() => setLightOn(!lightOn)} 
+                aria-label="Toggle Studio Light"
+              >
+                <span className="light-switch-knob" />
+              </button>
+            </div>
           </div>
 
           {/* Right Column: Visual */}
@@ -1818,13 +1825,45 @@ export default function HomePage() {
                 <div className="lamp-head">
                   <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
                 </div>
-                {/* Pull chain (rope) */}
-                <div className="pull-chain" onClick={() => setLightOn(!lightOn)}>
-                  <div className="chain-wire" />
-                  <div className="chain-handle" />
-                </div>
+
                 {/* Light beam */}
                 <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+                {/* Copied glow & particle effect */}
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* The frame wrapper */}
@@ -2009,11 +2048,11 @@ export default function HomePage() {
               border-color: var(--accent);
             }
             .btn-promo-submit {
-              background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-              color: #1A1100;
-              border: 1px solid #7E631F;
-              outline: 3px solid #D4AF37;
-              outline-offset: -4px;
+              background: var(--accent) !important;
+              color: #0C0A08 !important;
+              border: none !important;
+              outline: none !important;
+              border-radius: 9999px !important;
               padding: 14px;
               font-family: var(--font-display);
               font-weight: 700;
@@ -2021,12 +2060,13 @@ export default function HomePage() {
               letter-spacing: 0.05em;
               text-transform: uppercase;
               cursor: pointer;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-              transition: all 0.2s ease;
+              box-shadow: 0 4px 15px rgba(181, 139, 92, 0.25);
+              transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
             .btn-promo-submit:hover {
-              background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-              transform: translateY(-1px);
+              background: var(--accent2) !important;
+              transform: translateY(-2px) scale(1.02);
+              box-shadow: 0 8px 24px rgba(181, 139, 92, 0.4);
             }
             .promo-code-container {
               display: flex;
@@ -2049,16 +2089,17 @@ export default function HomePage() {
               background: var(--surface3);
               border: 1px solid var(--border2);
               color: var(--text);
-              padding: 6px 12px;
+              padding: 6px 16px;
               font-size: 12px;
               font-family: var(--font-display);
               cursor: pointer;
               transition: all 0.2s ease;
+              border-radius: 9999px !important;
             }
             .btn-copy-code:hover {
-              background: var(--accent);
-              color: #1A1100;
-              border-color: var(--accent);
+              background: rgba(181, 139, 92, 0.1) !important;
+              color: var(--accent2) !important;
+              border-color: var(--accent2) !important;
             }
             .btn-promo-success-close {
               background: none;
@@ -2072,6 +2113,7 @@ export default function HomePage() {
               cursor: pointer;
               transition: all 0.2s ease;
               margin-top: 12px;
+              border-radius: 9999px !important;
             }
             .btn-promo-success-close:hover {
               color: var(--text);

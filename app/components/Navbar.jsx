@@ -326,11 +326,12 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
 
       <div className="nav-links-center">
         <a href="/" onClick={(e) => handleNavClick(e, "/")} className={`nav-link-item ${pathname === "/" && !searchVal ? "active" : ""}`}>Home</a>
-        <a href="/#catalog" onClick={(e) => handleNavClick(e, "/#catalog")} className="nav-link-item">Catalog</a>
         <a href="/new-arrivals" className={`nav-link-item ${pathname === "/new-arrivals" ? "active" : ""}`}>New Arrivals</a>
+        <a href="/#catalog" onClick={(e) => handleNavClick(e, "/#catalog")} className="nav-link-item">Catalog</a>
+
         <a href="/services" className={`nav-link-item ${pathname === "/services" ? "active" : ""}`}>Services</a>
         <a href="/contact" className={`nav-link-item ${pathname === "/contact" ? "active" : ""}`}>Contact</a>
-        <a href="/customize" className="nav-link-item">Customize</a>
+
       </div>
 
       <div className="nav-actions-right">

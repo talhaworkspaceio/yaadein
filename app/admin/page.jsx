@@ -118,10 +118,10 @@ export default function AdminLogin() {
 
         .btn-login {
           width: 100%;
-          background: var(--accent);
-          color: #1A1100;
-          border: none;
-          border-radius: 8px;
+          background: linear-gradient(135deg, #FF3E6C 0%, #FF6B4A 50%, #FFAF38 100%) !important;
+          color: #0C0A08 !important;
+          border: none !important;
+          border-radius: 9999px !important;
           padding: 14px;
           font-family: 'DM Sans', sans-serif;
           font-size: 14px;
@@ -129,10 +129,13 @@ export default function AdminLogin() {
           letter-spacing: 0.05em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 0 4px 15px rgba(255, 62, 108, 0.45);
         }
         .btn-login:hover {
-          background: #E8C96A;
+          filter: brightness(1.1) !important;
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(255, 62, 108, 0.6);
         }
       ` }} />
 

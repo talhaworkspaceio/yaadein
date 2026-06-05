@@ -309,31 +309,10 @@ export default function CheckoutPage() {
 
         .btn-order {
           width: 100%;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          border-radius: var(--radius);
-          padding: 16px;
-          font-family: var(--font-display);
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.5);
           margin-top: 22px;
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
         }
-        .btn-order:hover:not(:disabled) {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 8px 20px rgba(212,175,55,0.25);
-        }
-        .btn-order:active:not(:disabled) { transform: translateY(0); }
         .btn-order:disabled { opacity: 0.6; cursor: not-allowed; }
 
         /* ── SIDEBAR ── */
@@ -488,18 +467,8 @@ export default function CheckoutPage() {
         .success-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); gap: 12px; }
         .success-row strong { color: var(--text); text-align: right; }
         .btn-success {
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100 !important;
-          text-decoration: none; font-size: 13px; font-weight: 700;
-          padding: 14px 28px; border-radius: var(--radius);
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em; text-transform: uppercase;
-          transition: all 0.2s ease; margin-top: 8px;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+          margin-top: 8px;
         }
-        .btn-success:hover { background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%); transform: translateY(-1px); }
 
         @keyframes scaleIn {
           from { transform: scale(0); }
@@ -549,7 +518,7 @@ export default function CheckoutPage() {
           .cod-icon  { font-size: 22px; }
           .cod-details h4 { font-size: 13px; }
           .cod-details p  { font-size: 11px; }
-          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: var(--radius); }
+          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: 9999px !important; }
           .summary-items-list { max-height: 190px; }
           .totals-row.grand   { font-size: 17px; }
           .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: var(--radius); gap: 14px; }

@@ -23,6 +23,7 @@ const saveCart = (cart) => {
 export default function ServicesPage() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [lightOn, setLightOn] = useState(true);
 
   // Cart synchronization
   const loadCart = useCallback(() => {
@@ -65,6 +66,344 @@ export default function ServicesPage() {
   return (
     <div className="services-root">
       <style dangerouslySetInnerHTML={{ __html: `
+        /* PICTURE LIGHT LAMP STYLING */
+        .exquisite-lamp {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 240px;
+          margin-bottom: 25px;
+          z-index: 20;
+        }
+
+        .services-lamp {
+          margin-top: -30px;
+        }
+
+        .lamp-rod {
+          width: 4px;
+          height: 100vh;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 1px 0 3px rgba(0,0,0,0.4);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+        }
+
+        .lamp-mount {
+          width: 32px;
+          height: 18px;
+          background: linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b);
+          border: 1px solid #1a1205;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
+          border-radius: 2px;
+          position: relative;
+          z-index: 12;
+        }
+
+        .lamp-arm {
+          width: 6px;
+          height: 38px;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+          position: relative;
+        }
+        
+        .lamp-arm::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: -4px;
+          width: 14px;
+          height: 6px;
+          background: #5e461b;
+          border-radius: 2px;
+        }
+
+        .lamp-head {
+          width: 180px;
+          height: 24px;
+          background: linear-gradient(to bottom, 
+            #362710 0%, 
+            #8f723b 25%, 
+            #dfc38a 45%, 
+            #fae7b5 55%, 
+            #8f723b 75%, 
+            #362710 100%
+          );
+          border: 1px solid #1a1205;
+          border-radius: 12px;
+          box-shadow: 
+            0 8px 16px rgba(0,0,0,0.6),
+            inset 0 1px 2px rgba(255,255,255,0.3);
+          position: relative;
+        }
+
+        .services-lamp .lamp-head {
+          width: 440px; /* Cover the title */
+        }
+
+        .lamp-head::before, .lamp-head::after {
+          content: '';
+          position: absolute;
+          top: -1px;
+          width: 8px;
+          height: 24px;
+          background: linear-gradient(to bottom, #1a1205, #5e461b, #1a1205);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+        }
+        .lamp-head::before { left: -4px; }
+        .lamp-head::after { right: -4px; }
+
+        .lamp-bulb {
+          position: absolute;
+          bottom: 0px;
+          left: 15%;
+          right: 15%;
+          height: 4px;
+          background: #fff;
+          border-radius: 2px;
+          box-shadow: 0 0 12px 3px #fae7b5, 0 0 24px 8px #fae7b5;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          z-index: 5;
+        }
+        .lamp-bulb.on {
+          opacity: 1;
+        }
+
+        .lamp-light-beam {
+          position: absolute;
+          top: 76px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 480px;
+          height: 480px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
+          filter: blur(30px);
+          pointer-events: none;
+          z-index: 15;
+          opacity: 0;
+          transition: opacity 0.25s ease-in-out;
+        }
+        .lamp-light-beam.on {
+          opacity: 1;
+        }
+
+        .services-lamp .lamp-light-beam {
+          width: 650px;
+          height: 500px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
+        }
+
+        /* GLOW & PARTICLES */
+        .exquisite-glow-container {
+          top: 68px !important;
+        }
+        .lamp-glow-container {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+        }
+
+        .glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          background: #fff;
+          opacity: 0;
+        }
+        .exquisite-glow-container.on .glow {
+          opacity: 1;
+          animation: glow-warm 3s linear infinite alternate;
+        }
+
+        .particles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100px;
+          height: 100px;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        .exquisite-glow-container.on .particles {
+          opacity: 1;
+        }
+
+        .rotate {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          animation: rotate 20s linear 0s infinite alternate;
+        }
+
+        .angle {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .size {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .position {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .pulse {
+          position: absolute;
+          top: 0;
+          left: 0;
+          animation: pulse 1.5s linear 0s infinite alternate;
+        }
+
+        .particle {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+        }
+
+        @keyframes glow-warm {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+            box-shadow: 0 0 100px 35px rgba(251, 191, 36, 0.85), 35px 20px 75px 15px #fff, -5px -35px 45px 8px #fff;
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(5deg);
+            box-shadow: 0 0 140px 35px rgba(251, 191, 36, 0.95), 50px 30px 60px 15px #fff, -45px -45px 60px 8px #fff;
+          }
+        }
+
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes angle {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes size {
+          0% { transform: scale(.2); }
+          100% { transform: scale(.6); }
+        }
+
+        @keyframes position {
+          0% {
+            transform: translate3d(0,0,0);
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate3d(100px,100px,0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          100% { transform: scale(.5); }
+        }
+
+        @keyframes particle-warm {
+          0% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
+          }
+          33.33% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
+          }
+          33.34% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
+          }
+          66.66% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
+          }
+          66.67% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
+          }
+          100% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
+          }
+        }
+
+        .rotate .angle:nth-child(1) {
+          animation: angle 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .size {
+          animation: size 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .particle {
+          animation: particle-warm 6s linear infinite alternate;
+        }
+        .rotate .angle:nth-child(1) .position {
+          animation: position 2s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(2) {
+          animation: angle 4.95s steps(3) -1.65s infinite;
+        }
+        .rotate .angle:nth-child(2) .size {
+          animation: size 4.95s steps(3) -1.65s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .particle {
+          animation: particle-warm 4.95s linear -3.3s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .position {
+          animation: position 1.65s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(3) {
+          animation: angle 13.76s steps(8) -6.88s infinite;
+        }
+        .rotate .angle:nth-child(3) .size {
+          animation: size 6.88s steps(4) -5.16s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .particle {
+          animation: particle-warm 5.16s linear -1.72s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .position {
+          animation: position 1.72s linear 0s infinite;
+        }
+
+        /* Pull chain switch removed */
+        
+        .chain-handle::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 1px;
+          width: 4px;
+          height: 4px;
+          background: #8f723b;
+          border-radius: 50%;
+        }
+
+        /* SERVICES GENERAL STYLING */
         .services-root {
           font-family: var(--font-serif);
           background: var(--bg);
@@ -106,8 +445,18 @@ export default function ServicesPage() {
         
         .services-section {
           padding: 80px 40px;
+          position: relative;
+          overflow: hidden;
+          background: #080605;
+          max-width: 100%;
+          width: 100%;
+        }
+
+        .services-container {
           max-width: 1100px;
           margin: 0 auto;
+          position: relative;
+          z-index: 3;
           display: flex;
           flex-direction: column;
           gap: 50px;
@@ -124,6 +473,11 @@ export default function ServicesPage() {
           gap: 40px;
           align-items: center;
           box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+          transition: all 0.3s ease;
+        }
+        .service-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 15px rgba(212,175,55,0.15);
         }
         
         .service-card:nth-child(even) {
@@ -194,30 +548,199 @@ export default function ServicesPage() {
         .btn-service-action {
           display: inline-block;
           align-self: flex-start;
-          background-image: url('/images/wood-bg.png') !important;
-          background-size: 100% 100% !important;
-          background-repeat: no-repeat !important;
-          color: var(--text) !important;
+          background: linear-gradient(135deg, #FF3E6C 0%, #FF6B4A 50%, #FFAF38 100%) !important;
+          background-image: none !important;
+          color: #0C0A08 !important;
           text-decoration: none;
           font-family: var(--font-display) !important;
           font-size: 12px !important;
           font-weight: 700 !important;
           padding: 10px 24px !important;
-          border-radius: var(--radius) !important;
-          border: 3px solid #1C0F07 !important;
-          outline: 1.5px solid var(--accent) !important;
-          outline-offset: -5px;
+          border-radius: 9999px !important;
+          border: none !important;
+          outline: none !important;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 0 4px 15px rgba(255, 62, 108, 0.45);
           cursor: pointer;
         }
         
         .btn-service-action:hover {
-          filter: brightness(1.18) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 14px rgba(0,0,0,0.7);
+          filter: brightness(1.1) !important;
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(255, 62, 108, 0.6);
+        }
+
+        /* BACKDROP LIQUID ANIMATIONS */
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(12, 10, 8, 0.45);
+          backdrop-filter: blur(35px) saturate(140%);
+          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
+          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+
+        .catalog-glow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 1000px;
+          height: 1000px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 1;
+          animation: catalog-glow-auto 10s infinite ease-in-out;
+        }
+
+        @keyframes catalog-glow-auto {
+          0% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+          25% {
+            transform: translate(100%, 10%) scale(1.2);
+          }
+          50% {
+            transform: translate(40%, 40%) scale(0.9);
+          }
+          75% {
+            transform: translate(-10%, 30%) scale(1.1);
+          }
+          100% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+        }
+
+        /* LIQUID BLOBS */
+        .liquid-blob-1 {
+          position: absolute;
+          top: -10%;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .liquid-blob-2 {
+          position: absolute;
+          bottom: -15%;
+          right: 5%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes liquid-move-1 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+          33% {
+            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
+            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
+          }
+          66% {
+            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
+            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
+          }
+          100% {
+            transform: translate(0, 0) scale(1) rotate(180deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+        }
+
+        @keyframes liquid-move-2 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+          50% {
+            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
+            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
+          }
+          100% {
+            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+        }
+
+        /* LIGHT SWITCH TOGGLE STYLING */
+        .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
+        }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
         }
 
         /* CART DRAWER SLIDE-OVER */
@@ -470,78 +993,151 @@ export default function ServicesPage() {
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
       <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of Our Services heading */}
+        <div className={`exquisite-lamp services-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+          {/* Lamp glow & particle system */}
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <h1 className="hero-title">Our <span>Services</span></h1>
         <p className="hero-desc">
           We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence.
         </p>
+
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Studio Light</span>
+          <button 
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+            onClick={() => setLightOn(!lightOn)} 
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
       </div>
 
       <section className="services-section">
-        {/* Service 1 */}
-        <div className="service-card">
-          <div className="service-visual">🖼</div>
-          <div className="service-info">
-            <h2 className="service-name">Bespoke Picture Framing</h2>
-            <p className="service-desc">
-              Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
-            </p>
-            <ul className="service-features">
-              <li>Solid cured local pine, walnut, and oak mouldings</li>
-              <li>Acid-free double mounting mats (matboards)</li>
-              <li>Premium scratch-resistant acrylic and conservation glass</li>
-            </ul>
-            <a href="/customize" className="btn-service-action">Launch Customizer</a>
-          </div>
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
         </div>
 
-        {/* Service 2 */}
-        <div className="service-card">
-          <div className="service-visual">🖨</div>
-          <div className="service-info">
-            <h2 className="service-name">Giclée Fine Art Printing</h2>
-            <p className="service-desc">
-              Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
-            </p>
-            <ul className="service-features">
-              <li>Archival 380gsm matte cotton canvas</li>
-              <li>12-color Lucia PRO pigment inks (fade-proof for 100+ years)</li>
-              <li>Digital color grading & image resolution upscaling</li>
-            </ul>
-            <a href="/customize" className="btn-service-action">Print & Frame</a>
-          </div>
-        </div>
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
 
-        {/* Service 3 */}
-        <div className="service-card">
-          <div className="service-visual">📐</div>
-          <div className="service-info">
-            <h2 className="service-name">Gallery Wall Layouts</h2>
-            <p className="service-desc">
-              Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.
-            </p>
-            <ul className="service-features">
-              <li>Custom multi-frame spacing blueprints</li>
-              <li>Virtual render pre-views for your specific walls</li>
-              <li>Includes absolute wall-hanging templates</li>
-            </ul>
-            <a href="/contact" className="btn-service-action">Consult Designer</a>
+        <div className="services-container">
+          {/* Service 1 */}
+          <div className="service-card">
+            <div className="service-visual">🖼</div>
+            <div className="service-info">
+              <h2 className="service-name">Bespoke Picture Framing</h2>
+              <p className="service-desc">
+                Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
+              </p>
+              <ul className="service-features">
+                <li>Solid cured local pine, walnut, and oak mouldings</li>
+                <li>Acid-free double mounting mats (matboards)</li>
+                <li>Premium scratch-resistant acrylic and conservation glass</li>
+              </ul>
+              <a href="/customize" className="btn-service-action">Launch Customizer</a>
+            </div>
           </div>
-        </div>
 
-        {/* Service 4 */}
-        <div className="service-card">
-          <div className="service-visual">📜</div>
-          <div className="service-info">
-            <h2 className="service-name">Heritage Conservation</h2>
-            <p className="service-desc">
-              Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.
-            </p>
-            <ul className="service-features">
-              <li>Reversible mounting techniques (no adhesive damage)</li>
-              <li>99% UV-blocking conservation museum acrylic</li>
-              <li>Dust and humidity-controlled rear framing seal</li>
-            </ul>
-            <a href="/contact" className="btn-service-action">Inquire About Conservation</a>
+          {/* Service 2 */}
+          <div className="service-card">
+            <div className="service-visual">🖨</div>
+            <div className="service-info">
+              <h2 className="service-name">Giclée Fine Art Printing</h2>
+              <p className="service-desc">
+                Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
+              </p>
+              <ul className="service-features">
+                <li>Archival 380gsm matte cotton canvas</li>
+                <li>12-color Lucia PRO pigment inks (fade-proof for 100+ years)</li>
+                <li>Digital color grading & image resolution upscaling</li>
+              </ul>
+              <a href="/customize" className="btn-service-action">Print & Frame</a>
+            </div>
+          </div>
+
+          {/* Service 3 */}
+          <div className="service-card">
+            <div className="service-visual">📐</div>
+            <div className="service-info">
+              <h2 className="service-name">Gallery Wall Layouts</h2>
+              <p className="service-desc">
+                Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.
+              </p>
+              <ul className="service-features">
+                <li>Custom multi-frame spacing blueprints</li>
+                <li>Virtual render pre-views for your specific walls</li>
+                <li>Includes absolute wall-hanging templates</li>
+              </ul>
+              <a href="/contact" className="btn-service-action">Consult Designer</a>
+            </div>
+          </div>
+
+          {/* Service 4 */}
+          <div className="service-card">
+            <div className="service-visual">📜</div>
+            <div className="service-info">
+              <h2 className="service-name">Heritage Conservation</h2>
+              <p className="service-desc">
+                Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.
+              </p>
+              <ul className="service-features">
+                <li>Reversible mounting techniques (no adhesive damage)</li>
+                <li>99% UV-blocking conservation museum acrylic</li>
+                <li>Dust and humidity-controlled rear framing seal</li>
+              </ul>
+              <a href="/contact" className="btn-service-action">Inquire About Conservation</a>
+            </div>
           </div>
         </div>
       </section>

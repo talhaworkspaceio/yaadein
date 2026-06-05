@@ -26,6 +26,7 @@ export default function NewArrivalsPage() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [products, setProducts] = useState([]);
+  const [lightOn, setLightOn] = useState(true);
 
   // Fetch products from Firebase
   useEffect(() => {
@@ -91,6 +92,330 @@ export default function NewArrivalsPage() {
   return (
     <div className="new-arrivals-root">
       <style dangerouslySetInnerHTML={{ __html: `
+        /* PICTURE LIGHT LAMP STYLING */
+        .exquisite-lamp {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 240px;
+          margin-bottom: 25px;
+          z-index: 20;
+        }
+
+        .new-arrivals-lamp {
+          margin-top: -30px; /* Pull it slightly higher in the padding */
+        }
+
+        .lamp-rod {
+          width: 4px;
+          height: 100vh;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 1px 0 3px rgba(0,0,0,0.4);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+        }
+
+        .lamp-mount {
+          width: 32px;
+          height: 18px;
+          background: linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b);
+          border: 1px solid #1a1205;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
+          border-radius: 2px;
+          position: relative;
+          z-index: 12;
+        }
+
+        .lamp-arm {
+          width: 6px;
+          height: 38px;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+          position: relative;
+        }
+        
+        .lamp-arm::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: -4px;
+          width: 14px;
+          height: 6px;
+          background: #5e461b;
+          border-radius: 2px;
+        }
+
+        .lamp-head {
+          width: 180px;
+          height: 24px;
+          background: linear-gradient(to bottom, 
+            #362710 0%, 
+            #8f723b 25%, 
+            #dfc38a 45%, 
+            #fae7b5 55%, 
+            #8f723b 75%, 
+            #362710 100%
+          );
+          border: 1px solid #1a1205;
+          border-radius: 12px;
+          box-shadow: 
+            0 8px 16px rgba(0,0,0,0.6),
+            inset 0 1px 2px rgba(255,255,255,0.3);
+          position: relative;
+        }
+
+        .new-arrivals-lamp .lamp-head {
+          width: 440px; /* Cover the title */
+        }
+
+        .lamp-head::before, .lamp-head::after {
+          content: '';
+          position: absolute;
+          top: -1px;
+          width: 8px;
+          height: 24px;
+          background: linear-gradient(to bottom, #1a1205, #5e461b, #1a1205);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+        }
+        .lamp-head::before { left: -4px; }
+        .lamp-head::after { right: -4px; }
+
+        .lamp-bulb {
+          position: absolute;
+          bottom: 0px;
+          left: 15%;
+          right: 15%;
+          height: 4px;
+          background: #fff;
+          border-radius: 2px;
+          box-shadow: 0 0 12px 3px #fae7b5, 0 0 24px 8px #fae7b5;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          z-index: 5;
+        }
+        .lamp-bulb.on {
+          opacity: 1;
+        }
+
+        .lamp-light-beam {
+          position: absolute;
+          top: 76px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 480px;
+          height: 480px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
+          filter: blur(30px);
+          pointer-events: none;
+          z-index: 15;
+          opacity: 0;
+          transition: opacity 0.25s ease-in-out;
+        }
+        .lamp-light-beam.on {
+          opacity: 1;
+        }
+
+        .new-arrivals-lamp .lamp-light-beam {
+          width: 650px;
+          height: 500px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
+        }
+
+        /* GLOW & PARTICLES */
+        .exquisite-glow-container {
+          top: 68px !important;
+        }
+        .lamp-glow-container {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+        }
+
+        .glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          background: #fff;
+          opacity: 0;
+        }
+        .exquisite-glow-container.on .glow {
+          opacity: 1;
+          animation: glow-warm 3s linear infinite alternate;
+        }
+
+        .particles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100px;
+          height: 100px;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        .exquisite-glow-container.on .particles {
+          opacity: 1;
+        }
+
+        .rotate {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          animation: rotate 20s linear 0s infinite alternate;
+        }
+
+        .angle {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .size {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .position {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .pulse {
+          position: absolute;
+          top: 0;
+          left: 0;
+          animation: pulse 1.5s linear 0s infinite alternate;
+        }
+
+        .particle {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+        }
+
+        @keyframes glow-warm {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+            box-shadow: 0 0 100px 35px rgba(251, 191, 36, 0.85), 35px 20px 75px 15px #fff, -5px -35px 45px 8px #fff;
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(5deg);
+            box-shadow: 0 0 140px 35px rgba(251, 191, 36, 0.95), 50px 30px 60px 15px #fff, -45px -45px 60px 8px #fff;
+          }
+        }
+
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes angle {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes size {
+          0% { transform: scale(.2); }
+          100% { transform: scale(.6); }
+        }
+
+        @keyframes position {
+          0% {
+            transform: translate3d(0,0,0);
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate3d(100px,100px,0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          100% { transform: scale(.5); }
+        }
+
+        @keyframes particle-warm {
+          0% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
+          }
+          33.33% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
+          }
+          33.34% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
+          }
+          66.66% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
+          }
+          66.67% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
+          }
+          100% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
+          }
+        }
+
+        .rotate .angle:nth-child(1) {
+          animation: angle 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .size {
+          animation: size 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .particle {
+          animation: particle-warm 6s linear infinite alternate;
+        }
+        .rotate .angle:nth-child(1) .position {
+          animation: position 2s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(2) {
+          animation: angle 4.95s steps(3) -1.65s infinite;
+        }
+        .rotate .angle:nth-child(2) .size {
+          animation: size 4.95s steps(3) -1.65s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .particle {
+          animation: particle-warm 4.95s linear -3.3s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .position {
+          animation: position 1.65s linear 0s infinite;
+        }
+
+        .rotate .angle:nth-child(3) {
+          animation: angle 13.76s steps(8) -6.88s infinite;
+        }
+        .rotate .angle:nth-child(3) .size {
+          animation: size 6.88s steps(4) -5.16s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .particle {
+          animation: particle-warm 5.16s linear -1.72s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .position {
+          animation: position 1.72s linear 0s infinite;
+        }
+
         .new-arrivals-root {
           font-family: var(--font-serif);
           background: var(--bg);
@@ -132,8 +457,18 @@ export default function NewArrivalsPage() {
         
         .exhibition-section {
           padding: 80px 40px;
+          position: relative;
+          overflow: hidden;
+          background: #080605;
+          max-width: 100%;
+          width: 100%;
+        }
+        
+        .exhibition-container {
           max-width: 1300px;
           margin: 0 auto;
+          position: relative;
+          z-index: 3;
         }
         
         .gallery-grid {
@@ -179,6 +514,19 @@ export default function NewArrivalsPage() {
           padding: 4px 10px;
           box-shadow: 0 4px 8px rgba(0,0,0,0.4);
           z-index: 10;
+        }
+
+        /* Pull chain switch removed */
+        
+        .chain-handle::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 1px;
+          width: 4px;
+          height: 4px;
+          background: #8f723b;
+          border-radius: 50%;
         }
         
         .card-thumb-wrap {
@@ -253,29 +601,8 @@ export default function NewArrivalsPage() {
         .btn-card {
           width: 100%;
           text-align: center;
-          background: linear-gradient(to bottom, #1E1A15, #14110E);
-          border: 1px solid var(--border2);
-          color: var(--text);
           padding: 12px;
-          border-radius: var(--radius);
-          font-family: var(--font-display);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          text-decoration: none;
-          transition: all 0.2s ease;
           margin-top: auto;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        }
-        
-        .arrival-card:hover .btn-card {
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          border-color: #7E631F;
-          color: #1A1100;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
         }
 
         /* CART DRAWER SLIDE-OVER */
@@ -504,24 +831,178 @@ export default function NewArrivalsPage() {
           display: block;
           width: 100%;
           text-align: center;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 13px;
-          font-weight: 700;
           padding: 14px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
         }
-        .btn-checkout-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
+
+        /* DYNAMIC LIQUID BACKDROP ELEMENTS */
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(12, 10, 8, 0.45);
+          backdrop-filter: blur(35px) saturate(140%);
+          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
+          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+
+        .catalog-glow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 1000px;
+          height: 1000px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 1;
+          animation: catalog-glow-auto 10s infinite ease-in-out;
+        }
+
+        @keyframes catalog-glow-auto {
+          0% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+          25% {
+            transform: translate(100%, 10%) scale(1.2);
+          }
+          50% {
+            transform: translate(40%, 40%) scale(0.9);
+          }
+          75% {
+            transform: translate(-10%, 30%) scale(1.1);
+          }
+          100% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+        }
+
+        /* LIQUID BLOBS */
+        .liquid-blob-1 {
+          position: absolute;
+          top: -10%;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .liquid-blob-2 {
+          position: absolute;
+          bottom: -15%;
+          right: 5%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes liquid-move-1 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+          33% {
+            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
+            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
+          }
+          66% {
+            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
+            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
+          }
+          100% {
+            transform: translate(0, 0) scale(1) rotate(180deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+        }
+
+        @keyframes liquid-move-2 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+          50% {
+            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
+            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
+          }
+          100% {
+            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+        }
+
+        /* LIGHT SWITCH TOGGLE STYLING */
+        .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
+        }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
         }
 
         @media (max-width: 768px) {
@@ -535,85 +1016,158 @@ export default function NewArrivalsPage() {
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
       <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of New Arrivals heading */}
+        <div className={`exquisite-lamp new-arrivals-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+          {/* Lamp glow & particle system */}
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <h1 className="hero-title">New <span>Arrivals</span></h1>
         <p className="hero-desc">
           Experience the latest additions to the Yaadein catalogue. Exquisite styles handpicked by our designers to turn your photographs into museum-quality centerpieces.
         </p>
+        
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Studio Light</span>
+          <button 
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+            onClick={() => setLightOn(!lightOn)} 
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
       </div>
 
       <section className="exhibition-section">
-        {products.length === 0 ? (
-          <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-            Discovering new frame arrivals...
-          </div>
-        ) : (
-          <div className="gallery-grid">
-            {products.map((p) => (
-              <div key={p.id} className="arrival-card">
-                {isNewArrival(p.id) && <div className="ribbon">New Arrival</div>}
-                
-                <div className="card-thumb-wrap">
-                  <div
-                    className="card-frame"
-                    style={{
-                      position: "relative",
-                      aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                      width: p.orientation === "landscape" ? "100%" : "auto",
-                      height: p.orientation === "landscape" ? "auto" : "100%",
-                      boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden"
-                    }}
-                  >
-                    {p.imageUrl && (
-                      <img
-                        src={p.imageUrl}
-                        alt={p.name}
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="exhibition-container">
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
+              Discovering new frame arrivals...
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {products.map((p) => (
+                <div key={p.id} className="arrival-card">
+                  {isNewArrival(p.id) && <div className="ribbon">New Arrival</div>}
+                  
+                  <div className="card-thumb-wrap">
+                    <div
+                      className="card-frame"
+                      style={{
+                        position: "relative",
+                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+                        width: p.orientation === "landscape" ? "100%" : "auto",
+                        height: p.orientation === "landscape" ? "auto" : "100%",
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden"
+                      }}
+                    >
+                      {p.imageUrl && (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "fill",
+                            position: "absolute",
+                            inset: 0,
+                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                            pointerEvents: "none"
+                          }}
+                        />
+                      )}
+                      <div
+                        className="card-frame-inner"
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "fill",
                           position: "absolute",
-                          inset: 0,
-                          zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                          pointerEvents: "none"
+                          top: `${p.paddingTop || 0}%`,
+                          left: `${p.paddingLeft || 0}%`,
+                          bottom: `${p.paddingBottom || 0}%`,
+                          right: `${p.paddingRight || 0}%`,
+                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                          background: "#2D2822",
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
                         }}
                       />
-                    )}
-                    <div
-                      className="card-frame-inner"
-                      style={{
-                        position: "absolute",
-                        top: `${p.paddingTop || 0}%`,
-                        left: `${p.paddingLeft || 0}%`,
-                        bottom: `${p.paddingBottom || 0}%`,
-                        right: `${p.paddingRight || 0}%`,
-                        zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
-                        background: "#2D2822",
-                        boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
-                      }}
-                    />
+                    </div>
                   </div>
-                </div>
 
-                <div className="product-info">
-                  <div className="product-header-row">
-                    <h3 className="product-name">{p.name}</h3>
-                    <span className="product-price">{p.price}</span>
+                  <div className="product-info">
+                    <div className="product-header-row">
+                      <h3 className="product-name">{p.name}</h3>
+                      <span className="product-price">{p.price}</span>
+                    </div>
+                    <span className="product-tag">{p.tag}</span>
+                    <p className="product-desc">{p.desc}</p>
                   </div>
-                  <span className="product-tag">{p.tag}</span>
-                  <p className="product-desc">{p.desc}</p>
-                </div>
 
-                <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-                  View Frame
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
+                  <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+                    View Frame
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       <Footer />

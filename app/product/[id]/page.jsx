@@ -39,10 +39,11 @@ function ProductDetailContent({ params }) {
 
   const [frames, setFrames] = useState([]);
   const [selectedFrame, setSelectedFrame] = useState(null);
-  
+
   // Set orientation initially based on query parameters if present, defaulting to portrait
   const [orientation, setOrientation] = useState(searchParams?.get("orientation") || "portrait");
-  const [selectedSize, setSelectedSize] = useState("12x16");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [sizeError, setSizeError] = useState(false);
   const [userUploadedImage, setUserUploadedImage] = useState(null);
   const [lightOn, setLightOn] = useState(true);
 
@@ -134,18 +135,20 @@ function ProductDetailContent({ params }) {
   const getSizePremium = (size) => {
     switch (size) {
       case "8x10": return -1500;
+      case "12x16": return 0;
       case "16x20": return 2500;
       case "24x36": return 6500;
-      default: return 0; // "12x16" is base price
+      default: return 0;
     }
   };
 
   const getSizeLabel = (size) => {
     switch (size) {
       case "8x10": return '8" x 10"';
+      case "12x16": return '12" x 16"';
       case "16x20": return '16" x 20"';
       case "24x36": return '24" x 36"';
-      default: return '12" x 16"';
+      default: return 'Choose Size';
     }
   };
 
@@ -211,6 +214,11 @@ function ProductDetailContent({ params }) {
 
   const handleAddToCart = () => {
     if (!selectedFrame) return;
+    if (!selectedSize) {
+      setSizeError(true);
+      alert("Please select a size before adding to cart.");
+      return;
+    }
     const item = {
       id: selectedFrame.id,
       frameName: selectedFrame.name,
@@ -252,13 +260,17 @@ function ProductDetailContent({ params }) {
 
   return (
     <div className="product-page-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .product-page-root {
           font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
           min-height: 100vh;
           overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
         }
 
         .product-container {
@@ -268,6 +280,10 @@ function ProductDetailContent({ params }) {
           display: grid;
           grid-template-columns: 1.1fr 1fr;
           gap: 80px;
+          flex: 1;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
         }
 
         /* --- Left Column: Visual Showcase --- */
@@ -323,7 +339,7 @@ function ProductDetailContent({ params }) {
 
         .lamp-rod {
           width: 4px;
-          height: 100px;
+          height: 100vh;
           background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
           box-shadow: 1px 0 3px rgba(0,0,0,0.4);
           position: absolute;
@@ -430,40 +446,7 @@ function ProductDetailContent({ params }) {
           opacity: 1;
         }
 
-        /* Pull chain string */
-        .pull-chain {
-          position: absolute;
-          top: 56px;
-          left: calc(50% + 22px);
-          width: 20px;
-          height: 180px;
-          cursor: pointer;
-          z-index: 25;
-          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .pull-chain:active {
-          transform: translateY(12px);
-        }
-        
-        .chain-wire {
-          width: 2px;
-          height: 120px;
-          background: repeating-linear-gradient(to bottom, #7a613b, #7a613b 2px, #362916 2px, #362916 4px);
-          margin: 0 auto;
-          box-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-        }
-        
-        .chain-handle {
-          width: 8px;
-          height: 24px;
-          background: linear-gradient(to right, #403014, #dfc38a 50%, #2b1f0d);
-          border: 1px solid #1a1205;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.3);
-          border-radius: 4px;
-          margin: 0 auto;
-          position: relative;
-        }
+        /* Pull chain switch removed */
         
         .chain-handle::after {
           content: '';
@@ -552,7 +535,7 @@ function ProductDetailContent({ params }) {
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: grayscale(100%) contrast(1.15) brightness(0.18);
+          filter: grayscale(100%) contrast(1.1) brightness(0.95);
         }
 
         .glass-reflection {
@@ -567,123 +550,198 @@ function ProductDetailContent({ params }) {
         .product-config-pane {
           display: flex;
           flex-direction: column;
-          gap: 28px;
+          gap: 22px;
+          background-image: url('/images/paper.png');
+          background-color: transparent !important;
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          border-radius: 0;
+          padding: 55px 45px 55px 65px;
+          border: none !important;
+          box-shadow: none !important;
+          filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.65));
+          color: #2c1e11;
+          position: relative;
+          max-width: 460px;
+          width: 100%;
+          margin: 0 auto;
+          align-self: end;
+          transform: translateY(40px);
+        }
+
+        .product-config-pane::before {
+          content: 'Y';
+          position: absolute;
+          bottom: 30px;
+          right: 35px;
+          width: 80px;
+          height: 80px;
+          border: 3px double rgba(185, 28, 28, 0.08);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(185, 28, 28, 0.08);
+          font-family: 'Cinzel', serif;
+          font-size: 32px;
+          font-weight: 700;
+          transform: rotate(-15deg);
+          pointer-events: none;
+          z-index: 0;
+          line-height: 80px;
+          text-align: center;
+        }
+
+        .product-meta-header,
+        .config-section,
+        .action-row {
+          position: relative;
+          z-index: 1;
         }
 
         .product-meta-header {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          border-bottom: 1px solid var(--border);
-          padding-bottom: 20px;
-          border-radius: 8px;
+          gap: 6px;
+          border-bottom: 1px dashed rgba(139, 94, 60, 0.25);
+          padding-bottom: 16px;
         }
 
         .product-tag {
           font-family: var(--font-typewriter);
-          font-size: 11px;
-          color: var(--accent);
-          letter-spacing: 0.1em;
+          font-size: 10px;
+          color: #8b5e3c;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
         }
 
         .product-title {
-          font-family: 'Cinzel', serif;
-          font-size: 38px;
-          font-weight: 600;
-          color: var(--text);
+          font-family: 'Shelly', cursive, serif;
+          font-size: 52px;
+          font-weight: normal;
+          color: #2c1e11;
+          line-height: 1.1;
+          text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6);
         }
 
         .product-price-row {
           display: flex;
           align-items: center;
           gap: 16px;
-          margin-top: 4px;
+          margin-top: 2px;
         }
 
         .product-price-val {
           font-family: var(--font-typewriter);
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 700;
-          color: var(--accent);
+          color: #8b1e1e; /* Vintage red ink stamp */
+          text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6);
         }
 
         .product-desc-text {
-          font-family: var(--font-serif);
-          font-size: 15px;
-          line-height: 1.6;
-          color: var(--text2);
+          font-family: 'Shelly', cursive, serif;
+          font-size: 26px;
+          line-height: 1.4;
+          color: #1f1308; /* Pen writing ink */
+          text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6);
         }
 
         .config-section {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
         }
 
         .config-label {
-          font-family: var(--font-display);
+          font-family: var(--font-typewriter);
           font-size: 11px;
-          font-weight: 700;
+          color: #8b5e3c;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: var(--accent);
         }
 
-        /* Orientation and Size Buttons */
+        /* Size Buttons */
         .choice-row {
-          display: flex;
-          gap: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
         }
 
         .choice-btn {
-          flex: 1;
-          background: var(--surface2);
-          border: 1px solid var(--border2);
-          color: var(--text2);
-          padding: 12px;
-          font-family: var(--font-display);
-          font-size: 12px;
+          background: rgba(255, 255, 255, 0.35);
+          border: 1px dashed rgba(139, 94, 60, 0.45);
+          color: #21160a;
+          padding: 8px 6px;
+          font-family: var(--font-typewriter);
+          font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           cursor: pointer;
           transition: all 0.2s ease;
-          border-radius: 8px;
+          border-radius: 6px;
           text-align: center;
+          box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+          line-height: 1.3;
         }
         .choice-btn:hover {
-          color: var(--text);
-          border-color: var(--accent);
+          background: rgba(255, 255, 255, 0.85);
+          border-color: #8b5e3c;
+          color: #2c1e11;
         }
         .choice-btn.selected {
-          background: var(--accent);
-          color: #1A1100;
-          border-color: var(--accent);
-          box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+          background: rgba(139, 94, 60, 0.12);
+          color: #8b5e3c;
+          border: 1.5px solid #8b5e3c;
+          box-shadow: 0 2px 8px rgba(139, 94, 60, 0.1);
         }
 
         /* Action Buttons */
         .action-row {
           display: flex;
-          gap: 16px;
-          margin-top: 10px;
-          border-top: 1px solid var(--border);
-          padding-top: 24px;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 6px;
+          border-top: 1px dashed rgba(139, 94, 60, 0.25);
+          padding-top: 20px;
         }
 
         .action-row .btn-premium {
-          flex: 1.2;
+          width: 100%;
           text-align: center;
-          padding: 14px 28px !important;
-          border-radius: 8px !important;
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          background: #2c1e11 !important; /* Dark ink block print */
+          color: #f6f0df !important;
+          font-family: var(--font-display) !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.08em;
+          box-shadow: 0 4px 12px rgba(44, 30, 17, 0.25);
+          transition: all 0.3s ease;
+        }
+        .action-row .btn-premium:hover {
+          background: #47321d !important;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(44, 30, 17, 0.35);
         }
 
         .action-row .btn-premium-ghost {
-          flex: 1;
+          width: 100%;
           text-align: center;
-          padding: 14px 26px !important;
-          border-radius: 8px !important;
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          background: transparent !important;
+          border: 1.5px solid #2c1e11 !important;
+          color: #2c1e11 !important;
+          font-family: var(--font-display) !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.08em;
+          transition: all 0.25s ease;
+        }
+        .action-row .btn-premium-ghost:hover {
+          background: rgba(44, 30, 17, 0.08) !important;
+          transform: translateY(-2px);
         }
 
         /* Responsive styling */
@@ -695,6 +753,10 @@ function ProductDetailContent({ params }) {
           }
           .product-visual-pane {
             padding-top: 90px;
+          }
+          .product-config-pane {
+            align-self: center;
+            transform: translateY(0);
           }
         }
         @media (max-width: 580px) {
@@ -708,6 +770,172 @@ function ProductDetailContent({ params }) {
             flex-direction: column;
             gap: 8px;
           }
+        }
+
+        /* LIGHT SWITCH TOGGLE STYLING */
+        .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
+        }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
+        }
+
+        /* Redesigned Select Dropdown Styling */
+        .select-wrapper {
+          position: relative;
+          width: 100%;
+        }
+        .premium-select {
+          width: 100%;
+          padding: 12px 40px 12px 16px;
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          font-weight: 700;
+          color: #2c1e11;
+          background: rgba(255, 255, 255, 0.4);
+          border: 1px dashed rgba(139, 94, 60, 0.6);
+          border-radius: 6px;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          cursor: pointer;
+          outline: none;
+          transition: all 0.2s ease;
+          box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        .premium-select:hover, .premium-select:focus {
+          background: rgba(255, 255, 255, 0.85);
+          border-color: #8b5e3c;
+          border-style: solid;
+        }
+        .premium-select.error {
+          border-color: #8b1e1e;
+          border-style: solid;
+          background: rgba(139, 30, 30, 0.05);
+        }
+        .select-arrow {
+          position: absolute;
+          right: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          pointer-events: none;
+          color: #8b5e3c;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .size-error-msg {
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          color: #8b1e1e;
+          margin-top: 2px;
+        }
+
+        /* Redesigned Orientation Selector Styling */
+        .orientation-btns {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .orientation-btn {
+          background: rgba(255, 255, 255, 0.35);
+          border: 1px dashed rgba(139, 94, 60, 0.45);
+          border-radius: 6px;
+          color: #21160a;
+          padding: 14px 10px;
+          cursor: pointer;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        .orientation-btn:hover {
+          background: rgba(255, 255, 255, 0.85);
+          border-color: #8b5e3c;
+          color: #2c1e11;
+        }
+        .orientation-btn.active {
+          background: rgba(139, 94, 60, 0.12);
+          color: #8b5e3c;
+          border: 1.5px solid #8b5e3c;
+          box-shadow: 0 2px 8px rgba(139, 94, 60, 0.1);
+        }
+        .orientation-btn-icon {
+          width: 16px;
+          height: 22px;
+          border: 2px solid currentColor;
+          border-radius: 3px;
+          transition: all 0.2s ease;
+          opacity: 0.8;
+        }
+        .orientation-btn.active .orientation-btn-icon {
+          opacity: 1;
+        }
+        .orientation-btn.landscape-btn .orientation-btn-icon {
+          width: 22px;
+          height: 16px;
+        }
+        .orientation-btn-label {
+          font-size: 10px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
         }
       ` }} />
 
@@ -728,11 +956,7 @@ function ProductDetailContent({ params }) {
               <div className="lamp-head">
                 <div className={`lamp-bulb ${lightOn ? "on" : ""}`} />
               </div>
-              {/* Pull switch cord */}
-              <div className="pull-chain" onClick={() => setLightOn(!lightOn)} title="Toggle Lamp Light">
-                <div className="chain-wire" />
-                <div className="chain-handle" />
-              </div>
+
               {/* Soft light beam */}
               <div className={`lamp-light-beam ${lightOn ? "on" : ""}`} />
             </div>
@@ -757,6 +981,18 @@ function ProductDetailContent({ params }) {
                 <div className="glass-reflection" />
               </div>
             </div>
+
+            {/* Toggle switch panel */}
+            <div className="light-control-panel" style={{ marginTop: "24px", alignSelf: "center", width: "fit-content" }}>
+              <span className="light-control-label">Studio Light</span>
+              <button 
+                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+                onClick={() => setLightOn(!lightOn)} 
+                aria-label="Toggle Studio Light"
+              >
+                <span className="light-switch-knob" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -778,56 +1014,50 @@ function ProductDetailContent({ params }) {
             </p>
           </div>
 
-          {/* Orientation selection */}
-          <div className="config-section">
-            <span className="config-label">Select Orientation</span>
-            <div className="choice-row">
-              <button
-                className={`choice-btn ${orientation === "portrait" ? "selected" : ""}`}
-                onClick={() => handleOrientationChange("portrait")}
-              >
-                Portrait (Vertical)
-              </button>
-              <button
-                className={`choice-btn ${orientation === "landscape" ? "selected" : ""}`}
-                onClick={() => handleOrientationChange("landscape")}
-              >
-                Landscape (Horizontal)
-              </button>
-            </div>
-          </div>
-
           {/* Size selection */}
           <div className="config-section">
             <span className="config-label">Choose Size</span>
-            <div className="choice-row">
-              <button
-                className={`choice-btn ${selectedSize === "8x10" ? "selected" : ""}`}
-                onClick={() => setSelectedSize("8x10")}
+            <div className="select-wrapper">
+              <select
+                className={`premium-select ${sizeError ? "error" : ""}`}
+                value={selectedSize}
+                onChange={(e) => {
+                  setSelectedSize(e.target.value);
+                  setSizeError(false);
+                }}
               >
-                8" x 10" <br />
-                <span style={{ fontSize: "10px", opacity: 0.8 }}>- Rs. 1,500</span>
+                <option value="">Choose Size</option>
+                <option value="8x10">8" x 10" (- Rs. 1,500)</option>
+                <option value="12x16">12" x 16" (Base Price)</option>
+                <option value="16x20">16" x 20" (+ Rs. 2,500)</option>
+                <option value="24x36">24" x 36" (+ Rs. 6,500)</option>
+              </select>
+              <span className="select-arrow">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+            </div>
+            {sizeError && <span className="size-error-msg">Please select a size</span>}
+          </div>
+
+          {/* Orientation selection */}
+          <div className="config-section" style={{ marginTop: "6px" }}>
+            <span className="config-label">Select Orientation</span>
+            <div className="orientation-btns">
+              <button
+                className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
+                onClick={() => handleOrientationChange("portrait")}
+              >
+                <div className="orientation-btn-icon" />
+                <span className="orientation-btn-label">Portrait</span>
               </button>
               <button
-                className={`choice-btn ${selectedSize === "12x16" ? "selected" : ""}`}
-                onClick={() => setSelectedSize("12x16")}
+                className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
+                onClick={() => handleOrientationChange("landscape")}
               >
-                12" x 16" <br />
-                <span style={{ fontSize: "10px", opacity: 0.8 }}>Base Price</span>
-              </button>
-              <button
-                className={`choice-btn ${selectedSize === "16x20" ? "selected" : ""}`}
-                onClick={() => setSelectedSize("16x20")}
-              >
-                16" x 20" <br />
-                <span style={{ fontSize: "10px", opacity: 0.8 }}>+ Rs. 2,500</span>
-              </button>
-              <button
-                className={`choice-btn ${selectedSize === "24x36" ? "selected" : ""}`}
-                onClick={() => setSelectedSize("24x36")}
-              >
-                24" x 36" <br />
-                <span style={{ fontSize: "10px", opacity: 0.8 }}>+ Rs. 6,500</span>
+                <div className="orientation-btn-icon" />
+                <span className="orientation-btn-label">Landscape</span>
               </button>
             </div>
           </div>
@@ -837,9 +1067,28 @@ function ProductDetailContent({ params }) {
             <button className="btn-premium" onClick={handleAddToCart}>
               Add to Cart
             </button>
-            <button className="btn-premium-ghost" onClick={navigateToStudio}>
-              Interactive Studio
+            <button className="btn-premium-ghost" onClick={triggerFileUpload}>
+              Upload Photo
             </button>
+            {userUploadedImage && (
+              <button 
+                className="remove-photo-link" 
+                onClick={removeCustomImage}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#8b1e1e",
+                  fontFamily: "var(--font-typewriter)",
+                  fontSize: "10px",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  marginTop: "4px",
+                  alignSelf: "center"
+                }}
+              >
+                Remove Custom Photo
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -906,6 +1155,13 @@ function ProductDetailContent({ params }) {
           </div>
         )}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleImageUpload}
+      />
     </div>
   );
 }
