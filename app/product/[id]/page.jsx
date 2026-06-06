@@ -32,6 +32,41 @@ const formatPrice = (priceNum) => {
   return `Rs. ${priceNum.toLocaleString()}`;
 };
 
+const resizeImage = (base64Str, maxW = 200, maxH = 200) => {
+  return new Promise((resolve) => {
+    if (!base64Str || !base64Str.startsWith("data:image")) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width;
+      let h = img.height;
+      if (w > h) {
+        if (w > maxW) {
+          h = Math.round((h * maxW) / w);
+          w = maxW;
+        }
+      } else {
+        if (h > maxH) {
+          w = Math.round((w * maxH) / h);
+          h = maxH;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+    img.src = base64Str;
+  });
+};
+
 function ProductDetailContent({ params }) {
   const { id } = params;
   const router = useRouter();
@@ -50,6 +85,28 @@ function ProductDetailContent({ params }) {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const fileInputRef = useRef(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Sync carousel index to show selected frame in center
+  useEffect(() => {
+    if (frames.length > 0 && selectedFrame) {
+      const idx = frames.findIndex((f) => f.id === selectedFrame.id);
+      if (idx !== -1) {
+        const targetStart = (idx - 1 + frames.length) % frames.length;
+        setCarouselIndex(targetStart);
+      }
+    }
+  }, [frames, selectedFrame]);
+
+  const handlePrevFrame = () => {
+    if (frames.length === 0) return;
+    setCarouselIndex((prev) => (prev - 1 + frames.length) % frames.length);
+  };
+
+  const handleNextFrame = () => {
+    if (frames.length === 0) return;
+    setCarouselIndex((prev) => (prev + 1) % frames.length);
+  };
 
   // Fetch all frames from Firebase database
   useEffect(() => {
@@ -100,10 +157,35 @@ function ProductDetailContent({ params }) {
     return () => window.removeEventListener("fs-cart-updated", loadCart);
   }, [loadCart]);
 
-  // Frame Switching Handler
+  // Frame Switching Handler - local state update to prevent full page refresh
   const handleFrameChange = (frameId) => {
-    router.push(`/product/${frameId}`, { scroll: false });
+    const matched = frames.find((f) => f.id === frameId);
+    if (matched) {
+      setSelectedFrame(matched);
+      if (typeof window !== "undefined") {
+        const url = `/product/${frameId}${window.location.search}`;
+        window.history.pushState({ ...window.history.state, as: url, url }, "", url);
+      }
+    }
   };
+
+  // Sync state if browser Back/Forward is clicked
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== "undefined") {
+        const pathSegments = window.location.pathname.split("/");
+        const frameId = pathSegments[pathSegments.length - 1];
+        if (frameId && frames.length > 0) {
+          const matched = frames.find((f) => f.id === frameId);
+          if (matched) {
+            setSelectedFrame(matched);
+          }
+        }
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [frames]);
 
   // Orientation toggling logic
   const handleOrientationChange = (newOrientation) => {
@@ -168,29 +250,32 @@ function ProductDetailContent({ params }) {
 
   const currentPhoto = userUploadedImage || getDummyPhoto();
 
-  // Swapped inner padding logic for rotated frames
+  // Get visible frames for the switcher carousel
+  const getVisibleFrames = () => {
+    if (frames.length === 0) return [];
+    const visible = [];
+    for (let i = 0; i < 3; i++) {
+      const idx = (carouselIndex + i) % frames.length;
+      visible.push(frames[idx]);
+    }
+    return visible;
+  };
+  const visibleFrames = getVisibleFrames();
+
+  // Swapped inner padding logic for rotated frames - simplified to native paddings since frame rotates
   const getPaddings = () => {
     if (!selectedFrame) return { top: 0, left: 0, bottom: 0, right: 0 };
     const p = selectedFrame;
-    if (orientation === (p.orientation || "portrait")) {
-      return {
-        top: p.paddingTop || 0,
-        left: p.paddingLeft || 0,
-        bottom: p.paddingBottom || 0,
-        right: p.paddingRight || 0
-      };
-    } else {
-      return {
-        top: p.paddingLeft || 0,
-        left: p.paddingTop || 0,
-        bottom: p.paddingRight || 0,
-        right: p.paddingBottom || 0
-      };
-    }
+    return {
+      top: p.paddingTop || 0,
+      left: p.paddingLeft || 0,
+      bottom: p.paddingBottom || 0,
+      right: p.paddingRight || 0
+    };
   };
 
   const paddings = getPaddings();
-  const aspectRatio = orientation === "landscape" ? "3 / 2" : "2 / 3";
+  const aspectRatio = "2 / 3"; // Always keep native portrait aspect ratio to avoid stretching the texture
 
   // Cart Drawer operations
   const updateQuantity = (index, delta) => {
@@ -212,13 +297,23 @@ function ProductDetailContent({ params }) {
     }, 0);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedFrame) return;
     if (!selectedSize) {
       setSizeError(true);
       alert("Please select a size before adding to cart.");
       return;
     }
+
+    let finalImage = currentPhoto;
+    if (userUploadedImage) {
+      try {
+        finalImage = await resizeImage(userUploadedImage, 150, 150);
+      } catch (err) {
+        console.error("Error compressing user image:", err);
+      }
+    }
+
     const item = {
       id: selectedFrame.id,
       frameName: selectedFrame.name,
@@ -227,7 +322,7 @@ function ProductDetailContent({ params }) {
       size: getSizeLabel(selectedSize),
       orientation: orientation,
       rotation: 0,
-      image: currentPhoto
+      image: finalImage
     };
 
     const cart = getCart();
@@ -242,12 +337,6 @@ function ProductDetailContent({ params }) {
     }
     saveCart(cart);
     setCartOpen(true);
-  };
-
-  const navigateToStudio = () => {
-    if (!selectedFrame) return;
-    let url = `/customize?frame=${selectedFrame.id}&orientation=${orientation}`;
-    router.push(url);
   };
 
   if (!selectedFrame) {
@@ -464,10 +553,14 @@ function ProductDetailContent({ params }) {
           position: relative;
           z-index: 10;
           width: 100%;
-          aspect-ratio: ${aspectRatio};
+          aspect-ratio: 2 / 3; /* Always keep portrait to avoid stretching the wood texture */
           box-shadow: 0 25px 50px rgba(0,0,0,0.85);
           overflow: hidden;
           background: #000;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .exquisite-wood-frame.rotated-landscape {
+          transform: rotate(90deg);
         }
 
         .exquisite-wood-frame::after {
@@ -527,7 +620,11 @@ function ProductDetailContent({ params }) {
           height: 100% !important;
           object-fit: cover !important;
           display: block;
-          transition: filter 0.35s ease;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s ease;
+          transform-origin: center center;
+        }
+        .exquisite-inner-photo img.rotated-landscape-img {
+          transform: rotate(-90deg) scale(1.5);
         }
 
         .exquisite-inner-photo img.light-active {
@@ -640,11 +737,10 @@ function ProductDetailContent({ params }) {
         }
 
         .product-desc-text {
-          font-family: 'Shelly', cursive, serif;
-          font-size: 26px;
-          line-height: 1.4;
-          color: #1f1308; /* Pen writing ink */
-          text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6);
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          line-height: 1.6;
+          color: #2c1e11;
         }
 
         .config-section {
@@ -937,6 +1033,337 @@ function ProductDetailContent({ params }) {
           letter-spacing: 0.06em;
           text-transform: uppercase;
         }
+
+        /* Frame Switcher Carousel & Dot Indicators styling */
+        .frame-thumbnails-carousel {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 30px;
+          width: 100%;
+          max-width: 380px;
+          z-index: 10;
+        }
+        .carousel-thumbnails-wrapper {
+          display: flex;
+          gap: 10px;
+          overflow: hidden;
+          justify-content: center;
+          flex: 1;
+        }
+        .carousel-thumb-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          width: 76px;
+          opacity: 0.6;
+        }
+        .carousel-thumb-card:hover {
+          opacity: 0.9;
+          transform: translateY(-2px);
+        }
+        .carousel-thumb-card.active {
+          opacity: 1;
+          transform: scale(1.04);
+        }
+        .thumb-image-wrapper {
+          width: 54px;
+          height: 72px;
+          border-radius: 4px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+          background: #111;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: border-color 0.25s ease;
+        }
+        .carousel-thumb-card.active .thumb-image-wrapper {
+          border: 1.5px solid #dfc38a;
+          box-shadow: 0 0 10px rgba(223, 195, 138, 0.35);
+        }
+        .thumb-image-wrapper img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .thumb-label {
+          font-family: var(--font-typewriter);
+          font-size: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #dfc38a;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+        }
+        .carousel-arrow {
+          background: none;
+          border: none;
+          color: #dfc38a;
+          font-size: 28px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 0 6px;
+          transition: color 0.2s ease, transform 0.2s ease;
+          user-select: none;
+        }
+        .carousel-arrow:hover {
+          color: #fff;
+          transform: scale(1.25);
+        }
+        .carousel-dots {
+          display: flex;
+          justify-content: center;
+          gap: 6px;
+          margin-top: 10px;
+          z-index: 10;
+        }
+        .carousel-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(223, 195, 138, 0.22);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .carousel-dot:hover {
+          background: rgba(223, 195, 138, 0.5);
+        }
+        .carousel-dot.active {
+          background: #dfc38a;
+          transform: scale(1.15);
+          box-shadow: 0 0 5px rgba(223, 195, 138, 0.55);
+        }
+
+        /* CART DRAWER SLIDE-OVER */
+        .cart-drawer-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 2000;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+        .cart-drawer-overlay.open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .cart-drawer {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 400px;
+          max-width: 100vw;
+          background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+          border-left: 3px solid #1C0F07;
+          outline: 1px solid var(--border);
+          outline-offset: -4px;
+          z-index: 2001;
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+        }
+        .cart-drawer.open {
+          transform: translateX(0);
+        }
+        .cart-drawer-header {
+          padding: 24px;
+          border-bottom: 2px solid #1C0F07;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .cart-drawer-header h3 {
+          font-family: var(--font-display);
+          font-size: 20px;
+          color: var(--accent);
+        }
+        .cart-close-btn {
+          background: none;
+          border: none;
+          color: var(--text2);
+          font-size: 28px;
+          cursor: pointer;
+          line-height: 1;
+          transition: color 0.15s ease;
+        }
+        .cart-close-btn:hover {
+          color: var(--accent);
+        }
+        .cart-drawer-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+        }
+        .cart-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          text-align: center;
+          gap: 16px;
+          color: var(--text2);
+        }
+        .cart-empty-icon {
+          font-size: 48px;
+        }
+        
+        .cart-items-list {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .cart-item {
+          display: flex;
+          gap: 16px;
+          background: var(--surface2);
+          border: 3px solid #1C0F07;
+          outline: 1px solid var(--border);
+          outline-offset: -3px;
+          border-radius: var(--radius);
+          padding: 12px;
+          position: relative;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .cart-item-thumb {
+          width: 70px;
+          height: 70px;
+          border-radius: var(--radius);
+          overflow: hidden;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          display: flex;
+          position: relative;
+          padding: 6px;
+        }
+        .cart-item-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: var(--radius);
+        }
+        .cart-item-thumb-placeholder {
+          flex: 1;
+          background: #2D2822;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(201, 168, 76, 0.2);
+          font-size: 24px;
+        }
+        
+        .cart-item-details {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .cart-item-name {
+          font-family: var(--font-display);
+          font-size: 15px;
+          color: var(--text);
+        }
+        .cart-item-meta {
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          color: var(--text2);
+          text-transform: uppercase;
+        }
+        .cart-item-price {
+          font-family: var(--font-typewriter);
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--accent);
+        }
+        .cart-item-qty-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 4px;
+        }
+        .qty-btn {
+          width: 24px;
+          height: 24px;
+          background: var(--surface3);
+          border: 1px solid var(--border2);
+          border-radius: var(--radius);
+          color: var(--text);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          line-height: 1;
+          transition: all 0.15s ease;
+        }
+        .qty-btn:hover {
+          background: var(--accent);
+          color: #1A1100;
+          border-color: var(--accent);
+        }
+        .qty-val {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--text);
+        }
+        
+        .cart-item-remove {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: none;
+          border: none;
+          color: var(--text2);
+          font-size: 18px;
+          cursor: pointer;
+          line-height: 1;
+          transition: color 0.15s ease;
+        }
+        .cart-item-remove:hover {
+          color: #FF5A5A;
+        }
+        
+        .cart-drawer-footer {
+          padding: 24px;
+          border-top: 2px solid #1C0F07;
+          background: var(--surface);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .cart-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 14px;
+          color: var(--text2);
+        }
+        .cart-summary-total {
+          font-family: var(--font-typewriter);
+          font-size: 22px;
+          color: var(--accent);
+        }
+        .btn-checkout-primary {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 14px;
+        }
       ` }} />
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
@@ -961,8 +1388,20 @@ function ProductDetailContent({ params }) {
               <div className={`lamp-light-beam ${lightOn ? "on" : ""}`} />
             </div>
 
+            {/* Toggle switch panel (Placed on top of the frame) */}
+            <div className="light-control-panel" style={{ marginBottom: "20px", alignSelf: "center", width: "fit-content", zIndex: 30 }}>
+              <span className="light-control-label">Studio Light</span>
+              <button 
+                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+                onClick={() => setLightOn(!lightOn)} 
+                aria-label="Toggle Studio Light"
+              >
+                <span className="light-switch-knob" />
+              </button>
+            </div>
+
             {/* Picture Frame */}
-            <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""}`}>
+            <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${orientation === "landscape" ? "rotated-landscape" : ""}`}>
               {selectedFrame.imageUrl && (
                 <img
                   src={selectedFrame.imageUrl}
@@ -976,23 +1415,54 @@ function ProductDetailContent({ params }) {
                 <img
                   src={currentPhoto}
                   alt="Customized preview print"
-                  className={lightOn ? "light-active" : "light-inactive"}
+                  className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
                 />
                 <div className="glass-reflection" />
               </div>
             </div>
 
-            {/* Toggle switch panel */}
-            <div className="light-control-panel" style={{ marginTop: "24px", alignSelf: "center", width: "fit-content" }}>
-              <span className="light-control-label">Studio Light</span>
-              <button 
-                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-                onClick={() => setLightOn(!lightOn)} 
-                aria-label="Toggle Studio Light"
-              >
-                <span className="light-switch-knob" />
-              </button>
-            </div>
+            {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
+            {frames.length > 0 && (
+              <>
+                <div className="frame-thumbnails-carousel">
+                  <button className="carousel-arrow left" onClick={handlePrevFrame} aria-label="Previous frames">
+                    ‹
+                  </button>
+                  <div className="carousel-thumbnails-wrapper">
+                    {visibleFrames.map((f) => (
+                      <div
+                        key={f.id}
+                        className={`carousel-thumb-card ${f.id === selectedFrame.id ? "active" : ""}`}
+                        onClick={() => handleFrameChange(f.id)}
+                      >
+                        <div className="thumb-image-wrapper">
+                          {f.imageUrl ? (
+                            <img src={f.imageUrl} alt={f.name} />
+                          ) : (
+                            <div className="cart-item-thumb-placeholder">Y</div>
+                          )}
+                        </div>
+                        <span className="thumb-label">{f.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="carousel-arrow right" onClick={handleNextFrame} aria-label="Next frames">
+                    ›
+                  </button>
+                </div>
+                {/* Dot Indicators */}
+                <div className="carousel-dots">
+                  {frames.map((f) => (
+                    <span
+                      key={f.id}
+                      className={`carousel-dot ${f.id === selectedFrame.id ? "active" : ""}`}
+                      onClick={() => handleFrameChange(f.id)}
+                      title={f.name}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

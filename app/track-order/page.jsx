@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { db } from "../../lib/firebase";
+import { ref, onValue } from "firebase/database";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -20,10 +22,37 @@ const saveCart = (cart) => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
-export default function ServicesPage() {
+export default function TrackOrderPage() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [lightOn, setLightOn] = useState(true);
+
+  // Search state
+  const [searchId, setSearchId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [searched, setSearched] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [recentOrders, setRecentOrders] = useState([]);
+
+  // Auto-fill order ID from URL query param if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const recent = JSON.parse(localStorage.getItem("recent_orders") || "[]");
+        setRecentOrders(recent);
+      } catch (e) {
+        console.error(e);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const qId = params.get("id");
+      if (qId) {
+        setSearchId(qId);
+        handleTrackOrder(null, qId);
+      }
+    }
+  }, []);
 
   // Cart synchronization
   const loadCart = useCallback(() => {
@@ -63,8 +92,69 @@ export default function ServicesPage() {
     }, 0);
   };
 
+  const handleTrackOrder = (e, overrideId = null) => {
+    if (e) e.preventDefault();
+    const targetId = (overrideId || searchId).trim();
+    if (!targetId) {
+      setErrorMsg("Please enter a valid Order Reference ID.");
+      return;
+    }
+    setErrorMsg("");
+    setLoading(true);
+    setSearched(false);
+    setOrder(null);
+
+    const ordersRef = ref(db, "orders");
+    onValue(ordersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const match = Object.entries(data).find(([key, val]) => {
+          return val.orderId && val.orderId.trim().toUpperCase() === targetId.toUpperCase();
+        });
+        if (match) {
+          const matchedOrder = { docId: match[0], ...match[1] };
+          setOrder(matchedOrder);
+
+          // Save to local recent orders array
+          if (typeof window !== "undefined") {
+            try {
+              const recent = JSON.parse(localStorage.getItem("recent_orders") || "[]");
+              if (!recent.includes(matchedOrder.orderId)) {
+                const updated = [matchedOrder.orderId, ...recent].slice(0, 5);
+                localStorage.setItem("recent_orders", JSON.stringify(updated));
+                setRecentOrders(updated);
+              }
+            } catch (err) {
+              console.error("Local storage error:", err);
+            }
+          }
+        } else {
+          setOrder(null);
+        }
+      } else {
+        setOrder(null);
+      }
+      setSearched(true);
+      setLoading(false);
+    }, { onlyOnce: true });
+  };
+
+  // Helper to determine status step indexes
+  const getStatusStep = (status) => {
+    switch (status) {
+      case "Pending": return 0;
+      case "Processing": return 1;
+      case "Shipped": return 2;
+      case "Delivered": return 3;
+      case "Cancelled": return -1;
+      default: return 0;
+    }
+  };
+
+  const currentStep = order ? getStatusStep(order.status) : 0;
+
   return (
-    <div className="services-root">
+    <div className="track-root">
       <style dangerouslySetInnerHTML={{ __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
@@ -77,7 +167,7 @@ export default function ServicesPage() {
           z-index: 20;
         }
 
-        .services-lamp {
+        .track-lamp {
           margin-top: -30px;
         }
 
@@ -142,7 +232,7 @@ export default function ServicesPage() {
           position: relative;
         }
 
-        .services-lamp .lamp-head {
+        .track-lamp .lamp-head {
           width: 440px; /* Cover the title */
         }
 
@@ -194,7 +284,7 @@ export default function ServicesPage() {
           opacity: 1;
         }
 
-        .services-lamp .lamp-light-beam {
+        .track-lamp .lamp-light-beam {
           width: 650px;
           height: 500px;
           background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
@@ -251,31 +341,15 @@ export default function ServicesPage() {
           animation: rotate 20s linear 0s infinite alternate;
         }
 
-        .angle {
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-
-        .size {
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-
-        .position {
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-
+        .angle { position: absolute; top: 0; left: 0; }
+        .size { position: absolute; top: 0; left: 0; }
+        .position { position: absolute; top: 0; left: 0; }
         .pulse {
           position: absolute;
           top: 0;
           left: 0;
           animation: pulse 1.5s linear 0s infinite alternate;
         }
-
         .particle {
           position: absolute;
           top: calc(50% - 5px);
@@ -296,115 +370,41 @@ export default function ServicesPage() {
           }
         }
 
-        @keyframes rotate {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        @keyframes angle {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        @keyframes size {
-          0% { transform: scale(.2); }
-          100% { transform: scale(.6); }
-        }
-
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes angle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes size { 0% { transform: scale(.2); } 100% { transform: scale(.6); } }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(.5); } }
         @keyframes position {
-          0% {
-            transform: translate3d(0,0,0);
-            opacity: 1;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate3d(100px,100px,0);
-            opacity: 0;
-          }
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          100% { transform: scale(.5); }
+          0% { transform: translate3d(0,0,0); opacity: 1; }
+          50% { opacity: 1; }
+          100% { transform: translate3d(100px,100px,0); opacity: 0; }
         }
 
         @keyframes particle-warm {
-          0% {
-            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
-          }
-          33.33% {
-            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
-          }
-          33.34% {
-            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
-          }
-          66.66% {
-            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
-          }
-          66.67% {
-            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
-          }
-          100% {
-            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
-          }
+          0% { box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D; }
+          33.33% { box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D; }
+          33.34% { box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF; }
+          66.66% { box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF; }
+          66.67% { box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00; }
+          100% { box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00; }
         }
 
-        .rotate .angle:nth-child(1) {
-          animation: angle 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .size {
-          animation: size 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .particle {
-          animation: particle-warm 6s linear infinite alternate;
-        }
-        .rotate .angle:nth-child(1) .position {
-          animation: position 2s linear 0s infinite;
-        }
+        .rotate .angle:nth-child(1) { animation: angle 10s steps(5) 0s infinite; }
+        .rotate .angle:nth-child(1) .size { animation: size 10s steps(5) 0s infinite; }
+        .rotate .angle:nth-child(1) .particle { animation: particle-warm 6s linear infinite alternate; }
+        .rotate .angle:nth-child(1) .position { animation: position 2s linear 0s infinite; }
 
-        .rotate .angle:nth-child(2) {
-          animation: angle 4.95s steps(3) -1.65s infinite;
-        }
-        .rotate .angle:nth-child(2) .size {
-          animation: size 4.95s steps(3) -1.65s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .particle {
-          animation: particle-warm 4.95s linear -3.3s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .position {
-          animation: position 1.65s linear 0s infinite;
-        }
+        .rotate .angle:nth-child(2) { animation: angle 4.95s steps(3) -1.65s infinite; }
+        .rotate .angle:nth-child(2) .size { animation: size 4.95s steps(3) -1.65s infinite alternate; }
+        .rotate .angle:nth-child(2) .particle { animation: particle-warm 4.95s linear -3.3s infinite alternate; }
+        .rotate .angle:nth-child(2) .position { animation: position 1.65s linear 0s infinite; }
 
-        .rotate .angle:nth-child(3) {
-          animation: angle 13.76s steps(8) -6.88s infinite;
-        }
-        .rotate .angle:nth-child(3) .size {
-          animation: size 6.88s steps(4) -5.16s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .particle {
-          animation: particle-warm 5.16s linear -1.72s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .position {
-          animation: position 1.72s linear 0s infinite;
-        }
+        .rotate .angle:nth-child(3) { animation: angle 13.76s steps(8) -6.88s infinite; }
+        .rotate .angle:nth-child(3) .size { animation: size 6.88s steps(4) -5.16s infinite alternate; }
+        .rotate .angle:nth-child(3) .particle { animation: particle-warm 5.16s linear -1.72s infinite alternate; }
+        .rotate .angle:nth-child(3) .position { animation: position 1.72s linear 0s infinite; }
 
-        /* Pull chain switch removed */
-        
-        .chain-handle::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 1px;
-          width: 4px;
-          height: 4px;
-          background: #8f723b;
-          border-radius: 50%;
-        }
-
-        /* SERVICES GENERAL STYLING */
-        .services-root {
+        .track-root {
           font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
@@ -442,119 +442,26 @@ export default function ServicesPage() {
           max-width: 650px;
           line-height: 1.7;
         }
-        
-        .services-section {
+
+        .track-section {
           padding: 80px 40px;
           position: relative;
           overflow: hidden;
           background: #080605;
-          max-width: 100%;
-          width: 100%;
+          min-height: 500px;
+          display: flex;
+          justify-content: center;
         }
 
-        .services-container {
-          max-width: 1100px;
+        .track-container {
+          max-width: 800px;
+          width: 100%;
           margin: 0 auto;
           position: relative;
           z-index: 3;
-          display: flex;
-          flex-direction: column;
-          gap: 50px;
-        }
-        
-        .service-card {
-          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
-          border: 6px solid #1C0F07;
-          outline: 1.5px solid var(--accent);
-          outline-offset: -5px;
-          padding: 40px;
-          display: grid;
-          grid-template-columns: 1fr 1.2fr;
-          gap: 40px;
-          align-items: center;
-          box-shadow: 0 12px 30px rgba(0,0,0,0.6);
-          transition: all 0.3s ease;
-        }
-        .service-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 15px rgba(212,175,55,0.15);
-        }
-        
-        .service-card:nth-child(even) {
-          grid-template-columns: 1.2fr 1fr;
-        }
-        
-        .service-card:nth-child(even) .service-visual {
-          order: 2;
-        }
-        
-        .service-visual {
-          background: #080605;
-          border: 3px solid #1C0F07;
-          outline: 1px solid var(--border);
-          outline-offset: -3px;
-          aspect-ratio: 4/3;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 52px;
-          color: var(--accent);
-          box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
-        }
-        
-        .service-info {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        
-        .service-name {
-          font-family: var(--font-display);
-          font-size: 28px;
-          color: var(--accent);
-          letter-spacing: 0.02em;
-        }
-        
-        .service-desc {
-          font-family: var(--font-serif);
-          font-size: 15px;
-          line-height: 1.7;
-          color: var(--text2);
-        }
-        
-        .service-features {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        
-        .service-features li {
-          font-family: var(--font-typewriter);
-          font-size: 12px;
-          color: var(--text);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .service-features li::before {
-          content: "•";
-          color: var(--accent);
-          font-size: 14px;
-        }
-        
-
-
-        /* BACKDROP LIQUID ANIMATIONS */
-        .catalog-glass-bg {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
         }
 
+        /* Frosted Glass overlay sheet */
         .catalog-glass-pane {
           position: absolute;
           inset: 0;
@@ -568,45 +475,32 @@ export default function ServicesPage() {
           pointer-events: none;
         }
 
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
         .catalog-glow {
           position: absolute;
           top: 0;
           left: 0;
           width: 1000px;
           height: 1000px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.25) 0%, rgba(139, 94, 60, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
           pointer-events: none;
           z-index: 1;
           opacity: 1;
-          animation: catalog-glow-auto 10s infinite ease-in-out;
         }
 
-        @keyframes catalog-glow-auto {
-          0% {
-            transform: translate(-20%, -20%) scale(1);
-          }
-          25% {
-            transform: translate(100%, 10%) scale(1.2);
-          }
-          50% {
-            transform: translate(40%, 40%) scale(0.9);
-          }
-          75% {
-            transform: translate(-10%, 30%) scale(1.1);
-          }
-          100% {
-            transform: translate(-20%, -20%) scale(1);
-          }
-        }
-
-        /* LIQUID BLOBS */
         .liquid-blob-1 {
           position: absolute;
           top: -10%;
           left: 10%;
           width: 500px;
           height: 500px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.2) 0%, rgba(139, 94, 60, 0) 70%);
           border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
           animation: liquid-move-1 25s infinite alternate ease-in-out;
           pointer-events: none;
@@ -619,45 +513,254 @@ export default function ServicesPage() {
           right: 5%;
           width: 550px;
           height: 550px;
-          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.18) 0%, rgba(201, 168, 76, 0) 70%);
           border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
           animation: liquid-move-2 30s infinite alternate ease-in-out;
           pointer-events: none;
           z-index: 1;
         }
 
-        @keyframes liquid-move-1 {
-          0% {
-            transform: translate(0, 0) scale(1) rotate(0deg);
-            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-          }
-          33% {
-            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
-            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
-          }
-          66% {
-            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
-            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
-          }
-          100% {
-            transform: translate(0, 0) scale(1) rotate(180deg);
-            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-          }
+        /* SEARCH CARD */
+        .track-card {
+          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
+          border: 6px solid #1C0F07;
+          border-radius: var(--radius);
+          box-shadow: inset 0 0 0 1.5px var(--accent), 0 12px 30px rgba(0,0,0,0.6);
+          padding: 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 30px;
+          position: relative;
         }
 
-        @keyframes liquid-move-2 {
-          0% {
-            transform: translate(0, 0) scale(1) rotate(0deg);
-            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-          }
-          50% {
-            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
-            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
-          }
-          100% {
-            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
-            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-          }
+        .track-card-title {
+          font-family: var(--font-display);
+          font-size: 24px;
+          color: var(--accent);
+          border-bottom: 2px solid #1C0F07;
+          padding-bottom: 12px;
+          letter-spacing: 0.05em;
+        }
+
+        .search-form-group {
+          display: flex;
+          gap: 12px;
+        }
+
+        .order-search-input {
+          flex: 1;
+          background: var(--surface2);
+          border: 1px solid var(--border2);
+          border-radius: var(--radius);
+          color: var(--text);
+          padding: 14px 18px;
+          font-family: var(--font-typewriter);
+          font-size: 15px;
+          outline: none;
+          transition: border-color 0.2s ease;
+        }
+
+        .order-search-input:focus {
+          border-color: var(--accent);
+        }
+
+        .btn-track {
+          min-width: 140px;
+        }
+
+        /* TIMELINE TRACKER styling */
+        .track-timeline {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: relative;
+          padding: 30px 0;
+          margin: 10px 0 20px;
+        }
+
+        .track-timeline-line {
+          position: absolute;
+          top: 50%;
+          left: 40px;
+          right: 40px;
+          height: 4px;
+          background: #2D1A0F;
+          z-index: 1;
+          transform: translateY(-50%);
+        }
+
+        .track-timeline-progress {
+          position: absolute;
+          top: 50%;
+          left: 40px;
+          height: 4px;
+          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
+          box-shadow: 0 0 10px var(--accent);
+          z-index: 2;
+          transform: translateY(-50%);
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .timeline-node {
+          position: relative;
+          z-index: 3;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          width: 80px;
+        }
+
+        .node-dot {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #100d0b;
+          border: 2px solid #2D1A0F;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+          color: transparent;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .timeline-node.active .node-dot {
+          background: var(--accent);
+          border-color: #7E631F;
+          box-shadow: 0 0 12px var(--accent);
+          color: #1A1100;
+        }
+
+        .timeline-node.completed .node-dot {
+          background: #dfc38a;
+          border-color: #7E631F;
+          color: #1A1100;
+        }
+
+        .node-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text2);
+          transition: color 0.3s ease;
+          white-space: nowrap;
+        }
+
+        .timeline-node.active .node-label {
+          color: var(--accent);
+          font-weight: 700;
+        }
+
+        .timeline-node.completed .node-label {
+          color: var(--text);
+        }
+
+        /* Order Details info sheet */
+        .order-info-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 30px;
+          border-top: 1px dashed rgba(181, 139, 92, 0.2);
+          padding-top: 24px;
+        }
+
+        .info-col-title {
+          font-family: var(--font-display);
+          font-size: 14px;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 12px;
+        }
+
+        .tracking-items-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .tracking-item {
+          display: flex;
+          gap: 12px;
+          background: var(--surface2);
+          border: 3px solid #1C0F07;
+          border-radius: var(--radius);
+          padding: 8px;
+          align-items: center;
+        }
+
+        .tracking-item-thumb {
+          width: 50px;
+          height: 50px;
+          border-radius: var(--radius);
+          overflow: hidden;
+          background: #1c1815;
+          display: flex;
+          position: relative;
+          padding: 4px;
+        }
+
+        .tracking-item-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: var(--radius);
+        }
+
+        .tracking-item-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .tracking-item-name {
+          font-family: var(--font-display);
+          font-size: 13px;
+          color: var(--text);
+        }
+
+        .tracking-item-meta {
+          font-family: var(--font-typewriter);
+          font-size: 9px;
+          color: var(--text2);
+        }
+
+        .tracking-item-price {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: var(--accent);
+          font-weight: 700;
+        }
+
+        .customer-summary {
+          font-family: var(--font-serif);
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--text2);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .customer-summary strong {
+          color: var(--text);
+        }
+
+        .cancelled-banner {
+          background: rgba(255, 90, 90, 0.08);
+          border: 1.5px dashed #FF5A5A;
+          color: #FF7777;
+          padding: 18px;
+          border-radius: var(--radius);
+          text-align: center;
+          font-family: var(--font-typewriter);
+          font-size: 14px;
+          margin-bottom: 10px;
         }
 
         /* LIGHT SWITCH TOGGLE STYLING */
@@ -937,39 +1040,23 @@ export default function ServicesPage() {
           display: block;
           width: 100%;
           text-align: center;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 13px;
-          font-weight: 700;
           padding: 14px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        }
-        .btn-checkout-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 768px) {
           .hero-title { font-size: 38px; }
-          .services-section { padding: 40px 20px; gap: 30px; }
-          .service-card { grid-template-columns: 1fr !important; padding: 24px; gap: 20px; }
-          .service-visual { order: -1 !important; aspect-ratio: 16/9; }
+          .track-section { padding: 40px 20px; }
+          .order-info-grid { grid-template-columns: 1fr; gap: 30px; }
+          .search-form-group { flex-direction: column; }
+          .btn-track { width: 100%; }
         }
       ` }} />
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
       <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of Our Services heading */}
-        <div className={`exquisite-lamp services-lamp ${lightOn ? 'on' : ''}`}>
+        {/* Suspended Brass Lamp on top of Track Order heading */}
+        <div className={`exquisite-lamp track-lamp ${lightOn ? 'on' : ''}`}>
           <div className="lamp-rod" />
           <div className="lamp-mount" />
           <div className="lamp-arm" />
@@ -1017,11 +1104,11 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        <h1 className="hero-title">Our <span>Services</span></h1>
+        <h1 className="hero-title">Track <span>Order</span></h1>
         <p className="hero-desc">
-          We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence.
+          Review the status of your handcrafted orders. Enter your Order Reference ID code below to trace your design through production and delivery.
         </p>
-
+        
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
@@ -1035,7 +1122,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <section className="services-section">
+      <section className="track-section">
         {/* Dynamic liquid backdrop elements */}
         <div className="catalog-glass-bg">
           <div className="liquid-blob-1" />
@@ -1046,73 +1133,141 @@ export default function ServicesPage() {
         {/* Frosted Glass overlay sheet */}
         <div className="catalog-glass-pane" />
 
-        <div className="services-container">
-          {/* Service 1 */}
-          <div className="service-card">
-            <div className="service-visual">🖼</div>
-            <div className="service-info">
-              <h2 className="service-name">Bespoke Picture Framing</h2>
-              <p className="service-desc">
-                Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
-              </p>
-              <ul className="service-features">
-                <li>Solid cured local pine, walnut, and oak mouldings</li>
-                <li>Acid-free double mounting mats (matboards)</li>
-                <li>Premium scratch-resistant acrylic and conservation glass</li>
-              </ul>
-              <a href="/catalog" className="btn-premium">Browse Catalog</a>
-            </div>
-          </div>
+        <div className="track-container">
+          <div className="track-card">
+            <h2 className="track-card-title">Order Tracking Search</h2>
 
-          {/* Service 2 */}
-          <div className="service-card">
-            <div className="service-visual">🖨</div>
-            <div className="service-info">
-              <h2 className="service-name">Giclée Fine Art Printing</h2>
-              <p className="service-desc">
-                Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
-              </p>
-              <ul className="service-features">
-                <li>Archival 380gsm matte cotton canvas</li>
-                <li>12-color Lucia PRO pigment inks (fade-proof for 100+ years)</li>
-                <li>Digital color grading & image resolution upscaling</li>
-              </ul>
-              <a href="/catalog" className="btn-premium">Browse Catalog</a>
-            </div>
-          </div>
+            <form onSubmit={handleTrackOrder} className="search-form-group">
+              <input
+                type="text"
+                placeholder="Enter Reference ID (e.g. YAADEIN-XXXXXX)"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                className="order-search-input"
+              />
+              <button type="submit" className="btn-premium btn-track" disabled={loading}>
+                {loading ? "Searching..." : "Track Status"}
+              </button>
+            </form>
 
-          {/* Service 3 */}
-          <div className="service-card">
-            <div className="service-visual">📐</div>
-            <div className="service-info">
-              <h2 className="service-name">Gallery Wall Layouts</h2>
-              <p className="service-desc">
-                Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.
-              </p>
-              <ul className="service-features">
-                <li>Custom multi-frame spacing blueprints</li>
-                <li>Virtual render pre-views for your specific walls</li>
-                <li>Includes absolute wall-hanging templates</li>
-              </ul>
-              <a href="/contact" className="btn-premium">Consult Designer</a>
-            </div>
-          </div>
+            {errorMsg && <div style={{ color: "#FF7777", fontFamily: "var(--font-typewriter)", fontSize: "13px" }}>{errorMsg}</div>}
 
-          {/* Service 4 */}
-          <div className="service-card">
-            <div className="service-visual">📜</div>
-            <div className="service-info">
-              <h2 className="service-name">Heritage Conservation</h2>
-              <p className="service-desc">
-                Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.
-              </p>
-              <ul className="service-features">
-                <li>Reversible mounting techniques (no adhesive damage)</li>
-                <li>99% UV-blocking conservation museum acrylic</li>
-                <li>Dust and humidity-controlled rear framing seal</li>
-              </ul>
-              <a href="/contact" className="btn-premium">Inquire About Conservation</a>
-            </div>
+            {recentOrders.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", fontSize: "12px", fontFamily: "var(--font-typewriter)", color: "var(--text2)" }}>
+                <span>Recent Orders:</span>
+                {recentOrders.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setSearchId(id);
+                      handleTrackOrder(null, id);
+                    }}
+                    style={{
+                      background: "rgba(212, 175, 55, 0.08)",
+                      border: "1px solid rgba(212, 175, 55, 0.2)",
+                      borderRadius: "4px",
+                      color: "var(--accent)",
+                      padding: "4px 8px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-typewriter)",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {id}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {searched && !order && (
+              <div style={{ textAlign: "center", color: "var(--text2)", padding: "20px 0", fontFamily: "var(--font-typewriter)", borderTop: "1.5px dashed rgba(181, 139, 92, 0.15)", paddingTop: "30px" }}>
+                ❌ Order ID "{searchId}" not found. Please double-check your receipt code.
+              </div>
+            )}
+
+            {order && (
+              <div style={{ borderTop: "1.5px dashed rgba(181, 139, 92, 0.2)", paddingTop: "30px" }}>
+                
+                {/* Cancelled Banner */}
+                {order.status === "Cancelled" && (
+                  <div className="cancelled-banner">
+                    ⚠️ THIS ORDER HAS BEEN CANCELLED
+                  </div>
+                )}
+
+                {/* Timeline progress tracker */}
+                {order.status !== "Cancelled" && (
+                  <div className="track-timeline">
+                    <div className="track-timeline-line" />
+                    <div 
+                      className="track-timeline-progress" 
+                      style={{ width: `${(currentStep / 3) * 100}%` }}
+                    />
+
+                    <div className={`timeline-node ${currentStep >= 0 ? "active" : ""} ${currentStep > 0 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Placed</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 1 ? "active" : ""} ${currentStep > 1 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Processing</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 2 ? "active" : ""} ${currentStep > 2 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Shipped</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 3 ? "active" : ""} ${currentStep > 3 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Delivered</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Details Row */}
+                <div className="order-info-grid">
+                  <div>
+                    <h3 className="info-col-title">Order Summary</h3>
+                    <div className="tracking-items-list">
+                      {(order.items || []).map((item, idx) => (
+                        <div key={idx} className="tracking-item">
+                          <div className="tracking-item-thumb" style={{ background: item.frameColor }}>
+                            {item.image ? (
+                              <img src={item.image} alt={item.frameName} />
+                            ) : (
+                              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(201, 168, 76, 0.15)", fontSize: "16px", fontFamily: "var(--font-display)" }}>Y</div>
+                            )}
+                          </div>
+                          <div className="tracking-item-info">
+                            <span className="tracking-item-name">{item.frameName}</span>
+                            <span className="tracking-item-meta">{item.size || "Standard"} • {item.orientation || "Portrait"} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
+                          </div>
+                          <span className="tracking-item-price">{item.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="info-col-title">Recipient Details</h3>
+                    <div className="customer-summary">
+                      <div><strong>Full Name:</strong> {order.customer?.fullName}</div>
+                      <div><strong>Phone Number:</strong> {order.customer?.phone}</div>
+                      <div><strong>Shipping Address:</strong> {order.customer?.address}</div>
+                      <div><strong>City / Region:</strong> {order.customer?.city}</div>
+                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(181, 139, 92, 0.15)", color: "var(--accent)", fontFamily: "var(--font-typewriter)", fontSize: "15px" }}>
+                        <strong>Grand Total:</strong> Rs. {order.total?.toLocaleString()} (COD)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1149,7 +1304,7 @@ export default function ServicesPage() {
                   <div className="cart-item-details">
                     <div className="cart-item-name">{item.frameName}</div>
                     <div className="cart-item-meta">
-                      {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+                      {item.size} / {item.orientation}
                     </div>
                     <div className="cart-item-price">{item.price}</div>
                     <div className="cart-item-qty-row">

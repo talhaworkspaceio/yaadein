@@ -182,11 +182,10 @@ export default function HomePage() {
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const displayedProducts = products.filter(p =>
-    p.orientation === filter &&
-    (searchQuery.trim() === "" ||
+    searchQuery.trim() === "" ||
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase())))
+      (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -1506,6 +1505,36 @@ export default function HomePage() {
         }
 
         /* LIGHT SWITCH TOGGLE STYLING */
+        .product-card {
+          display: flex;
+          flex-direction: column;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.2);
+          border-radius: var(--radius);
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          min-height: 520px;
+          justify-content: space-between;
+          position: relative;
+        }
+
+        .ribbon {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
+          border: 1px solid #7E631F;
+          color: #1A1100;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          padding: 4px 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+          z-index: 10;
+        }
+
         .light-control-panel {
           display: flex;
           align-items: center;
@@ -1688,15 +1717,10 @@ export default function HomePage() {
         <div className="catalog-container">
           <div className="section-header">
 
-            <h2 className="section-title">The Product Catalog</h2>
+            <h2 className="section-title">Featured Products</h2>
             <p className="section-desc">
               Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
             </p>
-          </div>
-
-          <div className="catalog-filters">
-            <button className={`filter-btn ${filter === 'portrait' ? 'active' : ''}`} onClick={() => setFilter('portrait')}>Portrait Frames</button>
-            <button className={`filter-btn ${filter === 'landscape' ? 'active' : ''}`} onClick={() => setFilter('landscape')}>Landscape Frames</button>
           </div>
 
           {products.length === 0 ? (
@@ -1707,6 +1731,7 @@ export default function HomePage() {
             <div className="catalog-grid">
               {displayedProducts.map((p) => (
                 <div key={p.id} className="product-card">
+                  <div className="ribbon">Featured</div>
                   <div className="card-thumb-wrap">
                     <div
                       className="card-frame"
@@ -1794,8 +1819,8 @@ export default function HomePage() {
             <p className="exquisite-desc">
               Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments.
             </p>
-            <a href="/customize" className="btn-premium exquisite-btn">
-              Create Your Frame
+            <a href="/catalog" className="btn-premium exquisite-btn">
+              Browse Catalog
             </a>
 
             {/* Toggle switch panel */}

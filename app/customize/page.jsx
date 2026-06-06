@@ -22,6 +22,41 @@ const saveCart = (cart) => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
+const resizeImage = (base64Str, maxW = 200, maxH = 200) => {
+  return new Promise((resolve) => {
+    if (!base64Str || !base64Str.startsWith("data:image")) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width;
+      let h = img.height;
+      if (w > h) {
+        if (w > maxW) {
+          h = Math.round((h * maxW) / w);
+          w = maxW;
+        }
+      } else {
+        if (h > maxH) {
+          w = Math.round((w * maxH) / h);
+          h = maxH;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+    img.src = base64Str;
+  });
+};
+
 function FrameCustomizer() {
   const [frames, setFrames] = useState([]);
   const [selectedFrame, setSelectedFrame] = useState(null);
@@ -245,8 +280,18 @@ function FrameCustomizer() {
     setRotation((r) => (r + deg + 360) % 360);
   }, []);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedFrame) return;
+
+    let finalImage = uploadedImage;
+    if (uploadedImage) {
+      try {
+        finalImage = await resizeImage(uploadedImage, 150, 150);
+      } catch (err) {
+        console.error("Error compressing design image:", err);
+      }
+    }
+
     const item = {
       id: selectedFrame.id,
       frameName: selectedFrame.name,
@@ -254,7 +299,7 @@ function FrameCustomizer() {
       price: selectedFrame.price || "Rs. 4,900",
       rotation: rotation,
       orientation: orientation,
-      image: uploadedImage,
+      image: finalImage,
     };
 
     const cart = getCart();

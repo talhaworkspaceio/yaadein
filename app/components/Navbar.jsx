@@ -326,8 +326,8 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
 
       <div className="nav-links-center">
         <a href="/" onClick={(e) => handleNavClick(e, "/")} className={`nav-link-item ${pathname === "/" && !searchVal ? "active" : ""}`}>Home</a>
+        <a href="/catalog" className={`nav-link-item ${pathname === "/catalog" ? "active" : ""}`}>Catalog</a>
         <a href="/new-arrivals" className={`nav-link-item ${pathname === "/new-arrivals" ? "active" : ""}`}>New Arrivals</a>
-        <a href="/#catalog" onClick={(e) => handleNavClick(e, "/#catalog")} className="nav-link-item">Catalog</a>
 
         <a href="/services" className={`nav-link-item ${pathname === "/services" ? "active" : ""}`}>Services</a>
         <a href="/contact" className={`nav-link-item ${pathname === "/contact" ? "active" : ""}`}>Contact</a>
@@ -351,6 +351,12 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           </button>
         </form>
 
+        <a href="/track-order" className="btn-nav-cart" title="Track Order">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-icon-svg" style={{ width: "22px", height: "22px" }}>
+            <path d="M12.378 1.602a.75.75 0 0 0-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03ZM21.75 7.93l-9 5.25v9l9-5.25v-9ZM2.25 7.93v9l9 5.25v-9l-9-5.25Z" />
+          </svg>
+        </a>
+
         <button className="btn-nav-cart" onClick={onCartOpen} title="View Cart">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-icon-svg">
             <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
@@ -365,11 +371,11 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
 
       <div className={`mobile-menu-drawer ${mobileMenuOpen ? "open" : ""}`}>
         <a href="/" onClick={(e) => handleNavClick(e, "/")} className="mobile-nav-link">Home</a>
-        <a href="/#catalog" onClick={(e) => handleNavClick(e, "/#catalog")} className="mobile-nav-link">Catalog</a>
+        <a href="/catalog" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Catalog</a>
         <a href="/new-arrivals" className="mobile-nav-link">New Arrivals</a>
         <a href="/services" className="mobile-nav-link">Services</a>
         <a href="/contact" className="mobile-nav-link">Contact</a>
-        <a href="/customize" className="mobile-nav-link">Customize Studio</a>
+        <a href="/track-order" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Track Order</a>
       </div>
     </nav>
   );

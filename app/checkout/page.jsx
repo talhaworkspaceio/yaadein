@@ -72,7 +72,7 @@ export default function CheckoutPage() {
     setErrorMsg("");
 
     if (cartItems.length === 0) {
-      setErrorMsg("Your cart is empty. Please add a frame to customize first!");
+      setErrorMsg("Your cart is empty. Please add a frame first!");
       return;
     }
 
@@ -136,6 +136,20 @@ export default function CheckoutPage() {
 
       setOrderId(randomId);
       setOrderSuccess(true);
+
+      // Save to recent orders list
+      if (typeof window !== "undefined") {
+        try {
+          const recent = JSON.parse(localStorage.getItem("recent_orders") || "[]");
+          if (!recent.includes(randomId)) {
+            recent.unshift(randomId);
+            localStorage.setItem("recent_orders", JSON.stringify(recent.slice(0, 5)));
+          }
+        } catch (e) {
+          console.error("Error storing order ID locally:", e);
+        }
+      }
+
       clearCart();
     } catch (err) {
       console.error("Firebase Order Error:", err);
@@ -534,7 +548,7 @@ export default function CheckoutPage() {
         <a href="/" className="nav-brand">
           <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
         </a>
-        <a href="/customize" className="btn-back">← Return to Customizer</a>
+        <a href="/catalog" className="btn-back">← Return to Catalog</a>
       </nav>
 
       {/* BODY */}
@@ -568,7 +582,21 @@ export default function CheckoutPage() {
                 <strong style={{ color: "var(--accent)", fontSize: "16px" }}>Rs. {total.toLocaleString()}</strong>
               </div>
             </div>
-            <a href="/" className="btn-success">Back to Gallery</a>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginTop: "16px" }}>
+              <a href={`/track-order?id=${orderId}`} className="btn-success" style={{ textAlign: "center", width: "100%" }}>
+                Track Order Status
+              </a>
+              <a href="/" className="btn-success" style={{ 
+                textAlign: "center", 
+                width: "100%", 
+                background: "rgba(20, 17, 14, 0.6) !important", 
+                border: "1.5px solid var(--accent) !important", 
+                color: "var(--accent) !important",
+                boxShadow: "none"
+              }}>
+                Back to Gallery
+              </a>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="checkout-main-form">

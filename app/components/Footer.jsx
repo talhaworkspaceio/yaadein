@@ -104,11 +104,10 @@ export default function Footer() {
           <h4 className="footer-title">Explore</h4>
           <div className="footer-links">
             <a href="/" className="footer-link">Home</a>
-            <a href="/#catalog" className="footer-link">Catalog</a>
+            <a href="/catalog" className="footer-link">Catalog</a>
             <a href="/new-arrivals" className="footer-link">New Arrivals</a>
             <a href="/services" className="footer-link">Services</a>
             <a href="/contact" className="footer-link">Contact</a>
-            <a href="/customize" className="footer-link">Customize Studio</a>
           </div>
         </div>
 

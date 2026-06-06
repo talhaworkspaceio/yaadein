@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { db } from "../../lib/firebase";
+import { ref, onValue } from "firebase/database";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -20,10 +22,29 @@ const saveCart = (cart) => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
-export default function ServicesPage() {
+export default function CatalogPage() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [products, setProducts] = useState([]);
   const [lightOn, setLightOn] = useState(true);
+
+  // Fetch products from Firebase
+  useEffect(() => {
+    const framesRef = ref(db, "frames");
+    const unsub = onValue(framesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const framesList = Object.entries(data).map(([key, val]) => ({
+          id: key,
+          ...val
+        }));
+        setProducts(framesList);
+      } else {
+        setProducts([]);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Cart synchronization
   const loadCart = useCallback(() => {
@@ -63,8 +84,16 @@ export default function ServicesPage() {
     }, 0);
   };
 
+  const isNewArrival = (id) => {
+    return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
+  };
+
+  const isFeatured = (id) => {
+    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
+  };
+
   return (
-    <div className="services-root">
+    <div className="catalog-root">
       <style dangerouslySetInnerHTML={{ __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
@@ -77,8 +106,8 @@ export default function ServicesPage() {
           z-index: 20;
         }
 
-        .services-lamp {
-          margin-top: -30px;
+        .catalog-lamp {
+          margin-top: -30px; /* Pull it slightly higher in the padding */
         }
 
         .lamp-rod {
@@ -142,7 +171,7 @@ export default function ServicesPage() {
           position: relative;
         }
 
-        .services-lamp .lamp-head {
+        .catalog-lamp .lamp-head {
           width: 440px; /* Cover the title */
         }
 
@@ -194,7 +223,7 @@ export default function ServicesPage() {
           opacity: 1;
         }
 
-        .services-lamp .lamp-light-beam {
+        .catalog-lamp .lamp-light-beam {
           width: 650px;
           height: 500px;
           background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
@@ -390,21 +419,7 @@ export default function ServicesPage() {
           animation: position 1.72s linear 0s infinite;
         }
 
-        /* Pull chain switch removed */
-        
-        .chain-handle::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 1px;
-          width: 4px;
-          height: 4px;
-          background: #8f723b;
-          border-radius: 50%;
-        }
-
-        /* SERVICES GENERAL STYLING */
-        .services-root {
+        .catalog-root {
           font-family: var(--font-serif);
           background: var(--bg);
           color: var(--text);
@@ -443,7 +458,7 @@ export default function ServicesPage() {
           line-height: 1.7;
         }
         
-        .services-section {
+        .exhibition-section {
           padding: 80px 40px;
           position: relative;
           overflow: hidden;
@@ -451,101 +466,134 @@ export default function ServicesPage() {
           max-width: 100%;
           width: 100%;
         }
-
-        .services-container {
-          max-width: 1100px;
+        
+        .exhibition-container {
+          max-width: 1300px;
           margin: 0 auto;
           position: relative;
           z-index: 3;
+        }
+        
+        .gallery-grid {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 40px;
+        }
+        
+        .arrival-card {
+          width: 340px;
+          background: linear-gradient(135deg, var(--surface2) 0%, #15110D 100%);
+          border: 6px solid #1C0F07;
+          outline: 1px solid var(--accent);
+          outline-offset: -5px;
+          padding: 24px;
           display: flex;
           flex-direction: column;
-          gap: 50px;
-        }
-        
-        .service-card {
-          background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
-          border: 6px solid #1C0F07;
-          outline: 1.5px solid var(--accent);
-          outline-offset: -5px;
-          padding: 40px;
-          display: grid;
-          grid-template-columns: 1fr 1.2fr;
-          gap: 40px;
-          align-items: center;
+          gap: 20px;
+          transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          position: relative;
           box-shadow: 0 12px 30px rgba(0,0,0,0.6);
-          transition: all 0.3s ease;
-        }
-        .service-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 15px rgba(212,175,55,0.15);
         }
         
-        .service-card:nth-child(even) {
-          grid-template-columns: 1.2fr 1fr;
+        .arrival-card:hover {
+          transform: translateY(-8px);
+          border-color: #2D1A0F;
+          box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 15px rgba(212,175,55,0.2);
         }
         
-        .service-card:nth-child(even) .service-visual {
-          order: 2;
+        .ribbon {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
+          border: 1px solid #7E631F;
+          color: #1A1100;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          padding: 4px 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+          z-index: 10;
         }
         
-        .service-visual {
-          background: #080605;
-          border: 3px solid #1C0F07;
-          outline: 1px solid var(--border);
-          outline-offset: -3px;
-          aspect-ratio: 4/3;
+        .card-thumb-wrap {
+          aspect-ratio: 4/5;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 52px;
-          color: var(--accent);
-          box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+          position: relative;
+          overflow: hidden;
+          padding: 20px;
         }
         
-        .service-info {
+        .card-frame {
+          border: 8px solid #2D1A0F;
+          outline: 1px solid var(--accent);
+          outline-offset: -3px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+          display: flex;
+          position: relative;
+        }
+        
+        .card-frame-inner {
+          flex: 1;
+          background: #2D2822;
+          box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+          position: relative;
+        }
+        
+        .product-info {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 10px;
+          flex: 1;
         }
         
-        .service-name {
+        .product-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        
+        .product-name {
           font-family: var(--font-display);
-          font-size: 28px;
-          color: var(--accent);
-          letter-spacing: 0.02em;
+          font-size: 21px;
+          color: var(--text);
         }
         
-        .service-desc {
+        .product-price {
+          font-family: var(--font-typewriter);
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--accent);
+        }
+        
+        .product-tag {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          color: var(--text2);
+          align-self: flex-start;
+          border-bottom: 1.5px solid var(--accent);
+          padding-bottom: 2px;
+        }
+        
+        .product-desc {
           font-family: var(--font-serif);
-          font-size: 15px;
-          line-height: 1.7;
+          font-size: 14px;
+          line-height: 1.6;
           color: var(--text2);
         }
         
-        .service-features {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-bottom: 8px;
+        .btn-card {
+          width: 100%;
+          text-align: center;
+          padding: 12px;
+          margin-top: auto;
         }
-        
-        .service-features li {
-          font-family: var(--font-typewriter);
-          font-size: 12px;
-          color: var(--text);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .service-features li::before {
-          content: "•";
-          color: var(--accent);
-          font-size: 14px;
-        }
-        
-
 
         /* BACKDROP LIQUID ANIMATIONS */
         .catalog-glass-bg {
@@ -937,39 +985,22 @@ export default function ServicesPage() {
           display: block;
           width: 100%;
           text-align: center;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 13px;
-          font-weight: 700;
           padding: 14px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        }
-        .btn-checkout-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 768px) {
           .hero-title { font-size: 38px; }
-          .services-section { padding: 40px 20px; gap: 30px; }
-          .service-card { grid-template-columns: 1fr !important; padding: 24px; gap: 20px; }
-          .service-visual { order: -1 !important; aspect-ratio: 16/9; }
+          .exhibition-section { padding: 40px 20px; }
+          .gallery-grid { gap: 20px; }
+          .arrival-card { width: 100%; max-width: 320px; }
         }
       ` }} />
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
       <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of Our Services heading */}
-        <div className={`exquisite-lamp services-lamp ${lightOn ? 'on' : ''}`}>
+        {/* Suspended Brass Lamp on top of Our Catalog heading */}
+        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
           <div className="lamp-rod" />
           <div className="lamp-mount" />
           <div className="lamp-arm" />
@@ -1017,11 +1048,11 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        <h1 className="hero-title">Our <span>Services</span></h1>
+        <h1 className="hero-title">Our <span>Catalog</span></h1>
         <p className="hero-desc">
-          We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence.
+          Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
         </p>
-
+        
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
@@ -1035,7 +1066,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <section className="services-section">
+      <section className="exhibition-section">
         {/* Dynamic liquid backdrop elements */}
         <div className="catalog-glass-bg">
           <div className="liquid-blob-1" />
@@ -1046,74 +1077,83 @@ export default function ServicesPage() {
         {/* Frosted Glass overlay sheet */}
         <div className="catalog-glass-pane" />
 
-        <div className="services-container">
-          {/* Service 1 */}
-          <div className="service-card">
-            <div className="service-visual">🖼</div>
-            <div className="service-info">
-              <h2 className="service-name">Bespoke Picture Framing</h2>
-              <p className="service-desc">
-                Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
-              </p>
-              <ul className="service-features">
-                <li>Solid cured local pine, walnut, and oak mouldings</li>
-                <li>Acid-free double mounting mats (matboards)</li>
-                <li>Premium scratch-resistant acrylic and conservation glass</li>
-              </ul>
-              <a href="/catalog" className="btn-premium">Browse Catalog</a>
+        <div className="exhibition-container">
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
+              Loading frame catalog...
             </div>
-          </div>
+          ) : (
+            <div className="gallery-grid">
+              {products.map((p) => (
+                <div key={p.id} className="arrival-card">
+                  {isNewArrival(p.id) ? (
+                    <div className="ribbon">New Arrival</div>
+                  ) : isFeatured(p.id) ? (
+                    <div className="ribbon">Featured</div>
+                  ) : null}
+                  
+                  <div className="card-thumb-wrap">
+                    <div
+                       className="card-frame"
+                       style={{
+                         position: "relative",
+                         aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+                         width: p.orientation === "landscape" ? "100%" : "auto",
+                         height: p.orientation === "landscape" ? "auto" : "100%",
+                         boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+                         display: "flex",
+                         alignItems: "center",
+                         justifyContent: "center",
+                         overflow: "hidden"
+                       }}
+                    >
+                      {p.imageUrl && (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "fill",
+                            position: "absolute",
+                            inset: 0,
+                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                            pointerEvents: "none"
+                          }}
+                        />
+                      )}
+                      <div
+                        className="card-frame-inner"
+                        style={{
+                          position: "absolute",
+                          top: `${p.paddingTop || 0}%`,
+                          left: `${p.paddingLeft || 0}%`,
+                          bottom: `${p.paddingBottom || 0}%`,
+                          right: `${p.paddingRight || 0}%`,
+                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                          background: "#2D2822",
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
+                        }}
+                      />
+                    </div>
+                  </div>
 
-          {/* Service 2 */}
-          <div className="service-card">
-            <div className="service-visual">🖨</div>
-            <div className="service-info">
-              <h2 className="service-name">Giclée Fine Art Printing</h2>
-              <p className="service-desc">
-                Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
-              </p>
-              <ul className="service-features">
-                <li>Archival 380gsm matte cotton canvas</li>
-                <li>12-color Lucia PRO pigment inks (fade-proof for 100+ years)</li>
-                <li>Digital color grading & image resolution upscaling</li>
-              </ul>
-              <a href="/catalog" className="btn-premium">Browse Catalog</a>
-            </div>
-          </div>
+                  <div className="product-info">
+                    <div className="product-header-row">
+                      <h3 className="product-name">{p.name}</h3>
+                      <span className="product-price">{p.price}</span>
+                    </div>
+                    <span className="product-tag">{p.tag}</span>
+                    <p className="product-desc">{p.desc}</p>
+                  </div>
 
-          {/* Service 3 */}
-          <div className="service-card">
-            <div className="service-visual">📐</div>
-            <div className="service-info">
-              <h2 className="service-name">Gallery Wall Layouts</h2>
-              <p className="service-desc">
-                Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.
-              </p>
-              <ul className="service-features">
-                <li>Custom multi-frame spacing blueprints</li>
-                <li>Virtual render pre-views for your specific walls</li>
-                <li>Includes absolute wall-hanging templates</li>
-              </ul>
-              <a href="/contact" className="btn-premium">Consult Designer</a>
+                  <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+                    View Frame
+                  </a>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* Service 4 */}
-          <div className="service-card">
-            <div className="service-visual">📜</div>
-            <div className="service-info">
-              <h2 className="service-name">Heritage Conservation</h2>
-              <p className="service-desc">
-                Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.
-              </p>
-              <ul className="service-features">
-                <li>Reversible mounting techniques (no adhesive damage)</li>
-                <li>99% UV-blocking conservation museum acrylic</li>
-                <li>Dust and humidity-controlled rear framing seal</li>
-              </ul>
-              <a href="/contact" className="btn-premium">Inquire About Conservation</a>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
