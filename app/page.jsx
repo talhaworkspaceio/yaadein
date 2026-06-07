@@ -1136,6 +1136,8 @@ export default function HomePage() {
           flex-direction: column;
           align-items: flex-start;
           gap: 24px;
+          position: relative;
+          z-index: 10;
         }
 
         .exquisite-tagline {
@@ -1205,6 +1207,7 @@ export default function HomePage() {
           display: flex;
           justify-content: center;
           position: relative;
+          z-index: 1;
         }
 
         .exquisite-frame-component {
@@ -1494,7 +1497,13 @@ export default function HomePage() {
           .lamp-wrapper { display: none; }
           .exquisite-section { padding: 60px 20px; }
           .exquisite-container { flex-direction: column; gap: 40px; text-align: center; }
-          .exquisite-content { align-items: center; }
+          .exquisite-content { align-items: center; position: relative; z-index: 10; width: 100%; }
+          .exquisite-content .light-control-panel {
+            margin-top: 0 !important;
+            margin-bottom: 43px !important;
+            align-self: center !important;
+            z-index: 25;
+          }
           .exquisite-title { font-size: 32px; }
           .feature-item { flex-direction: column; align-items: center; gap: 8px; }
           .exquisite-frame-component { width: 300px; }
@@ -1550,6 +1559,11 @@ export default function HomePage() {
         }
         .light-control-panel:hover {
           border-color: rgba(212, 175, 55, 0.5);
+        }
+        .exquisite-content .light-control-panel {
+          margin-top: 24px;
+          align-self: flex-start;
+          width: fit-content;
         }
         .light-control-label {
           font-family: var(--font-typewriter);
@@ -1824,7 +1838,7 @@ export default function HomePage() {
             </a>
 
             {/* Toggle switch panel */}
-            <div className="light-control-panel" style={{ marginTop: "24px", alignSelf: "flex-start", width: "fit-content" }}>
+            <div className="light-control-panel">
               <span className="light-control-label">Studio Light</span>
               <button 
                 className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
