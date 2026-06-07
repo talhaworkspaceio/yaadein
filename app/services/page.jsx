@@ -544,6 +544,10 @@ export default function ServicesPage() {
           color: var(--accent);
           font-size: 14px;
         }
+
+        .service-info .btn-premium {
+          align-self: flex-start;
+        }
         
 
 
