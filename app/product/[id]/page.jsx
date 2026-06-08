@@ -241,11 +241,7 @@ function ProductDetailContent({ params }) {
 
   // Dynamic dummy photo loader
   const getDummyPhoto = () => {
-    if (orientation === "landscape") {
-      return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800";
-    } else {
-      return "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800";
-    }
+    return "/images/dummyImg.jpg";
   };
 
   const currentPhoto = userUploadedImage || getDummyPhoto();
@@ -624,15 +620,15 @@ function ProductDetailContent({ params }) {
           transform-origin: center center;
         }
         .exquisite-inner-photo img.rotated-landscape-img {
-          transform: rotate(-90deg) scale(1.5);
+          transform: rotate(-90deg) scale(1.5) translateX(-12%);
         }
 
         .exquisite-inner-photo img.light-active {
-          filter: grayscale(100%) contrast(1.1) brightness(0.95);
+          filter: none;
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: grayscale(100%) contrast(1.1) brightness(0.95);
+          filter: brightness(0.4) contrast(1.1);
         }
 
         .glass-reflection {

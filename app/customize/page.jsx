@@ -1552,10 +1552,16 @@ function FrameCustomizer() {
                         zIndex: selectedFrame.imageUrl && selectedFrame.imageUrl.endsWith('.png') ? 4 : 2,
                         background: "#181512",
                         cursor: "pointer",
+                        overflow: "hidden"
                       }}
                       onClick={() => fileRef.current?.click()}
                     >
-                      <div className="placeholder-content">
+                      <img 
+                        src="/images/dummyImg.jpg" 
+                        alt="Default Frame Art" 
+                        style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6, pointerEvents: "none" }} 
+                      />
+                      <div className="placeholder-content" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}>
                         <div className="placeholder-plus">＋</div>
                         <div className="placeholder-text">Add Your Photo</div>
                         <div className="placeholder-subtext">Click or drag image here</div>

@@ -64,7 +64,8 @@ export default function PrivacyPage() {
 
   return (
     <div className="policy-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .policy-root {
           font-family: var(--font-serif);
           background: var(--bg);
@@ -392,7 +393,7 @@ export default function PrivacyPage() {
           <div className="policy-text">
             <p>Last updated: June 4, 2026</p>
             <p>At Yaadein, we value your privacy and are committed to protecting the personal information you share with us. This Privacy Policy details how we collect, store, and process your details.</p>
-            
+
             <h2>1. Information We Collect</h2>
             <p>We collect details you provide to us directly through various forms on the site:</p>
             <ul>
@@ -400,19 +401,19 @@ export default function PrivacyPage() {
               <li><strong>Uploaded Files</strong>: Custom photographic images uploaded to our frame designer. These are securely processed for fine art printing purposes.</li>
               <li><strong>Newsletter Subscription</strong>: Email address provided to sign up for newsletter promos.</li>
             </ul>
-            
+
             <h2>2. How We Use Your Information</h2>
             <p>We process your data strictly to fulfill order operations and communicate updates:</p>
             <ul>
               <li>To build and deliver your handcrafted custom picture frames.</li>
-              <li>To coordinate Cash on Delivery (COD) dispatch with our national delivery courier network in Pakistan.</li>
+              <li>To coordinate secure shipment and delivery operations with our national courier network in Pakistan.</li>
               <li>To answer questions or support requests submitted via the contact form.</li>
               <li>To send promotional emails and discount alerts if you subscribed to our newsletter.</li>
             </ul>
-            
+
             <h2>3. Security & Storage</h2>
             <p>We leverage Firebase services for secure database hosting. Your uploaded images are stored securely on Cloudinary and Firebase cloud storage solely for the purpose of printing, and are not shared with third parties.</p>
-            <p>We do not store credit card numbers or banking passwords since our payment flow relies entirely on physical Cash on Delivery (COD).</p>
+            <p>We do not collect or store credit card credentials or banking passwords. Payments are transferred manually by you via secure third-party mobile wallet apps (EasyPaisa, JazzCash) or standard bank transfer channels.</p>
           </div>
         </div>
       </div>

@@ -1132,9 +1132,16 @@ export default function CatalogPage() {
                           right: `${p.paddingRight || 0}%`,
                           zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
                           background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                          overflow: "hidden"
                         }}
-                      />
+                      >
+                        <img 
+                          src="/images/dummyImg.jpg" 
+                          alt="Frame Art Preview" 
+                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+                        />
+                      </div>
                     </div>
                   </div>
 

@@ -400,11 +400,11 @@ export default function TermsPage() {
             <h2>2. Custom Work Finality</h2>
             <p>Since every order is handcrafted from scratch to your specific dimensions and design selections, they cannot be resold. Thus, all bespoke orders are final upon payment confirmation or shipping initiation.</p>
             
-            <h2>3. Payment & COD</h2>
-            <p>We provide Cash on Delivery (COD) services across Pakistan. You agree to pay the delivery agent the exact grand total in Pakistani Rupees (PKR) upon package arrival. Refusing packages at the doorstep will result in account suspension and blacklisting from future custom orders.</p>
+            <h2>3. Payment & Verification</h2>
+            <p>We support secure prepaid transfers via EasyPaisa, JazzCash, and Bank Transfer across Pakistan. Payment must be verified before our craftsmen begin hand-building your custom frames. Unverified orders will be automatically cancelled after 48 hours.</p>
             
             <h2>4. Delivery Timeline</h2>
-            <p>Our typical artisanal hand-building process takes 3-5 working days, followed by 2-3 days for courier transit. While we strive to meet all delivery timelines, transit delays from third-party logistics agents are out of our control.</p>
+            <p>Our standard delivery timeline is 14 days, which includes custom craftsmanship, frame assembly by our master artisans, and courier transit. While we strive to meet all delivery timelines, transit delays from third-party logistics agents are out of our control.</p>
           </div>
         </div>
       </div>

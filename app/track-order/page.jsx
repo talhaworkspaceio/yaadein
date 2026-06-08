@@ -1260,7 +1260,7 @@ export default function TrackOrderPage() {
                       <div><strong>Shipping Address:</strong> {order.customer?.address}</div>
                       <div><strong>City / Region:</strong> {order.customer?.city}</div>
                       <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(181, 139, 92, 0.15)", color: "var(--accent)", fontFamily: "var(--font-typewriter)", fontSize: "15px" }}>
-                        <strong>Grand Total:</strong> Rs. {order.total?.toLocaleString()} (COD)
+                        <strong>Grand Total:</strong> Rs. {order.total?.toLocaleString()} {order.paymentMethod ? `(${order.paymentMethod})` : "(COD)"}
                       </div>
                     </div>
                   </div>

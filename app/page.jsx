@@ -752,11 +752,6 @@ export default function HomePage() {
           align-items: center;
           justify-content: center;
         }
-        .card-frame-inner::after {
-          content: 'Y';
-          font-size: 32px;
-          color: rgba(212, 175, 55, 0.15);
-        }
         
         .product-info {
           display: flex;
@@ -1466,11 +1461,11 @@ export default function HomePage() {
         }
 
         .exquisite-inner-photo img.light-active {
-          filter: grayscale(100%) contrast(1.1) brightness(0.95);
+          filter: none;
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: grayscale(100%) contrast(1.1) brightness(0.95);
+          filter: brightness(0.4) contrast(1.1);
         }
 
         .glass-reflection {
@@ -1789,9 +1784,16 @@ export default function HomePage() {
                           right: `${p.paddingRight || 0}%`,
                           zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
                           background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)"
+                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                          overflow: "hidden"
                         }}
-                      />
+                      >
+                        <img 
+                          src="/images/dummyImg.jpg" 
+                          alt="Frame Art Preview" 
+                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1917,7 +1919,7 @@ export default function HomePage() {
                 {/* Inner photo area filling the frame space */}
                 <div className="exquisite-inner-photo">
                   <img
-                    src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"
+                    src="/images/dummyImg.jpg"
                     alt="Exhibited B&W Artwork"
                     className={lightOn ? 'light-active' : 'light-inactive'}
                   />

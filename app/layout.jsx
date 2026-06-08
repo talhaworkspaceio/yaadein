@@ -1,4 +1,5 @@
 import "./globals.css";
+import SmoothScroll from "./components/SmoothScroll";
 
 export const metadata = {
   title: "Yaadein — Photo Frame Customizer",
@@ -10,7 +11,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <div className="vintage-sepia-tint" />
-        {children}
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
       </body>
     </html>
   );
