@@ -628,7 +628,7 @@ function ProductDetailContent({ params }) {
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: brightness(0.4) contrast(1.1);
+          filter: none;
         }
 
         .glass-reflection {

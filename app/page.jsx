@@ -1465,7 +1465,7 @@ export default function HomePage() {
         }
 
         .exquisite-inner-photo img.light-inactive {
-          filter: brightness(0.4) contrast(1.1);
+          filter: none;
         }
 
         .glass-reflection {
@@ -1599,6 +1599,403 @@ export default function HomePage() {
         .light-switch-btn.on .light-switch-knob {
           transform: translateX(20px);
           background: linear-gradient(135deg, #dfc38a, #fae7b5);
+        }
+
+        /* ── GOOGLE REVIEWS SECTION ── */
+        .reviews-section {
+          padding: 100px 40px;
+          background: #090706;
+          border-top: 2px solid #1C0F07;
+          position: relative;
+          overflow: hidden;
+        }
+        .reviews-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 3;
+        }
+        .reviews-header {
+          text-align: center;
+          margin-bottom: 16px;
+        }
+        .reviews-tagline {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: var(--accent);
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+        }
+        .reviews-title {
+          font-family: 'Instrument Sans', sans-serif;
+          font-size: 42px;
+          font-weight: 800;
+          color: var(--text);
+          letter-spacing: -0.01em;
+          line-height: 1.2;
+        }
+        .reviews-subtitle {
+          font-family: var(--font-serif);
+          font-size: 15px;
+          color: var(--text2);
+          line-height: 1.6;
+          max-width: 540px;
+          margin: 14px auto 0;
+        }
+        .reviews-summary-bar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 20px;
+          margin: 32px auto 48px;
+          padding: 20px 32px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.2);
+          border-radius: var(--radius);
+          max-width: 520px;
+        }
+        .reviews-google-icon {
+          font-size: 32px;
+        }
+        .reviews-avg-score {
+          font-family: var(--font-display);
+          font-size: 42px;
+          font-weight: 700;
+          color: var(--accent);
+          line-height: 1;
+        }
+        .reviews-avg-detail {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .reviews-stars {
+          font-size: 18px;
+          letter-spacing: 2px;
+          color: #FBBF24;
+        }
+        .reviews-count {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          color: var(--text2);
+        }
+        .reviews-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        .review-card {
+          background: linear-gradient(135deg, rgba(20, 17, 14, 0.8) 0%, rgba(16, 13, 11, 0.9) 100%);
+          border: 1.5px solid rgba(212, 175, 55, 0.12);
+          border-radius: var(--radius);
+          padding: 28px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        .review-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.3), transparent);
+        }
+        .review-card:hover {
+          border-color: rgba(212, 175, 55, 0.3);
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+        .review-card-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .review-avatar {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--accent), #8B6914);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-display);
+          font-size: 16px;
+          font-weight: 700;
+          color: #0C0A08;
+          flex-shrink: 0;
+        }
+        .review-author-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .review-author-name {
+          font-family: var(--font-display);
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text);
+        }
+        .review-author-meta {
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          color: var(--text2);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .review-stars-row {
+          font-size: 14px;
+          letter-spacing: 2px;
+          color: #FBBF24;
+        }
+        .review-text {
+          font-family: var(--font-serif);
+          font-size: 14px;
+          line-height: 1.7;
+          color: var(--text2);
+          flex: 1;
+        }
+        .review-google-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          color: var(--text2);
+          opacity: 0.6;
+        }
+        .reviews-cta {
+          text-align: center;
+          margin-top: 40px;
+        }
+        .btn-review-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 28px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          border-radius: 9999px;
+          color: var(--accent);
+          font-family: var(--font-display);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: all 0.3s ease;
+        }
+        .btn-review-cta:hover {
+          background: rgba(201, 168, 76, 0.08);
+          border-color: var(--accent);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(201, 168, 76, 0.15);
+        }
+
+        /* ── SOCIAL FEED SECTION ── */
+        .social-feed-section {
+          padding: 100px 40px;
+          background: var(--bg);
+          border-top: 2px solid #1C0F07;
+          position: relative;
+          overflow: hidden;
+        }
+        .social-feed-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 3;
+        }
+        .social-feed-header {
+          text-align: center;
+          margin-bottom: 48px;
+        }
+        .social-feed-tagline {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: var(--accent);
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+        }
+        .social-feed-title {
+          font-family: 'Instrument Sans', sans-serif;
+          font-size: 42px;
+          font-weight: 800;
+          color: var(--text);
+          letter-spacing: -0.01em;
+          line-height: 1.2;
+        }
+        .social-feed-subtitle {
+          font-family: var(--font-serif);
+          font-size: 15px;
+          color: var(--text2);
+          line-height: 1.6;
+          max-width: 500px;
+          margin: 14px auto 0;
+        }
+        .social-feed-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+        }
+        .social-post-card {
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.1);
+          border-radius: var(--radius);
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          cursor: pointer;
+        }
+        .social-post-card:hover {
+          border-color: rgba(212, 175, 55, 0.3);
+          transform: translateY(-6px);
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+        .social-post-image {
+          width: 100%;
+          aspect-ratio: 1;
+          background: #1A1714;
+          position: relative;
+          overflow: hidden;
+        }
+        .social-post-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+        .social-post-card:hover .social-post-image img {
+          transform: scale(1.08);
+        }
+        .social-post-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(transparent 50%, rgba(0,0,0,0.7) 100%);
+          display: flex;
+          align-items: flex-end;
+          padding: 14px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .social-post-card:hover .social-post-overlay {
+          opacity: 1;
+        }
+        .social-post-stats {
+          display: flex;
+          gap: 14px;
+          font-size: 12px;
+          color: #fff;
+          font-family: var(--font-typewriter);
+        }
+        .social-post-body {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .social-post-author {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .social-post-author-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #E1306C, #F77737, #FCAF45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #fff;
+          flex-shrink: 0;
+        }
+        .social-post-author-name {
+          font-family: var(--font-display);
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--text);
+        }
+        .social-post-platform {
+          font-family: var(--font-typewriter);
+          font-size: 9px;
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .social-post-caption {
+          font-family: var(--font-serif);
+          font-size: 12px;
+          line-height: 1.6;
+          color: var(--text2);
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .social-post-date {
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          color: rgba(168, 160, 140, 0.5);
+        }
+        .social-feed-footer {
+          text-align: center;
+          margin-top: 48px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
+        .social-handle {
+          font-family: var(--font-typewriter);
+          font-size: 14px;
+          color: var(--accent);
+          letter-spacing: 0.02em;
+        }
+        .social-links {
+          display: flex;
+          gap: 14px;
+        }
+        .social-link-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 22px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.2);
+          border-radius: 9999px;
+          color: var(--text);
+          font-family: var(--font-display);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: all 0.3s ease;
+        }
+        .social-link-btn:hover {
+          border-color: var(--accent);
+          background: rgba(201, 168, 76, 0.06);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 768px) {
+          .reviews-section { padding: 60px 20px; }
+          .reviews-title { font-size: 28px; }
+          .reviews-grid { grid-template-columns: 1fr; gap: 16px; }
+          .reviews-summary-bar { flex-direction: column; gap: 12px; padding: 16px; }
+          .reviews-avg-score { font-size: 36px; }
+          .social-feed-section { padding: 60px 20px; }
+          .social-feed-title { font-size: 28px; }
+          .social-feed-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .social-links { flex-direction: column; }
         }
       ` }} />
 
@@ -1926,6 +2323,281 @@ export default function HomePage() {
                   <div className="glass-reflection" />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GOOGLE REVIEWS SECTION ── */}
+      <section className="reviews-section" id="reviews">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="reviews-container">
+          <div className="reviews-header">
+            <p className="reviews-tagline">What Our Customers Say</p>
+            <h2 className="reviews-title">Trusted by Art Lovers Nationwide</h2>
+            <p className="reviews-subtitle">
+              Real reviews from our verified customers on Google. Every frame tells a story — here's what they have to say.
+            </p>
+          </div>
+
+          <div className="reviews-summary-bar">
+            <span className="reviews-google-icon">🇬</span>
+            <span className="reviews-avg-score">4.9</span>
+            <div className="reviews-avg-detail">
+              <span className="reviews-stars">★★★★★</span>
+              <span className="reviews-count">Based on 127 Google Reviews</span>
+            </div>
+          </div>
+
+          <div className="reviews-grid">
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">AK</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Ayesha Khan</span>
+                  <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★★</div>
+              <p className="review-text">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">HA</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Hassan Ali</span>
+                  <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★★</div>
+              <p className="review-text">
+                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">SM</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Sara Malik</span>
+                  <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★★</div>
+              <p className="review-text">
+                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">OA</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Omar Ahmed</span>
+                  <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★☆</div>
+              <p className="review-text">
+                Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">FZ</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Fatima Zahra</span>
+                  <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★★</div>
+              <p className="review-text">
+                Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+
+            <div className="review-card">
+              <div className="review-card-header">
+                <div className="review-avatar">BI</div>
+                <div className="review-author-info">
+                  <span className="review-author-name">Bilal Iqbal</span>
+                  <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                </div>
+              </div>
+              <div className="review-stars-row">★★★★★</div>
+              <p className="review-text">
+                Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
+              </p>
+              <div className="review-google-badge">🇬 Posted on Google</div>
+            </div>
+          </div>
+
+          <div className="reviews-cta">
+            <a
+              href="https://g.page/r/yaadein-art-studio/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-review-cta"
+            >
+              ⭐ Leave Us a Review on Google
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SOCIAL MEDIA FEED SECTION ── */}
+      <section className="social-feed-section" id="social">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="social-feed-container">
+          <div className="social-feed-header">
+            <p className="social-feed-tagline">Follow Our Journey</p>
+            <h2 className="social-feed-title">#YaadeinFrames</h2>
+            <p className="social-feed-subtitle">
+              See how our customers style their spaces. Tag us to get featured in our gallery.
+            </p>
+          </div>
+
+          <div className="social-feed-grid">
+            <div className="social-post-card">
+              <div className="social-post-image">
+                <img src="/images/dummyImg.jpg" alt="Customer frame setup" />
+                <div className="social-post-overlay">
+                  <div className="social-post-stats">
+                    <span>❤️ 234</span>
+                    <span>💬 18</span>
+                  </div>
+                </div>
+              </div>
+              <div className="social-post-body">
+                <div className="social-post-author">
+                  <div className="social-post-author-avatar">Y</div>
+                  <div>
+                    <div className="social-post-author-name">yaadein.studio</div>
+                    <div className="social-post-platform">Instagram</div>
+                  </div>
+                </div>
+                <p className="social-post-caption">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dignissim lacinia nunc. 🖼️✨ #YaadeinFrames #HomeDecor
+                </p>
+                <span className="social-post-date">2 days ago</span>
+              </div>
+            </div>
+
+            <div className="social-post-card">
+              <div className="social-post-image">
+                <img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} />
+                <div className="social-post-overlay">
+                  <div className="social-post-stats">
+                    <span>❤️ 189</span>
+                    <span>💬 12</span>
+                  </div>
+                </div>
+              </div>
+              <div className="social-post-body">
+                <div className="social-post-author">
+                  <div className="social-post-author-avatar">A</div>
+                  <div>
+                    <div className="social-post-author-name">ayesha.interiors</div>
+                    <div className="social-post-platform">Instagram</div>
+                  </div>
+                </div>
+                <p className="social-post-caption">
+                  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi. My living room transformation! 🏡 #InteriorDesign
+                </p>
+                <span className="social-post-date">5 days ago</span>
+              </div>
+            </div>
+
+            <div className="social-post-card">
+              <div className="social-post-image">
+                <img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} />
+                <div className="social-post-overlay">
+                  <div className="social-post-stats">
+                    <span>❤️ 312</span>
+                    <span>💬 27</span>
+                  </div>
+                </div>
+              </div>
+              <div className="social-post-body">
+                <div className="social-post-author">
+                  <div className="social-post-author-avatar">Y</div>
+                  <div>
+                    <div className="social-post-author-name">yaadein.studio</div>
+                    <div className="social-post-platform">Instagram</div>
+                  </div>
+                </div>
+                <p className="social-post-caption">
+                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. New collection drop! 🎨 #ArtFraming #BespokeFrames
+                </p>
+                <span className="social-post-date">1 week ago</span>
+              </div>
+            </div>
+
+            <div className="social-post-card">
+              <div className="social-post-image">
+                <img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} />
+                <div className="social-post-overlay">
+                  <div className="social-post-stats">
+                    <span>❤️ 156</span>
+                    <span>💬 9</span>
+                  </div>
+                </div>
+              </div>
+              <div className="social-post-body">
+                <div className="social-post-author">
+                  <div className="social-post-author-avatar">H</div>
+                  <div>
+                    <div className="social-post-author-name">hassan.captures</div>
+                    <div className="social-post-platform">Instagram</div>
+                  </div>
+                </div>
+                <p className="social-post-caption">
+                  Excepteur sint occaecat cupidatat non proident, sunt in culpa. Gallery wall completed! 📸 #WallArt #Photography
+                </p>
+                <span className="social-post-date">2 weeks ago</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="social-feed-footer">
+            <span className="social-handle">@yaadein.studio</span>
+            <div className="social-links">
+              <a href="https://instagram.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                📸 Follow on Instagram
+              </a>
+              <a href="https://facebook.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                👤 Follow on Facebook
+              </a>
+              <a href="https://tiktok.com/@yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                🎵 Follow on TikTok
+              </a>
             </div>
           </div>
         </div>

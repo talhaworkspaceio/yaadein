@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -20,7 +20,101 @@ const saveCart = (cart) => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
-export default function ServicesPage() {
+const SERVICES_DATA = {
+  "bespoke-framing": {
+    title: "Bespoke Picture Framing",
+    tagline: "Handcrafted To Perfection",
+    desc: "Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.",
+    image: "/images/bespoke_framing.png",
+    priceInfo: "Pricing starts from Rs. 2,500 depending on dimensions and wood selection.",
+    features: [
+      "Solid cured local pine, walnut, and oak mouldings",
+      "Acid-free double mounting mats (matboards) to protect artwork",
+      "Premium scratch-resistant acrylic and conservation glass choices",
+      "Individually hand-assembled and quality-tested in our studio",
+      "Includes premium hanging hardware and mounting wire"
+    ],
+    detailedText: "Our bespoke picture framing service is designed for those who appreciate the finer details. We don't believe in mass production. Each frame begins as raw lumber, which is carefully selected for grain consistency and strength. We cure the wood to ensure it will never warp or crack, even in humid climates. Our artisans then mill, join, and finish the frames using traditional techniques passed down through generations. Whether you are framing a family photograph, a modern art print, or a canvas painting, we customize the borders, dimensions, and depth to create a perfect museum-quality presentation.",
+    ctaText: "Launch Studio Builder",
+    ctaLink: "/customize",
+    gallery: [
+      { img: "/images/wood-bg.png", caption: "Premium Hardwood Selections" },
+      { img: "/images/window_light_frame.png", caption: "Daylight Shadow Interaction" },
+      { img: "/images/dummyImg.jpg", caption: "Traditional Joinery Work" }
+    ]
+  },
+  "fine-art-printing": {
+    title: "Giclée Fine Art Printing",
+    tagline: "Archival Quality Prints",
+    desc: "Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.",
+    image: "/images/fine_art_printing.png",
+    priceInfo: "Printing starts from Rs. 1,200 depending on size and media type.",
+    features: [
+      "Archival 380gsm matte cotton canvas",
+      "12-color Lucia PRO pigment inks (fade-proof for 100+ years)",
+      "Digital color grading & image resolution upscaling by default",
+      "Fine art textured papers (Hahnemühle style)",
+      "Stretching and gallery wrapping services available"
+    ],
+    detailedText: "Transform your digital files into breathtaking tangible art. Our Giclée printing service utilizes museum-grade plotters with 12-color pigment-based ink systems. Unlike standard laser or inkjet prints, Giclée prints offer exceptional color depth, smooth gradients, and fade-resistance that lasts for over a century. We print on thick, archival cotton canvas and acid-free fine art papers. Before printing, our digital technicians inspect every file, performing color calibration and advanced image upscaling to ensure your artwork looks sharp and vibrant even at large scales.",
+    ctaText: "Upload & Print Image",
+    ctaLink: "/catalog",
+    gallery: [
+      { img: "/images/paper.png", caption: "Fine Textured Archival Stock" },
+      { img: "/images/dummyImg.jpg", caption: "Calibration & Profiling" },
+      { img: "/images/wood-bg.png", caption: "Canvas Wrapping Base" }
+    ]
+  },
+  "gallery-walls": {
+    title: "Gallery Wall Layouts",
+    tagline: "Curated Space Design",
+    desc: "Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.",
+    image: "/images/gallery_walls.png",
+    priceInfo: "Custom consultations start from Rs. 5,000 including blueprints.",
+    features: [
+      "Custom multi-frame spacing blueprints and 3D renders",
+      "Virtual render previews for your specific walls",
+      "Includes absolute life-sized wall-hanging paper templates",
+      "Curated wood trim matching for consistent aesthetics",
+      "Expert alignment advice and layout optimization"
+    ],
+    detailedText: "A gallery wall is more than just a collection of pictures; it is a visual narrative of your life, travel, and tastes. Designing one can be overwhelming—which is why our experts are here to help. We analyze your wall dimensions, furniture placement, and lighting to design a perfectly balanced layout. We provide you with 3D digital renders showing exactly how the frames will look in your space. Once approved, we deliver the complete set of frames along with a life-sized paper hanging template that marks the exact screw locations, making installation incredibly easy and stress-free.",
+    ctaText: "Consult Designer",
+    ctaLink: "/contact",
+    gallery: [
+      { img: "/images/window_light_frame.png", caption: "Modern Hallway Arrangements" },
+      { img: "/images/dummyImg.jpg", caption: "Aesthetic Matting Variations" },
+      { img: "/images/wood-bg.png", caption: "Cohesive Material Palette" }
+    ]
+  },
+  "heritage-conservation": {
+    title: "Heritage Conservation",
+    tagline: "Preserving Family History",
+    desc: "Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.",
+    image: "/images/heritage_conservation.png",
+    priceInfo: "Conservation assessments and custom preservation starts from Rs. 8,000.",
+    features: [
+      "Reversible mounting techniques (no adhesive damage)",
+      "99% UV-blocking conservation museum acrylic",
+      "Dust and humidity-controlled rear framing seal",
+      "Acid-free buffered mounting boards to prevent yellowing",
+      "Expert handling by certified preservation artisans"
+    ],
+    detailedText: "Valuable documents, historic heirlooms, and vintage objects deserve specialized care to protect them from environmental damage. Standard framing materials contain acid that yellow papers and degrade fabrics over time. Our heritage conservation framing uses 100% reversible mounting methods, acid-free mats, and specialized barrier boards. We use museum-grade acrylic that filters out 99% of harmful UV rays, protecting colors from fading and paper from becoming brittle. Rest assured that your family treasures will be safely preserved for future generations to cherish.",
+    ctaText: "Book Assessment",
+    ctaLink: "/contact",
+    gallery: [
+      { img: "/images/paper.png", caption: "Acid-Free Mounting Matting" },
+      { img: "/images/dummyImg.jpg", caption: "UV-Blocking Shielding Glass" },
+      { img: "/images/wood-bg.png", caption: "Humidity Controlled Sealed Backing" }
+    ]
+  }
+};
+
+export default function ServiceDetailPage({ params }) {
+  const { slug } = params;
+  const service = SERVICES_DATA[slug];
+
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [lightOn, setLightOn] = useState(true);
@@ -62,6 +156,22 @@ export default function ServicesPage() {
       return acc + (priceVal * item.quantity);
     }, 0);
   };
+
+  if (!service) {
+    return (
+      <div className="services-root" style={{ padding: "120px 40px", textAlign: "center" }}>
+        <Navbar onCartOpen={() => setCartOpen(true)} />
+        <div style={{ margin: "100px auto", maxWidth: "600px" }}>
+          <h1 className="hero-title">Service <span>Not Found</span></h1>
+          <p className="hero-desc" style={{ margin: "24px auto" }}>
+            The page you are looking for does not exist or has been moved.
+          </p>
+          <a href="/services" className="btn-premium">Back to Services</a>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="services-root">
@@ -192,12 +302,6 @@ export default function ServicesPage() {
         }
         .lamp-light-beam.on {
           opacity: 1;
-        }
-
-        .services-lamp .lamp-light-beam {
-          width: 650px;
-          height: 500px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
         }
 
         /* GLOW & PARTICLES */
@@ -351,59 +455,6 @@ export default function ServicesPage() {
           }
         }
 
-        .rotate .angle:nth-child(1) {
-          animation: angle 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .size {
-          animation: size 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .particle {
-          animation: particle-warm 6s linear infinite alternate;
-        }
-        .rotate .angle:nth-child(1) .position {
-          animation: position 2s linear 0s infinite;
-        }
-
-        .rotate .angle:nth-child(2) {
-          animation: angle 4.95s steps(3) -1.65s infinite;
-        }
-        .rotate .angle:nth-child(2) .size {
-          animation: size 4.95s steps(3) -1.65s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .particle {
-          animation: particle-warm 4.95s linear -3.3s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .position {
-          animation: position 1.65s linear 0s infinite;
-        }
-
-        .rotate .angle:nth-child(3) {
-          animation: angle 13.76s steps(8) -6.88s infinite;
-        }
-        .rotate .angle:nth-child(3) .size {
-          animation: size 6.88s steps(4) -5.16s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .particle {
-          animation: particle-warm 5.16s linear -1.72s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .position {
-          animation: position 1.72s linear 0s infinite;
-        }
-
-        /* Pull chain switch removed */
-        
-        .chain-handle::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 1px;
-          width: 4px;
-          height: 4px;
-          background: #8f723b;
-          border-radius: 50%;
-        }
-
-        /* SERVICES GENERAL STYLING */
         .services-root {
           font-family: var(--font-serif);
           background: var(--bg);
@@ -426,9 +477,10 @@ export default function ServicesPage() {
         
         .hero-title {
           font-family: var(--font-display);
-          font-size: 52px;
+          font-size: 48px;
           color: var(--text);
           letter-spacing: 0.05em;
+          line-height: 1.2;
         }
         
         .hero-title span {
@@ -441,6 +493,7 @@ export default function ServicesPage() {
           color: var(--text2);
           max-width: 650px;
           line-height: 1.7;
+          margin: 0;
         }
         
         .services-section {
@@ -462,32 +515,21 @@ export default function ServicesPage() {
           gap: 50px;
         }
         
+        /* Rounded borders on service cards */
         .service-card {
           background: linear-gradient(135deg, var(--surface) 0%, #100D0B 100%);
           border-radius: var(--radius);
           box-shadow: inset 0 0 0 1.5px var(--accent), 0 12px 30px rgba(0, 0, 0, 0.6);
-          padding: 40px;
+          padding: 45px;
           display: grid;
           grid-template-columns: 1fr 1.2fr;
-          gap: 40px;
+          gap: 50px;
           align-items: center;
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           position: relative;
           overflow: hidden;
         }
-        .service-card:hover {
-          transform: translateY(-6px);
-          box-shadow: inset 0 0 0 2px var(--accent2), 0 20px 45px rgba(0,0,0,0.8), 0 0 20px rgba(212,175,55,0.25);
-        }
         
-        .service-card:nth-child(even) {
-          grid-template-columns: 1.2fr 1fr;
-        }
-        
-        .service-card:nth-child(even) .service-visual {
-          order: 2;
-        }
-        
+        /* Rounded borders on service visuals */
         .service-visual {
           background: #080605;
           border-radius: var(--radius);
@@ -497,7 +539,6 @@ export default function ServicesPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--accent);
           position: relative;
           box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
         }
@@ -505,60 +546,140 @@ export default function ServicesPage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.5s ease;
-        }
-        .service-card:hover .service-visual img {
-          transform: scale(1.06);
         }
         
         .service-info {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 20px;
         }
         
         .service-name {
           font-family: var(--font-display);
-          font-size: 28px;
+          font-size: 32px;
           color: var(--accent);
           letter-spacing: 0.02em;
+        }
+
+        .service-tagline {
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-top: -8px;
         }
         
         .service-desc {
           font-family: var(--font-serif);
-          font-size: 15px;
+          font-size: 16px;
           line-height: 1.7;
           color: var(--text2);
+        }
+
+        .service-price-box {
+          background: rgba(20, 17, 14, 0.6);
+          border: 1px dashed rgba(212, 175, 55, 0.3);
+          border-radius: 12px;
+          padding: 16px 20px;
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          color: var(--text);
+          line-height: 1.5;
         }
         
         .service-features {
           list-style: none;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
           margin-bottom: 8px;
         }
         
         .service-features li {
-          font-family: var(--font-typewriter);
-          font-size: 12px;
+          font-family: var(--font-serif);
+          font-size: 14px;
           color: var(--text);
           display: flex;
-          align-items: center;
-          gap: 8px;
+          align-items: flex-start;
+          gap: 10px;
         }
         
         .service-features li::before {
-          content: "•";
+          content: "✓";
           color: var(--accent);
-          font-size: 14px;
+          font-weight: bold;
+          font-size: 15px;
         }
 
-        .service-info .btn-premium {
-          align-self: flex-start;
+        .service-info .btn-group {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-top: 10px;
         }
-        
 
+        /* Gallery/Related Images Section */
+        .service-gallery-section {
+          margin-top: 40px;
+        }
+
+        .gallery-title {
+          font-family: var(--font-display);
+          font-size: 24px;
+          color: var(--text);
+          margin-bottom: 24px;
+          letter-spacing: 0.02em;
+        }
+
+        .gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+
+        .gallery-card {
+          background: var(--surface2);
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          overflow: hidden;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+          transition: all 0.3s ease;
+        }
+
+        .gallery-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--accent);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+        }
+
+        .gallery-img-wrap {
+          aspect-ratio: 3/2;
+          overflow: hidden;
+          background: #080605;
+          position: relative;
+        }
+
+        .gallery-img-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .gallery-img-wrap img {
+          transform: scale(1.05);
+        }
+
+        .gallery-caption {
+          padding: 16px;
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          color: var(--text2);
+          text-align: center;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
 
         /* BACKDROP LIQUID ANIMATIONS */
         .catalog-glass-bg {
@@ -595,21 +716,11 @@ export default function ServicesPage() {
         }
 
         @keyframes catalog-glow-auto {
-          0% {
-            transform: translate(-20%, -20%) scale(1);
-          }
-          25% {
-            transform: translate(100%, 10%) scale(1.2);
-          }
-          50% {
-            transform: translate(40%, 40%) scale(0.9);
-          }
-          75% {
-            transform: translate(-10%, 30%) scale(1.1);
-          }
-          100% {
-            transform: translate(-20%, -20%) scale(1);
-          }
+          0% { transform: translate(-20%, -20%) scale(1); }
+          25% { transform: translate(100%, 10%) scale(1.2); }
+          50% { transform: translate(40%, 40%) scale(0.9); }
+          75% { transform: translate(-10%, 30%) scale(1.1); }
+          100% { transform: translate(-20%, -20%) scale(1); }
         }
 
         /* LIQUID BLOBS */
@@ -765,9 +876,8 @@ export default function ServicesPage() {
           flex-direction: column;
           box-shadow: -10px 0 40px rgba(0,0,0,0.8);
         }
-        .cart-drawer.open {
-          transform: translateX(0);
-        }
+        .cart-drawer.open { transform: translateX(0); }
+        
         .cart-drawer-header {
           padding: 24px;
           border-bottom: 2px solid #1C0F07;
@@ -789,9 +899,7 @@ export default function ServicesPage() {
           line-height: 1;
           transition: color 0.15s ease;
         }
-        .cart-close-btn:hover {
-          color: var(--accent);
-        }
+        .cart-close-btn:hover { color: var(--accent); }
         .cart-drawer-body {
           flex: 1;
           overflow-y: auto;
@@ -807,9 +915,7 @@ export default function ServicesPage() {
           gap: 16px;
           color: var(--text2);
         }
-        .cart-empty-icon {
-          font-size: 48px;
-        }
+        .cart-empty-icon { font-size: 48px; }
         
         .cart-items-list {
           display: flex;
@@ -877,12 +983,6 @@ export default function ServicesPage() {
           font-weight: 700;
           color: var(--accent);
         }
-        .cart-item-qty-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 4px;
-        }
         .qty-btn {
           width: 24px;
           height: 24px;
@@ -896,7 +996,6 @@ export default function ServicesPage() {
           justify-content: center;
           font-size: 14px;
           line-height: 1;
-          transition: all 0.15s ease;
         }
         .qty-btn:hover {
           background: var(--accent);
@@ -909,7 +1008,6 @@ export default function ServicesPage() {
           font-weight: 500;
           color: var(--text);
         }
-        
         .cart-item-remove {
           position: absolute;
           top: 8px;
@@ -919,12 +1017,8 @@ export default function ServicesPage() {
           color: var(--text2);
           font-size: 18px;
           cursor: pointer;
-          line-height: 1;
-          transition: color 0.15s ease;
         }
-        .cart-item-remove:hover {
-          color: #FF5A5A;
-        }
+        .cart-item-remove:hover { color: #FF5A5A; }
         
         .cart-drawer-footer {
           padding: 24px;
@@ -950,31 +1044,20 @@ export default function ServicesPage() {
           display: block;
           width: 100%;
           text-align: center;
-          background: linear-gradient(135deg, var(--accent) 0%, #A67C1E 100%);
-          color: #1A1100;
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 13px;
-          font-weight: 700;
-          padding: 14px;
-          border: 1px solid #7E631F;
-          outline: 3px solid #D4AF37;
-          outline-offset: -4px;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        }
-        .btn-checkout-primary:hover {
-          background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-          transform: translateY(-1px);
         }
 
-        @media (max-width: 800px) {
-          .hero-title { font-size: 38px; }
-          .services-section { padding: 40px 20px; gap: 30px; }
-          .service-card { grid-template-columns: 1fr !important; padding: 24px; gap: 20px; }
-          .service-visual { order: -1 !important; aspect-ratio: 16/9; }
+        @keyframes glow-warm {
+          0% { box-shadow: 0 0 100px 35px rgba(251, 191, 36, 0.85), 35px 20px 75px 15px #fff, -5px -35px 45px 8px #fff; }
+          100% { box-shadow: 0 0 140px 35px rgba(251, 191, 36, 0.95), 50px 30px 60px 15px #fff, -45px -45px 60px 8px #fff; }
+        }
+
+        @media (max-width: 850px) {
+          .hero-title { font-size: 36px; }
+          .services-section { padding: 40px 20px; }
+          .service-card { grid-template-columns: 1fr; padding: 30px; gap: 30px; }
+          .service-visual { aspect-ratio: 16/9; }
+          .gallery-grid { grid-template-columns: 1fr; gap: 20px; }
+          .service-info .btn-group { flex-direction: column; align-items: stretch; gap: 12px; }
         }
       ` }} />
 
@@ -1030,9 +1113,9 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        <h1 className="hero-title">Our <span>Services</span></h1>
+        <h1 className="hero-title">{service.title.split(" ").slice(0, -1).join(" ")} <span>{service.title.split(" ").slice(-1)}</span></h1>
         <p className="hero-desc">
-          We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence.
+          {service.tagline} — Premium handcrafting tailored for your specific gallery needs.
         </p>
 
         {/* Toggle switch panel */}
@@ -1060,79 +1143,45 @@ export default function ServicesPage() {
         <div className="catalog-glass-pane" />
 
         <div className="services-container">
-          {/* Service 1 */}
           <div className="service-card">
             <div className="service-visual">
-              <img src="/images/bespoke_framing.png" alt="Bespoke Picture Framing" />
+              <img src={service.image} alt={service.title} />
             </div>
             <div className="service-info">
-              <h2 className="service-name">Bespoke Picture Framing</h2>
-              <p className="service-desc">
-                Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
-              </p>
+              <h2 className="service-name">{service.title}</h2>
+              <div className="service-tagline">{service.tagline}</div>
+              <p className="service-desc">{service.detailedText}</p>
+              
+              <div className="service-price-box">
+                <strong>Price Detail:</strong><br />
+                {service.priceInfo}
+              </div>
+
               <ul className="service-features">
-                <li>Solid cured local pine, walnut, and oak mouldings</li>
-                <li>Acid-free double mounting mats (matboards)</li>
-                <li>Premium scratch-resistant acrylic and conservation glass</li>
+                {service.features.map((feat, idx) => (
+                  <li key={idx}>{feat}</li>
+                ))}
               </ul>
-              <a href="/services/bespoke-framing" className="btn-premium">Explore Details</a>
+
+              <div className="btn-group">
+                <a href={service.ctaLink} className="btn-premium">{service.ctaText}</a>
+                <a href="/services" className="btn-premium-ghost">All Services</a>
+              </div>
             </div>
           </div>
 
-          {/* Service 2 */}
-          <div className="service-card">
-            <div className="service-visual">
-              <img src="/images/fine_art_printing.png" alt="Giclée Fine Art Printing" />
-            </div>
-            <div className="service-info">
-              <h2 className="service-name">Giclée Fine Art Printing</h2>
-              <p className="service-desc">
-                Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
-              </p>
-              <ul className="service-features">
-                <li>Archival 380gsm matte cotton canvas</li>
-                <li>12-color Lucia PRO pigment inks (fade-proof for 100+ years)</li>
-                <li>Digital color grading & image resolution upscaling</li>
-              </ul>
-              <a href="/services/fine-art-printing" className="btn-premium">Explore Details</a>
-            </div>
-          </div>
-
-          {/* Service 3 */}
-          <div className="service-card">
-            <div className="service-visual">
-              <img src="/images/gallery_walls.png" alt="Gallery Wall Layouts" />
-            </div>
-            <div className="service-info">
-              <h2 className="service-name">Gallery Wall Layouts</h2>
-              <p className="service-desc">
-                Have a blank staircase, hallway, or living space? We design curated collections of frames that fit together in complete harmony to reflect your personal memories.
-              </p>
-              <ul className="service-features">
-                <li>Custom multi-frame spacing blueprints</li>
-                <li>Virtual render pre-views for your specific walls</li>
-                <li>Includes absolute wall-hanging templates</li>
-              </ul>
-              <a href="/services/gallery-walls" className="btn-premium">Explore Details</a>
-            </div>
-          </div>
-
-          {/* Service 4 */}
-          <div className="service-card">
-            <div className="service-visual">
-              <img src="/images/heritage_conservation.png" alt="Heritage Conservation" />
-            </div>
-            <div className="service-info">
-              <h2 className="service-name">Heritage Conservation</h2>
-              <p className="service-desc">
-                Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.
-              </p>
-              <ul className="service-features">
-                <li>Reversible mounting techniques (no adhesive damage)</li>
-                <li>99% UV-blocking conservation museum acrylic</li>
-                <li>Dust and humidity-controlled rear framing seal</li>
-              </ul>
-              <a href="/services/heritage-conservation" className="btn-premium">Explore Details</a>
+          {/* Related Images / Process Section */}
+          <div className="service-gallery-section">
+            <h3 className="gallery-title">Process & Detail Gallery</h3>
+            <div className="gallery-grid">
+              {service.gallery.map((item, idx) => (
+                <div key={idx} className="gallery-card">
+                  <div className="gallery-img-wrap">
+                    <img src={item.img} alt={item.caption} />
+                  </div>
+                  <div className="gallery-caption">{item.caption}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

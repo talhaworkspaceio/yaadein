@@ -55,6 +55,18 @@ const clearCart = () => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
+const getWhatsAppNumber = (phone) => {
+  if (!phone) return "";
+  let clean = phone.replace(/\D/g, "");
+  if (clean.startsWith("0")) {
+    clean = "92" + clean.slice(1);
+  }
+  if (clean.length === 10 && !clean.startsWith("92")) {
+    clean = "92" + clean;
+  }
+  return clean;
+};
+
 export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState([]);
   const [formData, setFormData] = useState({
@@ -172,6 +184,7 @@ export default function CheckoutPage() {
         }
         const result = await res.json();
         receiptUrl = result.secure_url;
+        setPaymentReceipt(receiptUrl);
       } catch (err) {
         console.error("Receipt upload error:", err);
         setErrorMsg("Failed to upload payment receipt screenshot securely. Please try again.");
@@ -250,7 +263,7 @@ export default function CheckoutPage() {
           `Payment Method: *${paymentMethod}*\n` +
           `Grand Total: *Rs. ${total.toLocaleString()}*\n\n` +
           `Please find the attached receipt screenshot below. Thank you!`;
-        const whatsappUrl = `https://wa.me/923007001977?text=${encodeURIComponent(messageText)}`;
+        const whatsappUrl = `https://wa.me/${getWhatsAppNumber(formData.phone)}?text=${encodeURIComponent(messageText)}`;
         if (typeof window !== "undefined") {
           window.open(whatsappUrl, "_blank");
         }
@@ -664,10 +677,6 @@ export default function CheckoutPage() {
           .success-row   { font-size: 12px; }
         }
 
-          .success-summary { padding: 16px; }
-          .success-row   { font-size: 12px; }
-        }
-
         /* ── RECEIPT UPLOADER ── */
         .receipt-uploader-zone {
           margin-top: 18px;
@@ -717,44 +726,92 @@ export default function CheckoutPage() {
 
         .receipt-preview-container {
           margin-top: 18px;
-          border: 2px solid #1C0F07;
+          border: 2px solid rgba(181, 139, 92, 0.25);
           border-radius: var(--radius);
-          padding: 16px;
-          background: rgba(30, 25, 20, 0.4);
+          background: rgba(30, 25, 20, 0.5);
+          overflow: hidden;
+          position: relative;
+        }
+        .receipt-preview-image-wrapper {
+          width: 100%;
+          max-height: 340px;
+          overflow: hidden;
           display: flex;
           align-items: center;
-          gap: 16px;
-        }
-        .receipt-preview-img-box {
-          width: 64px;
-          height: 64px;
-          border-radius: var(--radius);
-          overflow: hidden;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          justify-content: center;
+          background: #0A0806;
+          cursor: pointer;
           position: relative;
-          background: #000;
-          border: 1px solid rgba(181,139,92,0.2);
+        }
+        .receipt-preview-image-wrapper img {
+          width: 100%;
+          max-height: 340px;
+          object-fit: contain;
+          display: block;
+          transition: transform 0.3s ease;
+        }
+        .receipt-preview-image-wrapper:hover img {
+          transform: scale(1.02);
+        }
+        .receipt-preview-image-wrapper::after {
+          content: 'Click to view full size';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 8px;
+          background: linear-gradient(transparent, rgba(0,0,0,0.7));
+          color: rgba(255,255,255,0.5);
+          font-size: 10px;
+          text-align: center;
+          font-family: var(--font-display);
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .receipt-preview-image-wrapper:hover::after {
+          opacity: 1;
+        }
+        .receipt-preview-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          background: rgba(20, 17, 14, 0.6);
+        }
+        .receipt-preview-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .receipt-preview-check {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(68, 212, 136, 0.12);
+          border: 1.5px solid #44D488;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          color: #44D488;
           flex-shrink: 0;
         }
-        .receipt-preview-img-box img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
         .receipt-preview-details {
-          flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 2px;
         }
         .receipt-preview-title {
           font-family: var(--font-display);
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 600;
           color: var(--text);
         }
         .receipt-preview-status {
-          font-size: 11px;
+          font-size: 10px;
           color: #44D488;
           display: flex;
           align-items: center;
@@ -769,15 +826,64 @@ export default function CheckoutPage() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          padding: 6px 12px;
+          padding: 6px 14px;
           border-radius: var(--radius);
           cursor: pointer;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
         .btn-remove-receipt:hover {
-          background: rgba(255, 90, 90, 0.05);
+          background: rgba(255, 90, 90, 0.08);
           border-color: #FF5A5A;
           color: #FF5A5A;
+        }
+
+        /* ── RECEIPT LIGHTBOX ── */
+        .receipt-lightbox-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(0, 0, 0, 0.9);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          cursor: zoom-out;
+          animation: fadeInLightbox 0.25s ease;
+        }
+        .receipt-lightbox-overlay img {
+          max-width: 90vw;
+          max-height: 85vh;
+          object-fit: contain;
+          border-radius: var(--radius);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+          border: 2px solid rgba(181, 139, 92, 0.3);
+        }
+        .receipt-lightbox-close {
+          position: absolute;
+          top: 20px;
+          right: 24px;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: #fff;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .receipt-lightbox-close:hover {
+          background: rgba(255,255,255,0.2);
+        }
+        @keyframes fadeInLightbox {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         /* ── DELIVERY NOTIFICATION ── */
@@ -1109,7 +1215,7 @@ export default function CheckoutPage() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginTop: "16px" }}>
               <a
-                href={`https://wa.me/923007001977?text=${encodeURIComponent(
+                href={`https://wa.me/${getWhatsAppNumber(formData.phone)}?text=${encodeURIComponent(
                   `*Yaadein Order Confirmation* 🌟\n\n` +
                   `Order Reference: *${orderId}*\n` +
                   `Customer Name: *${formData.name}*\n` +
@@ -1366,20 +1472,42 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <div className="receipt-preview-container">
-                      <div className="receipt-preview-img-box">
-                        <img src={paymentReceipt} alt="Payment Receipt Screenshot" />
-                      </div>
-                      <div className="receipt-preview-details">
-                        <span className="receipt-preview-title">receipt_screenshot.png</span>
-                        <span className="receipt-preview-status">✓ Ready to submit</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeReceipt}
-                        className="btn-remove-receipt"
+                      <div
+                        className="receipt-preview-image-wrapper"
+                        onClick={() => {
+                          const overlay = document.createElement('div');
+                          overlay.className = 'receipt-lightbox-overlay';
+                          overlay.onclick = () => overlay.remove();
+                          const closeBtn = document.createElement('button');
+                          closeBtn.className = 'receipt-lightbox-close';
+                          closeBtn.innerHTML = '✕';
+                          closeBtn.onclick = (e) => { e.stopPropagation(); overlay.remove(); };
+                          const img = document.createElement('img');
+                          img.src = paymentReceipt;
+                          img.alt = 'Payment Receipt Full View';
+                          overlay.appendChild(closeBtn);
+                          overlay.appendChild(img);
+                          document.body.appendChild(overlay);
+                        }}
                       >
-                        Remove
-                      </button>
+                        <img src={paymentReceipt} alt="Payment Receipt Preview" />
+                      </div>
+                      <div className="receipt-preview-footer">
+                        <div className="receipt-preview-info">
+                          <div className="receipt-preview-check">✓</div>
+                          <div className="receipt-preview-details">
+                            <span className="receipt-preview-title">receipt_screenshot.png</span>
+                            <span className="receipt-preview-status">✓ Ready to submit</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeReceipt}
+                          className="btn-remove-receipt"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   )}
 
