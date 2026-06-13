@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export default function SmoothScroll({ children }) {
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith("/admin");
+
   useEffect(() => {
+    // Skip Lenis on admin routes — it hijacks native scroll in dashboard panels
+    if (isAdmin) return;
+
     // Register ScrollTrigger with GSAP
     gsap.registerPlugin(ScrollTrigger);
 
@@ -36,7 +43,7 @@ export default function SmoothScroll({ children }) {
       lenis.destroy();
       gsap.ticker.remove(rafCallback);
     };
-  }, []);
+  }, [isAdmin]);
 
   return <>{children}</>;
 }

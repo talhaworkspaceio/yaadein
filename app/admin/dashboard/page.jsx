@@ -1,1355 +1,480 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "../../../lib/firebase";
-import { ref, onValue, set, push, remove } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 
-const AVAILABLE_FRAME_IMAGES = [
-  { value: "/frames/portrait/frame-01-correct-size.webp", label: "Portrait - Frame 01 (Oak)", orientation: "portrait", top: 8.97, left: 12.04, bottom: 9.03, right: 12.33, ratio: 0.6667 },
-  { value: "/frames/portrait/frame-02-correct-size.webp", label: "Portrait - Frame 02 (Black)", orientation: "portrait", top: 12.61, left: 15.08, bottom: 13.19, right: 15.54, ratio: 0.6667 },
-  { value: "/frames/portrait/frame-03-correct-size.webp", label: "Portrait - Frame 03 (Gold)", orientation: "portrait", top: 9.11, left: 10.94, bottom: 9.29, right: 11.20, ratio: 0.6667 },
-  { value: "/frames/landscape/frame-04-correct-size.webp", label: "Landscape - Frame 04 (Oak)", orientation: "landscape", top: 7.22, left: 6.04, bottom: 7.06, right: 6.07, ratio: 1.5 },
-  { value: "/frames/landscape/Irrelevant Image.png", label: "Landscape - Irrelevant Image", orientation: "landscape", top: 21.48, left: 12.89, bottom: 21.39, right: 12.89, ratio: 1.0 }
-];
+// ── Animated counter hook ──
+function useCountUp(target, duration = 1200) {
+  const [count, setCount] = useState(0);
+  const prevTarget = useRef(0);
 
-const BASE_FRAMES = [
-  {
-    id: "classic-oak",
-    name: "Classic Oak",
-    price: "Rs. 4,900",
-    color: "#8B5E3C",
-    desc: "Warm traditional solid oak, showcasing rich organic grain patterns.",
-    tag: "Artisanal Wood",
-    orientation: "portrait",
-    imageUrl: "/frames/portrait/frame-01-correct-size.webp",
-    paddingTop: 8.97,
-    paddingLeft: 12.04,
-    paddingBottom: 9.03,
-    paddingRight: 12.33,
-    aspectRatio: 0.6667
-  },
-  {
-    id: "matte-black",
-    name: "Matte Black",
-    price: "Rs. 3,900",
-    color: "#1A1A1A",
-    desc: "Sleek, minimalist exhibition profile for modern photographic art.",
-    tag: "Gallery Classic",
-    orientation: "portrait",
-    imageUrl: "/frames/portrait/frame-02-correct-size.webp",
-    paddingTop: 12.61,
-    paddingLeft: 15.08,
-    paddingBottom: 13.19,
-    paddingRight: 15.54,
-    aspectRatio: 0.6667
-  },
-  {
-    id: "antique-gold",
-    name: "Antique Gold",
-    price: "Rs. 7,900",
-    color: "#C9A84C",
-    desc: "Luxury baroque detailing finished with gold-leaf accents.",
-    tag: "Heritage Luxury",
-    orientation: "portrait",
-    imageUrl: "/frames/portrait/frame-03-correct-size.webp",
-    paddingTop: 9.11,
-    paddingLeft: 10.94,
-    paddingBottom: 9.29,
-    paddingRight: 11.20,
-    aspectRatio: 0.6667
-  },
-  {
-    id: "landscape-oak",
-    name: "Landscape Oak",
-    price: "Rs. 4,900",
-    color: "#8B5E3C",
-    desc: "Warm traditional solid oak, wide landscape orientation.",
-    tag: "Artisanal Wood",
-    orientation: "landscape",
-    imageUrl: "/frames/landscape/frame-04-correct-size.webp",
-    paddingTop: 7.22,
-    paddingLeft: 6.04,
-    paddingBottom: 7.06,
-    paddingRight: 6.07,
-    aspectRatio: 1.5
-  },
-  {
-    id: "gallery-landscape",
-    name: "Gallery Landscape",
-    price: "Rs. 5,900",
-    color: "#777570",
-    desc: "A wide landscape frame mockup set against a clean room background.",
-    tag: "Contemporary",
-    orientation: "landscape",
-    imageUrl: "/frames/landscape/Irrelevant Image.png",
-    paddingTop: 21.48,
-    paddingLeft: 12.89,
-    paddingBottom: 21.39,
-    paddingRight: 12.89,
-    aspectRatio: 1.0
-  }
-];
+  useEffect(() => {
+    if (target === prevTarget.current) return;
+    const start = prevTarget.current;
+    const diff = target - start;
+    const startTime = performance.now();
 
-const INITIAL_FORM = {
-  id: "", name: "", price: "Rs. ", category: "", color: "#8B5E3C", desc: "", tag: "",
-  orientation: "portrait", imageUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 1.0
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutExpo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setCount(Math.round(start + diff * eased));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
+    prevTarget.current = target;
+  }, [target, duration]);
+
+  return count;
+}
+
+// ── Status badge colors ──
+const STATUS_COLORS = {
+  Pending: { bg: "rgba(255, 175, 56, 0.12)", text: "#FFAF38", border: "rgba(255, 175, 56, 0.25)" },
+  Processing: { bg: "rgba(56, 152, 255, 0.12)", text: "#3898FF", border: "rgba(56, 152, 255, 0.25)" },
+  Shipped: { bg: "rgba(139, 92, 246, 0.12)", text: "#8B5CF6", border: "rgba(139, 92, 246, 0.25)" },
+  Delivered: { bg: "rgba(34, 197, 94, 0.12)", text: "#22C55E", border: "rgba(34, 197, 94, 0.25)" },
+  Cancelled: { bg: "rgba(255, 90, 90, 0.12)", text: "#FF5A5A", border: "rgba(255, 90, 90, 0.25)" },
 };
 
-export default function AdminDashboard() {
+export default function DashboardOverview() {
   const router = useRouter();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [activeTab, setActiveTab] = useState("frames"); // 'frames' | 'orders'
-
-  // Data
   const [frames, setFrames] = useState([]);
   const [orders, setOrders] = useState([]);
-
-  // Order Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterPayment, setFilterPayment] = useState("All");
-  const [sortOrder, setSortOrder] = useState("newest");
-
-  // Frame Form
-  const [isEditing, setIsEditing] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
-
-  // Categories state
   const [categories, setCategories] = useState([]);
-  const [categoryFormName, setCategoryFormName] = useState("");
-  const [categoryEditingId, setCategoryEditingId] = useState(null);
-
-  // CSV state
-  const [csvStatus, setCsvStatus] = useState(null);
-
-  // Cloudinary Upload Config (hardcoded)
-  const cloudinaryCloud = "hpikhwjw";
-  const cloudinaryPreset = "ml_default";
-  const [uploadingImage, setUploadingImage] = useState(false);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingImage(true);
-    const dataUpload = new FormData();
-    dataUpload.append("file", file);
-    dataUpload.append("upload_preset", cloudinaryPreset);
-
-    try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`, {
-        method: "POST",
-        body: dataUpload,
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error?.message || "Failed to upload image to Cloudinary");
-      }
-
-      const result = await res.json();
-      setFormData(prev => ({
-        ...prev,
-        imageUrl: result.secure_url
-      }));
-      alert("Image uploaded to Cloudinary successfully! URL stored in form.");
-    } catch (err) {
-      console.error("Cloudinary upload failed:", err);
-      alert(`Cloudinary upload failed: ${err.message}`);
-      e.target.value = "";
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleDeleteOrder = async (docId) => {
-    if (!confirm("Are you sure you want to delete this order permanently?")) return;
-    try {
-      const orderRef = ref(db, `orders/${docId}`);
-      await remove(orderRef);
-      alert("Order deleted successfully.");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to delete order.");
-    }
-  };
-
-  const handleSelectTemplate = (e) => {
-    const val = e.target.value;
-    setSelectedTemplate(val);
-    if (!val) return;
-    const template = AVAILABLE_FRAME_IMAGES.find(x => x.value === val);
-    if (template) {
-      setFormData(prev => ({
-        ...prev,
-        orientation: template.orientation,
-        paddingTop: template.top,
-        paddingLeft: template.left,
-        paddingBottom: template.bottom,
-        paddingRight: template.right,
-        aspectRatio: template.ratio
-      }));
-    }
-  };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (sessionStorage.getItem("fs_admin") !== "authenticated") {
-        router.push("/admin");
-      } else {
-        setAuthChecked(true);
-      }
-    }
-  }, [router]);
-
-  // Listeners
-  useEffect(() => {
-    if (!authChecked) return;
-    const framesRef = ref(db, "frames");
-    const unsubFrames = onValue(framesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const framesList = Object.entries(data).map(([key, val]) => ({
-          docId: key,
-          ...val
-        }));
-        setFrames(framesList);
-      } else {
-        setFrames([]);
-      }
+    const unsubFrames = onValue(ref(db, "frames"), (snap) => {
+      const d = snap.val();
+      setFrames(d ? Object.entries(d).map(([k, v]) => ({ docId: k, ...v })) : []);
     });
-
-    const ordersRef = ref(db, "orders");
-    const unsubOrders = onValue(ordersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const ordersList = Object.entries(data).map(([key, val]) => ({
-          docId: key,
-          ...val
-        }));
-        ordersList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        setOrders(ordersList);
-      } else {
-        setOrders([]);
-      }
+    const unsubOrders = onValue(ref(db, "orders"), (snap) => {
+      const d = snap.val();
+      if (d) {
+        const list = Object.entries(d).map(([k, v]) => ({ docId: k, ...v }));
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        setOrders(list);
+      } else setOrders([]);
     });
-
-    const categoriesRef = ref(db, "categories");
-    const unsubCategories = onValue(categoriesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const catList = Object.entries(data).map(([key, val]) => ({
-          docId: key,
-          name: val.name
-        }));
-        setCategories(catList);
-      } else {
-        // Automatically seed default categories if empty
-        const defaultCats = ["Portrait", "Landscape", "Service", "Board Game", "Nikkah Nama Frame"];
-        defaultCats.forEach(cat => {
-          push(ref(db, "categories"), { name: cat });
-        });
-      }
+    const unsubCats = onValue(ref(db, "categories"), (snap) => {
+      const d = snap.val();
+      setCategories(d ? Object.entries(d).map(([k, v]) => ({ docId: k, name: v.name })) : []);
     });
+    return () => { unsubFrames(); unsubOrders(); unsubCats(); };
+  }, []);
 
-    return () => {
-      unsubFrames();
-      unsubOrders();
-      unsubCategories();
-    };
-  }, [authChecked]);
+  // ── Compute stats ──
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const pendingOrders = orders.filter(o => (o.status || "Pending") === "Pending").length;
+  const deliveredOrders = orders.filter(o => o.status === "Delivered").length;
+  const recentOrders = orders.slice(0, 5);
 
-  const handleSeed = async () => {
-    if (!confirm("Seed default 16 frames?")) return;
-    try {
-      for (const f of BASE_FRAMES) {
-        const frameRef = ref(db, `frames/${f.id}`);
-        await set(frameRef, f);
-      }
-      alert("Seeded successfully!");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to seed.");
-    }
-  };
+  // Animated counts
+  const animFrames = useCountUp(frames.length);
+  const animOrders = useCountUp(orders.length);
+  const animRevenue = useCountUp(totalRevenue);
+  const animPending = useCountUp(pendingOrders);
 
-  const handleFormChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
-  };
+  const STAT_CARDS = [
+    { label: "Total Frames", value: animFrames, icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>`, gradient: "linear-gradient(135deg, #C9A84C, #E8D48B)", href: "/admin/dashboard/frames" },
+    { label: "Total Orders", value: animOrders, icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`, gradient: "linear-gradient(135deg, #3898FF, #60BFFF)", href: "/admin/dashboard/orders" },
+    { label: "Revenue", value: `Rs. ${animRevenue.toLocaleString()}`, icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`, gradient: "linear-gradient(135deg, #22C55E, #4ADE80)", href: "/admin/dashboard/orders" },
+    { label: "Pending Orders", value: animPending, icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`, gradient: "linear-gradient(135deg, #FFAF38, #FFD166)", href: "/admin/dashboard/orders" },
+  ];
 
-  const handleSaveFrame = async (e) => {
-    e.preventDefault();
-    if (!formData.imageUrl) {
-      alert("Please upload a local image to Cloudinary first!");
-      return;
-    }
-    try {
-      if (isEditing) {
-        const frameRef = ref(db, `frames/${editId}`);
-        await set(frameRef, formData);
-      } else {
-        const frameRef = ref(db, `frames/${formData.id}`);
-        await set(frameRef, formData);
-      }
-      resetForm();
-    } catch (e) {
-      console.error(e);
-      alert("Error saving frame");
-    }
-  };
-
-  const handleDeleteFrame = async (docId) => {
-    if (!confirm("Are you sure?")) return;
-    const frameRef = ref(db, `frames/${docId}`);
-    await remove(frameRef);
-  };
-
-  const handleUpdateOrderStatus = async (docId, newStatus) => {
-    try {
-      const statusRef = ref(db, `orders/${docId}/status`);
-      await set(statusRef, newStatus);
-    } catch (e) {
-      console.error(e);
-      alert("Failed to update status.");
-    }
-  };
-
-  const editFrame = (f) => {
-    setFormData(f);
-    setEditId(f.docId);
-    setIsEditing(true);
-    const match = AVAILABLE_FRAME_IMAGES.find(img => img.value === f.imageUrl);
-    setSelectedTemplate(match ? match.value : "");
-  };
-
-  const resetForm = () => {
-    setFormData(INITIAL_FORM);
-    setIsEditing(false);
-    setEditId(null);
-    setSelectedTemplate("");
-  };
-
-  // CSV helper
-  const parseCSV = (text) => {
-    const lines = [];
-    let row = [""];
-    let inQuotes = false;
-    
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      const next = text[i+1];
-      
-      if (c === '"') {
-        if (inQuotes && next === '"') {
-          row[row.length - 1] += '"';
-          i++; // skip next double quote
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (c === ',' && !inQuotes) {
-        row.push('');
-      } else if ((c === '\r' || c === '\n') && !inQuotes) {
-        if (c === '\r' && next === '\n') {
-          i++; // skip \n
-        }
-        lines.push(row);
-        row = [''];
-      } else {
-        row[row.length - 1] += c;
-      }
-    }
-    if (row.length > 1 || row[0] !== '') {
-      lines.push(row);
-    }
-    return lines;
-  };
-
-  const handleDownloadCSVTemplate = () => {
-    const headers = [
-      "id", "name", "price", "category", "orientation", "desc", "color", "tag", "imageUrl", "paddingTop", "paddingLeft", "paddingBottom", "paddingRight", "aspectRatio"
-    ];
-    
-    const rows = [
-      [
-        "classic-oak", "Classic Oak", "Rs. 4,900", "Portrait", "portrait", "Warm traditional solid oak framing.", "#8B5E3C", "Artisanal Wood", "/frames/portrait/frame-01-correct-size.webp", "8.97", "12.04", "9.03", "12.33", "0.6667"
-      ],
-      [
-        "landscape-oak", "Landscape Oak", "Rs. 4,900", "Landscape", "landscape", "Wide landscape orientation frame.", "#8B5E3C", "Artisanal Wood", "/frames/landscape/frame-04-correct-size.webp", "7.22", "6.04", "7.06", "6.07", "1.5"
-      ]
-    ];
-    
-    const csvString = [headers.join(","), ...rows.map(r => r.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "frames_upload_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleCSVUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target.result;
-      try {
-        const parsed = parseCSV(text);
-        if (parsed.length < 2) {
-          throw new Error("CSV file is empty or only contains header row.");
-        }
-        
-        const headers = parsed[0].map(h => h.trim().toLowerCase());
-        const requiredHeaders = ["id", "name", "price"];
-        for (const req of requiredHeaders) {
-          if (!headers.includes(req)) {
-            throw new Error(`Missing required header: ${req}`);
-          }
-        }
-        
-        let successCount = 0;
-        let skipCount = 0;
-        const errors = [];
-        
-        for (let i = 1; i < parsed.length; i++) {
-          const row = parsed[i];
-          if (row.length === 1 && row[0] === "") continue; // skip blank lines
-          
-          const frameData = {};
-          headers.forEach((header, index) => {
-            const val = row[index] ? row[index].trim() : "";
-            if (header === "aspectratio") frameData.aspectRatio = parseFloat(val) || 1.0;
-            else if (header === "paddingtop") frameData.paddingTop = parseFloat(val) || 0;
-            else if (header === "paddingleft") frameData.paddingLeft = parseFloat(val) || 0;
-            else if (header === "paddingbottom") frameData.paddingBottom = parseFloat(val) || 0;
-            else if (header === "paddingright") frameData.paddingRight = parseFloat(val) || 0;
-            else if (header === "imageurl") frameData.imageUrl = val;
-            else frameData[header] = val;
-          });
-          
-          if (!frameData.id || !frameData.name || !frameData.price) {
-            errors.push(`Row ${i + 1}: Missing required fields.`);
-            skipCount++;
-            continue;
-          }
-          
-          const frameRef = ref(db, `frames/${frameData.id}`);
-          await set(frameRef, frameData);
-          successCount++;
-        }
-        
-        setCsvStatus({
-          error: false,
-          message: `Import complete! Successfully imported ${successCount} products.${skipCount > 0 ? ` Skipped ${skipCount} rows.` : ""}`
-        });
-        alert(`Import successful: ${successCount} products imported.`);
-      } catch (err) {
-        console.error(err);
-        setCsvStatus({
-          error: true,
-          message: `Import failed: ${err.message}`
-        });
-        alert(`Import failed: ${err.message}`);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  };
-
-  // Category handlers
-  const handleSaveCategory = async (e) => {
-    e.preventDefault();
-    if (!categoryFormName.trim()) return;
-    try {
-      if (categoryEditingId) {
-        const catRef = ref(db, `categories/${categoryEditingId}`);
-        await set(catRef, { name: categoryFormName.trim() });
-      } else {
-        const catRef = ref(db, "categories");
-        const newCatRef = push(catRef);
-        await set(newCatRef, { name: categoryFormName.trim() });
-      }
-      resetCategoryForm();
-    } catch (err) {
-      console.error(err);
-      alert("Error saving category");
-    }
-  };
-
-  const editCategory = (c) => {
-    setCategoryFormName(c.name);
-    setCategoryEditingId(c.docId);
-  };
-
-  const resetCategoryForm = () => {
-    setCategoryFormName("");
-    setCategoryEditingId(null);
-  };
-
-  const handleDeleteCategory = async (docId) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    try {
-      const catRef = ref(db, `categories/${docId}`);
-      await remove(catRef);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete category");
-    }
-  };
-
-  if (!authChecked) return null;
+  const QUICK_ACTIONS = [
+    { label: "Manage Frames", desc: "Add, edit or remove frame products", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>`, href: "/admin/dashboard/frames" },
+    { label: "View Orders", desc: "Track and fulfill customer orders", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`, href: "/admin/dashboard/orders" },
+    { label: "Categories", desc: "Organize your product catalog", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`, href: "/admin/dashboard/categories" },
+  ];
 
   return (
-    <div className="admin-root">
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-          --bg: #0F0D0B; --surface: #171512; --surface2: #211E1A;
-          --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.12);
-          --text: #F5F0E8; --text2: #A8A08C; --accent: #C9A84C; --radius: 12px;
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* ── DASHBOARD SPECIFIC STYLES ── */
+        .dash-greeting {
+          margin-bottom: 32px;
         }
-
-        .admin-root {
-          font-family: 'DM Sans', sans-serif;
-          background: var(--bg); color: var(--text);
-          min-height: 100vh; display: flex; flex-direction: column;
+        .dash-greeting h2 {
+          font-family: 'DM Serif Display', serif;
+          font-size: 28px; font-weight: 400;
+          margin-bottom: 6px;
         }
-
-        .admin-header {
-          height: 68px; background: var(--surface); border-bottom: 1px solid var(--border);
-          display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+        .dash-greeting p {
+          font-size: 14px; color: var(--text2);
         }
-        .admin-brand { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); }
-        .admin-brand span { color: var(--text); }
-        .admin-logout { color: var(--text2); cursor: pointer; border: none; background: none; font-size: 13px; }
+        .dash-greeting span.accent { color: var(--accent); }
 
-        .admin-layout { display: flex; flex: 1; }
-        .admin-sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; }
-        .tab-btn {
-          width: 100%; text-align: left; background: none; border: none; padding: 16px 30px;
-          color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; border-left: 3px solid transparent;
+        /* ── STAT CARDS ── */
+        .stat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          margin-bottom: 36px;
         }
-        .tab-btn.active { color: var(--accent); border-left-color: var(--accent); background: rgba(201,168,76,0.05); }
-
-        .admin-content { flex: 1; padding: 40px; overflow-y: auto; }
-        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        h2 { font-family: 'DM Serif Display', serif; font-size: 28px; }
-
-        .btn-primary {
-          padding: 10px 20px !important;
-          border-radius: 9999px !important;
-        }
-        .btn-secondary {
-          background: var(--surface2) !important;
-          color: var(--text) !important;
-          border: 1px solid var(--border2) !important;
-          padding: 10px 20px !important;
-          border-radius: 9999px !important;
-          cursor: pointer;
-          font-weight: 700;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          transition: all 0.2s ease;
-        }
-        .btn-secondary:hover {
-          background: var(--surface3) !important;
-          border-color: var(--accent) !important;
-        }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
-        
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 11px; color: var(--text2); text-transform: uppercase; }
-        .form-control { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); padding: 10px; border-radius: var(--radius); font-size: 13px; }
-
-        .item-list { display: flex; flex-direction: column; gap: 12px; }
-        .list-item { background: var(--surface2); border: 1px solid var(--border2); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .item-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--accent); }
-        .item-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
-        
-        .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
-
-        /* ── ORDER FILTERS ── */
-        .order-filters-bar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          align-items: center;
-          margin-bottom: 24px;
-          padding: 18px 20px;
+        .stat-card {
+          position: relative;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 10px;
-        }
-        .filter-search {
-          flex: 1;
-          min-width: 200px;
-          background: var(--surface2);
-          border: 1px solid var(--border2);
-          color: var(--text);
-          padding: 9px 14px 9px 36px;
-          border-radius: 8px;
-          font-size: 13px;
-          outline: none;
-          transition: border-color 0.2s ease;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .filter-search:focus { border-color: var(--accent); }
-        .filter-search::placeholder { color: var(--text2); opacity: 0.7; }
-        .filter-search-wrap {
-          position: relative;
-          flex: 1;
-          min-width: 200px;
-        }
-        .filter-search-icon {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 14px;
-          color: var(--text2);
-          pointer-events: none;
-        }
-        .filter-select {
-          background: var(--surface2);
-          border: 1px solid var(--border2);
-          color: var(--text);
-          padding: 9px 14px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 600;
-          outline: none;
+          border-radius: 16px;
+          padding: 24px;
+          overflow: hidden;
           cursor: pointer;
-          transition: border-color 0.2s ease;
-          font-family: 'DM Sans', sans-serif;
-          -webkit-appearance: none;
-          appearance: none;
-          min-width: 140px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .filter-select:focus { border-color: var(--accent); }
-        .filter-select-wrap {
-          position: relative;
-        }
-        .filter-select-wrap::after {
-          content: '▾';
+        .stat-card::before {
+          content: '';
           position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 11px;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          border-radius: 16px 16px 0 0;
+        }
+        .stat-card:hover {
+          border-color: rgba(201, 168, 76, 0.2);
+          transform: translateY(-4px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        .stat-card-icon {
+          margin-bottom: 16px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px; height: 48px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border);
+          color: var(--text);
+        }
+        .stat-card-value {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 30px;
+          font-weight: 700;
+          color: var(--text);
+          margin-bottom: 4px;
+          letter-spacing: -0.02em;
+        }
+        .stat-card-label {
+          font-size: 12px;
           color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-weight: 600;
+        }
+        .stat-card-glow {
+          position: absolute;
+          bottom: -40px; right: -40px;
+          width: 120px; height: 120px;
+          border-radius: 50%;
+          opacity: 0.06;
+          transition: opacity 0.3s ease;
           pointer-events: none;
         }
-        .filter-label {
+        .stat-card:hover .stat-card-glow { opacity: 0.12; }
+
+        /* ── BOTTOM GRID ── */
+        .dash-bottom-grid {
+          display: grid;
+          grid-template-columns: 1.6fr 1fr;
+          gap: 24px;
+        }
+
+        /* ── RECENT ORDERS TABLE ── */
+        .recent-orders-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          overflow: hidden;
+        }
+        .recent-orders-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+        }
+        .recent-orders-header h3 {
+          font-family: 'DM Serif Display', serif;
+          font-size: 18px; font-weight: 400;
+        }
+        .view-all-link {
+          font-size: 12px; color: var(--accent);
+          text-decoration: none; cursor: pointer;
+          font-weight: 600; text-transform: uppercase;
+          letter-spacing: 0.06em; border: none; background: none;
+          transition: opacity 0.2s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .view-all-link:hover { opacity: 0.7; }
+        .recent-orders-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .recent-orders-table th {
+          text-align: left;
           font-size: 10px;
           color: var(--text2);
           text-transform: uppercase;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.08em;
           font-weight: 700;
-          margin-bottom: 4px;
-          display: block;
+          padding: 12px 24px;
+          border-bottom: 1px solid var(--border);
+          background: rgba(255,255,255,0.01);
         }
-        .filter-group {
-          display: flex;
-          flex-direction: column;
+        .recent-orders-table td {
+          padding: 14px 24px;
+          font-size: 13px;
+          border-bottom: 1px solid var(--border);
+          vertical-align: middle;
         }
-        .filter-results-count {
-          font-size: 12px;
-          color: var(--text2);
-          margin-left: auto;
-          white-space: nowrap;
-          font-weight: 500;
+        .recent-orders-table tr:last-child td { border-bottom: none; }
+        .recent-orders-table tr {
+          transition: background 0.15s ease;
         }
-        .filter-clear-btn {
-          background: none;
-          border: 1px solid rgba(255, 90, 90, 0.3);
-          color: #FF7777;
+        .recent-orders-table tr:hover td {
+          background: rgba(255,255,255,0.015);
+        }
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: 6px;
           font-size: 10px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.04em;
-          padding: 8px 14px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          white-space: nowrap;
+          border: 1px solid;
         }
-        .filter-clear-btn:hover {
-          background: rgba(255, 90, 90, 0.08);
-          border-color: #FF5A5A;
-          color: #FF5A5A;
+        .order-id-cell {
+          font-weight: 600;
+          color: var(--accent);
+          font-size: 12px;
+        }
+        .empty-state {
+          text-align: center;
+          padding: 48px 24px;
+          color: var(--text2);
+        }
+        .empty-state-icon {
+          font-size: 40px;
+          margin-bottom: 12px;
+          opacity: 0.25;
+        }
+        .empty-state p { font-size: 13px; }
+
+        /* ── QUICK ACTIONS ── */
+        .quick-actions-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          overflow: hidden;
+        }
+        .quick-actions-header {
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+        }
+        .quick-actions-header h3 {
+          font-family: 'DM Serif Display', serif;
+          font-size: 18px; font-weight: 400;
+        }
+        .quick-actions-list {
+          padding: 12px;
+        }
+        .quick-action-item {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          border-radius: 12px;
+          cursor: pointer;
+          border: none;
+          background: none;
+          width: 100%;
+          text-align: left;
+          color: var(--text);
+          transition: all 0.2s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .quick-action-item:hover {
+          background: rgba(201, 168, 76, 0.06);
+        }
+        .quick-action-icon {
+          width: 48px; height: 48px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+          color: var(--text);
+        }
+        .quick-action-item:hover .quick-action-icon {
+          background: rgba(201, 168, 76, 0.1);
+          border-color: rgba(201, 168, 76, 0.25);
+        }
+        .quick-action-label {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
+        .quick-action-desc {
+          font-size: 12px;
+          color: var(--text2);
+        }
+        .quick-action-arrow {
+          margin-left: auto;
+          font-size: 16px;
+          color: var(--text2);
+          opacity: 0;
+          transform: translateX(-4px);
+          transition: all 0.2s ease;
+        }
+        .quick-action-item:hover .quick-action-arrow {
+          opacity: 1;
+          transform: translateX(0);
         }
 
-        .receipt-lightbox-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          background: rgba(0, 0, 0, 0.92);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px;
-          cursor: zoom-out;
-          animation: fadeInLightbox 0.2s ease;
+        /* ── SUMMARY CARDS ── */
+        .summary-strip {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          padding: 16px 24px 20px;
+          border-top: 1px solid var(--border);
         }
-        .receipt-lightbox-overlay img {
-          max-width: 90vw;
-          max-height: 85vh;
-          object-fit: contain;
-          border-radius: 8px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-          border: 2px solid rgba(201, 168, 76, 0.3);
+        .summary-mini {
+          text-align: center;
         }
-        .receipt-lightbox-close {
-          position: absolute;
-          top: 20px;
-          right: 24px;
-          background: rgba(255,255,255,0.1);
-          border: 1px solid rgba(255,255,255,0.2);
-          color: #fff;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
+        .summary-mini-value {
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--text);
         }
-        .receipt-lightbox-close:hover {
-          background: rgba(255,255,255,0.2);
+        .summary-mini-label {
+          font-size: 10px;
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          font-weight: 600;
+          margin-top: 2px;
         }
-        @keyframes fadeInLightbox {
-          from { opacity: 0; }
-          to { opacity: 1; }
+
+        @media (max-width: 1200px) {
+          .stat-grid { grid-template-columns: repeat(2, 1fr); }
+          .dash-bottom-grid { grid-template-columns: 1fr; }
         }
       ` }} />
 
-      <header className="admin-header">
-        <div className="admin-brand">Yaadein Admin</div>
-        <button className="admin-logout" onClick={() => { sessionStorage.clear(); router.push('/admin'); }}>Logout</button>
-      </header>
-
-      <div className="admin-layout">
-        <aside className="admin-sidebar">
-          <button className={`tab-btn ${activeTab === 'frames' ? 'active' : ''}`} onClick={() => setActiveTab('frames')}>Frame Catalog</button>
-          <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Incoming Orders</button>
-          <button className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Manage Categories</button>
-        </aside>
-
-        <main className="admin-content">
-          {activeTab === 'frames' && (
-            <>
-              <div className="content-header">
-                <h2>Manage Frames</h2>
-                {frames.length === 0 && <button className="btn-primary" onClick={handleSeed}>Seed Default Frames</button>}
-              </div>
-              <div className="grid">
-                <div className="card">
-                  <h3 style={{ marginBottom: "20px" }}>{isEditing ? "Edit Frame" : "Add New Frame"}</h3>
-
-                  <form onSubmit={handleSaveFrame}>
-                    <div className="form-row">
-                      <div className="form-group"><label>Unique ID</label><input required className="form-control" name="id" value={formData.id} onChange={handleFormChange} disabled={isEditing} /></div>
-                      <div className="form-group"><label>Name</label><input required className="form-control" name="name" value={formData.name} onChange={handleFormChange} /></div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Price</label><input required className="form-control" name="price" value={formData.price} onChange={handleFormChange} placeholder="Rs. 4,900" /></div>
-                      <div className="form-group"><label>Category</label>
-                        <select className="form-control" name="category" value={formData.category || ""} onChange={handleFormChange} required>
-                          <option value="">-- Select Category --</option>
-                          {categories.map(c => (
-                            <option key={c.docId} value={c.name}>{c.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group" style={{ marginBottom: "16px" }}><label>Description</label><textarea required className="form-control" name="desc" value={formData.desc} onChange={handleFormChange} /></div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Fallback Hex Color</label><input required className="form-control" name="color" value={formData.color} onChange={handleFormChange} /></div>
-                      <div className="form-group"><label>Orientation</label>
-                        <select className="form-control" name="orientation" value={formData.orientation} onChange={handleFormChange}>
-                          <option value="portrait">Portrait</option>
-                          <option value="landscape">Landscape</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Tag</label><input required className="form-control" name="tag" value={formData.tag} onChange={handleFormChange} /></div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Select Image Template (Prefills Margins)</label>
-                        <select className="form-control" onChange={handleSelectTemplate} value={selectedTemplate}>
-                          <option value="">-- Custom / Select Image --</option>
-                          {AVAILABLE_FRAME_IMAGES.map(img => (
-                            <option key={img.value} value={img.value}>{img.label}</option>
-                          ))}
-                        </select>
-                        <span style={{ fontSize: "10px", color: "var(--text2)", marginTop: "4px" }}>Note: This pre-fills dimension settings. You must still select the file below to upload to Cloudinary.</span>
-                      </div>
-                      <div className="form-group">
-                        <label>Select Local Image file (Upload to Cloudinary)</label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="form-control"
-                          onChange={handleFileChange}
-                          disabled={uploadingImage}
-                          style={{ background: "var(--surface2)", color: "var(--text)" }}
-                        />
-                        {uploadingImage && <div style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>Uploading image to Cloudinary... ⌛</div>}
-                      </div>
-                    </div>
-                    {formData.imageUrl && (
-                      <div style={{
-                        marginTop: "16px",
-                        marginBottom: "16px",
-                        padding: "12px",
-                        background: "rgba(255, 255, 255, 0.02)",
-                        border: "1px solid var(--border2)",
-                        borderRadius: "8px",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "8px"
-                      }}>
-                        <span style={{ fontSize: "11px", color: "var(--text2)", alignSelf: "flex-start", textTransform: "uppercase" }}>Uploaded Image Preview</span>
-                        <div style={{
-                          width: "100%",
-                          maxHeight: "150px",
-                          overflow: "hidden",
-                          borderRadius: "4px",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          background: "#000"
-                        }}>
-                          <img
-                            src={formData.imageUrl}
-                            alt="Frame Preview"
-                            style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain" }}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          style={{ fontSize: "11px", padding: "4px 10px", color: "#FF5A5A", borderColor: "rgba(255, 90, 90, 0.2)" }}
-                          onClick={() => setFormData(prev => ({ ...prev, imageUrl: "" }))}
-                        >
-                          Remove Image
-                        </button>
-                      </div>
-                    )}
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Uploaded Live URL (From Cloudinary - Read Only)</label>
-                        <input readOnly className="form-control" name="imageUrl" value={formData.imageUrl || ""} placeholder="No image uploaded yet" style={{ opacity: 0.7, cursor: "not-allowed" }} />
-                      </div>
-                      <div className="form-group"><label>Aspect Ratio (W/H)</label><input required type="number" step="any" className="form-control" name="aspectRatio" value={formData.aspectRatio || ""} onChange={handleFormChange} placeholder="0.6667" /></div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Padding Top (%)</label><input required type="number" step="any" className="form-control" name="paddingTop" value={formData.paddingTop || 0} onChange={handleFormChange} /></div>
-                      <div className="form-group"><label>Padding Left (%)</label><input required type="number" step="any" className="form-control" name="paddingLeft" value={formData.paddingLeft || 0} onChange={handleFormChange} /></div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group"><label>Padding Bottom (%)</label><input required type="number" step="any" className="form-control" name="paddingBottom" value={formData.paddingBottom || 0} onChange={handleFormChange} /></div>
-                      <div className="form-group"><label>Padding Right (%)</label><input required type="number" step="any" className="form-control" name="paddingRight" value={formData.paddingRight || 0} onChange={handleFormChange} /></div>
-                    </div>
-                    <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={uploadingImage || !formData.imageUrl}
-                        style={{
-                          opacity: (uploadingImage || !formData.imageUrl) ? 0.5 : 1,
-                          cursor: (uploadingImage || !formData.imageUrl) ? "not-allowed" : "pointer"
-                        }}
-                      >
-                        {uploadingImage ? "Uploading image..." : isEditing ? "Update Frame" : "Create Frame"}
-                      </button>
-                      {isEditing && <button type="button" className="btn-secondary" onClick={resetForm}>Cancel</button>}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="item-list">
-                  {/* Bulk CSV Import */}
-                  <div className="card" style={{ marginBottom: "24px" }}>
-                    <h3 style={{ marginBottom: "16px" }}>Bulk CSV Import</h3>
-                    <p style={{ fontSize: "12px", color: "var(--text2)", marginBottom: "16px", lineHeight: "1.5" }}>
-                      Upload an Excel-compatible CSV file to import multiple products at once. Make sure to map categories correctly.
-                    </p>
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
-                      <button type="button" className="btn-secondary" onClick={handleDownloadCSVTemplate} style={{ fontSize: "11px", padding: "8px 16px" }}>
-                        📥 Download Template
-                      </button>
-                      <label className="btn-secondary" style={{ fontSize: "11px", padding: "8px 16px", cursor: "pointer", display: "inline-block" }}>
-                        📁 Upload CSV File
-                        <input 
-                          type="file" 
-                          accept=".csv" 
-                          onChange={handleCSVUpload} 
-                          style={{ display: "none" }} 
-                        />
-                      </label>
-                    </div>
-                    {csvStatus && (
-                      <div style={{
-                        padding: "12px",
-                        background: csvStatus.error ? "rgba(255, 90, 90, 0.08)" : "rgba(201, 168, 76, 0.08)",
-                        border: `1px solid ${csvStatus.error ? "#FF5A5A" : "rgba(201, 168, 76, 0.3)"}`,
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                        color: csvStatus.error ? "#FF7777" : "var(--text)",
-                        lineHeight: "1.5"
-                      }}>
-                        {csvStatus.message}
-                      </div>
-                    )}
-                  </div>
-
-                  <h3 style={{ marginBottom: "12px" }}>Existing Frames ({frames.length})</h3>
-                  {frames.map(f => (
-                    <div key={f.docId} className="list-item">
-                      <div>
-                        <div className="item-title">{f.name}</div>
-                        <div className="item-sub">{f.id} • {f.category || "No Category"} • {f.orientation} • {f.price}</div>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button className="btn-secondary" onClick={() => editFrame(f)}>Edit</button>
-                        <button className="btn-secondary" style={{ color: "#FF5A5A" }} onClick={() => handleDeleteFrame(f.docId)}>Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'categories' && (
-            <>
-              <div className="content-header">
-                <h2>Product Categories</h2>
-              </div>
-              <div className="grid">
-                <div className="card">
-                  <h3 style={{ marginBottom: "20px" }}>{categoryEditingId ? "Edit Category" : "Create New Category"}</h3>
-                  <form onSubmit={handleSaveCategory}>
-                    <div className="form-group" style={{ marginBottom: "16px" }}>
-                      <label>Category Name</label>
-                      <input 
-                        required 
-                        className="form-control" 
-                        value={categoryFormName} 
-                        onChange={(e) => setCategoryFormName(e.target.value)}
-                        placeholder="e.g. Nikkah Nama Frame"
-                      />
-                    </div>
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      <button type="submit" className="btn-primary">
-                        {categoryEditingId ? "Update Category" : "Create Category"}
-                      </button>
-                      {categoryEditingId && (
-                        <button type="button" className="btn-secondary" onClick={resetCategoryForm}>
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                </div>
-                
-                <div className="item-list">
-                  <h3 style={{ marginBottom: "12px" }}>Existing Categories ({categories.length})</h3>
-                  {categories.map(c => (
-                    <div key={c.docId} className="list-item">
-                      <div className="item-title">{c.name}</div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button className="btn-secondary" onClick={() => editCategory(c)}>Edit</button>
-                        <button className="btn-secondary" style={{ color: "#FF5A5A" }} onClick={() => handleDeleteCategory(c.docId)}>Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'orders' && (
-            <>
-              <div className="content-header">
-                <h2>Customer Orders</h2>
-              </div>
-
-              {/* ── FILTER BAR ── */}
-              <div className="order-filters-bar">
-                <div className="filter-search-wrap">
-                  <span className="filter-search-icon">🔍</span>
-                  <input
-                    type="text"
-                    className="filter-search"
-                    placeholder="Search by Order ID or Customer Name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="filter-group">
-                  <span className="filter-label">Status</span>
-                  <div className="filter-select-wrap">
-                    <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                      <option value="All">All Statuses</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="filter-group">
-                  <span className="filter-label">Payment</span>
-                  <div className="filter-select-wrap">
-                    <select className="filter-select" value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)}>
-                      <option value="All">All Methods</option>
-                      <option value="EasyPaisa">EasyPaisa</option>
-                      <option value="JazzCash">JazzCash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="filter-group">
-                  <span className="filter-label">Sort</span>
-                  <div className="filter-select-wrap">
-                    <select className="filter-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                      <option value="newest">Newest First</option>
-                      <option value="oldest">Oldest First</option>
-                    </select>
-                  </div>
-                </div>
-                {(searchQuery || filterStatus !== "All" || filterPayment !== "All") && (
-                  <button
-                    className="filter-clear-btn"
-                    onClick={() => { setSearchQuery(""); setFilterStatus("All"); setFilterPayment("All"); setSortOrder("newest"); }}
-                  >
-                    ✕ Clear Filters
-                  </button>
-                )}
-              </div>
-
-              {(() => {
-                const query = searchQuery.toLowerCase().trim();
-                let filtered = orders.filter(o => {
-                  if (filterStatus !== "All" && (o.status || "Pending") !== filterStatus) return false;
-                  if (filterPayment !== "All" && o.paymentMethod !== filterPayment) return false;
-                  if (query) {
-                    const matchId = (o.orderId || "").toLowerCase().includes(query);
-                    const matchName = (o.customer?.name || "").toLowerCase().includes(query);
-                    const matchPhone = (o.customer?.phone || "").toLowerCase().includes(query);
-                    const matchEmail = (o.customer?.email || "").toLowerCase().includes(query);
-                    if (!matchId && !matchName && !matchPhone && !matchEmail) return false;
-                  }
-                  return true;
-                });
-
-                if (sortOrder === "oldest") {
-                  filtered = [...filtered].reverse();
-                }
-
-                if (filtered.length === 0) {
-                  return (
-                    <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text2)" }}>
-                      <div style={{ fontSize: "36px", marginBottom: "12px", opacity: 0.4 }}>📭</div>
-                      <p style={{ fontSize: "14px" }}>
-                        {orders.length === 0
-                          ? "No orders have been placed yet."
-                          : "No orders match the current filters."}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <>
-                    <div style={{ fontSize: "12px", color: "var(--text2)", marginBottom: "14px" }}>
-                      Showing <strong style={{ color: "var(--accent)" }}>{filtered.length}</strong> of {orders.length} order{orders.length !== 1 ? "s" : ""}
-                    </div>
-                    {filtered.map(o => (
-                      <div key={o.docId} className="order-card">
-                        <div className="order-header">
-                          <div>
-                            <strong style={{ color: "var(--accent)", fontSize: "16px" }}>{o.orderId}</strong>
-                            <span style={{ marginLeft: "12px", fontSize: "12px", color: "var(--text2)" }}>
-                              {o.createdAt ? new Date(o.createdAt).toLocaleString() : "Just now"}
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                            <select
-                              value={o.status || "Pending"}
-                              onChange={(e) => handleUpdateOrderStatus(o.docId, e.target.value)}
-                              style={{
-                                background: "var(--surface2)",
-                                color: "var(--accent)",
-                                border: "1px solid var(--border2)",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "12px",
-                                fontWeight: "700",
-                                textTransform: "uppercase",
-                                outline: "none",
-                                cursor: "pointer"
-                              }}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Processing">Processing</option>
-                              <option value="Shipped">Shipped</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
-                            <strong style={{ color: "#FFF" }}>Grand Total: Rs. {o.total?.toLocaleString()} ({o.paymentMethod || "COD"})</strong>
-
-                            {/* Delete Order button */}
-                            <button
-                              onClick={() => handleDeleteOrder(o.docId)}
-                              style={{
-                                background: "none",
-                                border: "1px solid #FF5A5A",
-                                color: "#FF5A5A",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                textTransform: "uppercase",
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                                marginLeft: "10px"
-                              }}
-                              onMouseEnter={(e) => { e.target.style.background = "#FF5A5A"; e.target.style.color = "#111"; }}
-                              onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.color = "#FF5A5A"; }}
-                            >
-                              Delete 🗑️
-                            </button>
-                          </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
-                          <div>
-                            <h4 style={{ fontSize: "12px", color: "var(--text2)", textTransform: "uppercase", marginBottom: "8px" }}>Customer Info</h4>
-                            <p style={{ fontSize: "13px" }}><strong>{o.customer?.name}</strong></p>
-                            <p style={{ fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                              <span>{o.customer?.phone} | {o.customer?.email}</span>
-                              <button
-                                onClick={() => {
-                                  const getWhatsAppNumber = (phone) => {
-                                    if (!phone) return "";
-                                    let clean = phone.replace(/\D/g, "");
-                                    if (clean.startsWith("0")) {
-                                      clean = "92" + clean.slice(1);
-                                    }
-                                    if (clean.length === 10 && !clean.startsWith("92")) {
-                                      clean = "92" + clean;
-                                    }
-                                    return clean;
-                                  };
-                                  const messageText = `*Yaadein Order Confirmation* 🌟\n\n` +
-                                    `Order Reference: *${o.orderId}*\n` +
-                                    `Customer Name: *${o.customer?.name}*\n` +
-                                    `Phone: *${o.customer?.phone}*\n` +
-                                    `Address: *${o.customer?.address || ""}, ${o.customer?.city || ""}, ${o.customer?.state || ""} ${o.customer?.zip || ""}*\n` +
-                                    `Payment Method: *${o.paymentMethod || "Prepaid"}*\n` +
-                                    `Grand Total: *Rs. ${o.total?.toLocaleString()}*\n\n` +
-                                    `Thank you for framing with Yaadein! Your order is confirmed and currently processing.`;
-                                  const whatsappUrl = `https://wa.me/${getWhatsAppNumber(o.customer?.phone)}?text=${encodeURIComponent(messageText)}`;
-                                  window.open(whatsappUrl, "_blank");
-                                }}
-                                style={{
-                                  background: "rgba(37, 211, 102, 0.1)",
-                                  border: "1px solid #25D366",
-                                  color: "#25D366",
-                                  padding: "2px 8px",
-                                  borderRadius: "4px",
-                                  fontSize: "11px",
-                                  cursor: "pointer",
-                                  fontWeight: "bold",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  transition: "all 0.2s ease"
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = "#25D366"; e.currentTarget.style.color = "#FFF"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(37, 211, 102, 0.1)"; e.currentTarget.style.color = "#25D366"; }}
-                              >
-                                💬 WhatsApp Confirm
-                              </button>
-                            </p>
-                            <p style={{ fontSize: "13px", marginTop: "8px", color: "var(--text2)" }}>
-                              {o.customer?.address}<br />{o.customer?.city}, {o.customer?.state} {o.customer?.zip}
-                            </p>
-
-                            {/* Payment Info */}
-                            <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px dashed var(--border)" }}>
-                              <h4 style={{ fontSize: "12px", color: "var(--text2)", textTransform: "uppercase", marginBottom: "6px" }}>Payment Info</h4>
-                              <p style={{ fontSize: "13px" }}>
-                                Method: <strong style={{ color: "var(--accent)" }}>{o.paymentMethod || "N/A"}</strong>
-                              </p>
-                              {o.paymentReceiptUrl ? (
-                                <div style={{ marginTop: "8px" }}>
-                                  <a
-                                    href={o.paymentReceiptUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                      color: "var(--accent)",
-                                      textDecoration: "none",
-                                      fontSize: "12px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "6px",
-                                      background: "rgba(201, 168, 76, 0.08)",
-                                      padding: "4px 10px",
-                                      borderRadius: "6px",
-                                      border: "1px solid rgba(201, 168, 76, 0.2)"
-                                    }}
-                                  >
-                                    📄 View Payment Receipt 🔗
-                                  </a>
-                                  <div style={{
-                                    marginTop: "8px",
-                                    width: "120px",
-                                    height: "80px",
-                                    borderRadius: "4px",
-                                    overflow: "hidden",
-                                    border: "1px solid var(--border2)",
-                                    background: "#000",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s ease"
-                                  }}
-                                    onClick={() => {
-                                      const overlay = document.createElement('div');
-                                      overlay.className = 'receipt-lightbox-overlay';
-                                      overlay.onclick = () => overlay.remove();
-                                      const closeBtn = document.createElement('button');
-                                      closeBtn.className = 'receipt-lightbox-close';
-                                      closeBtn.innerHTML = '✕';
-                                      closeBtn.onclick = (e) => { e.stopPropagation(); overlay.remove(); };
-                                      const img = document.createElement('img');
-                                      img.src = o.paymentReceiptUrl;
-                                      img.alt = 'Payment Receipt Full View';
-                                      overlay.appendChild(closeBtn);
-                                      overlay.appendChild(img);
-                                      document.body.appendChild(overlay);
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                                    title="Click to view full size"
-                                  >
-                                    <img
-                                      src={o.paymentReceiptUrl}
-                                      alt="Receipt Thumbnail"
-                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                    />
-                                  </div>
-                                </div>
-                              ) : (
-                                <p style={{ fontSize: "12px", color: "#FF7777", fontStyle: "italic", marginTop: "4px" }}>No receipt screenshot uploaded.</p>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 style={{ fontSize: "12px", color: "var(--text2)", textTransform: "uppercase", marginBottom: "12px" }}>Order Items</h4>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                              {o.items?.map((item, i) => (
-                                <div key={i} style={{
-                                  display: "flex",
-                                  gap: "16px",
-                                  alignItems: "center",
-                                  background: "var(--bg)",
-                                  border: "1px solid var(--border)",
-                                  borderRadius: "8px",
-                                  padding: "10px 14px"
-                                }}>
-                                  {/* Customer Image Live Preview & Link */}
-                                  <div style={{
-                                    width: "60px",
-                                    height: "60px",
-                                    background: item.frameColor || "#333",
-                                    padding: "4px",
-                                    borderRadius: "4px",
-                                    display: "flex",
-                                    flexShrink: 0,
-                                    boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-                                    position: "relative"
-                                  }}>
-                                    {item.image ? (
-                                      <img
-                                        src={item.image}
-                                        alt={item.frameName}
-                                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "2px" }}
-                                      />
-                                    ) : (
-                                      <div style={{ flex: 1, background: "#2D2822", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "rgba(201,168,76,0.15)" }}>Y</div>
-                                    )}
-                                  </div>
-
-                                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                      <span style={{ fontWeight: "700", color: "#FFF", fontSize: "14px" }}>{item.quantity}x {item.frameName}</span>
-                                      <span style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px" }}>{item.price}</span>
-                                    </div>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--text2)" }}>
-                                      <span>{item.size ? `${item.size} • ` : ""}{item.orientation === "landscape" ? "Landscape" : "Portrait"}{item.rotation ? ` • Rotated ${item.rotation}°` : ""}</span>
-                                      {item.image && (
-                                        <a
-                                          href={item.image}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{
-                                            color: "var(--accent)",
-                                            textDecoration: "none",
-                                            fontWeight: "500",
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "4px",
-                                            background: "rgba(201,168,76,0.08)",
-                                            padding: "3px 8px",
-                                            borderRadius: "12px",
-                                            border: "1px solid rgba(201,168,76,0.2)"
-                                          }}
-                                        >
-                                          Live Image Link 🔗
-                                        </a>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                  </>
-                );
-              })()}
-            </>
-          )}
-        </main>
+      {/* ── GREETING ── */}
+      <div className="dash-greeting animate-in">
+        <h2>Welcome back <span className="accent">✦</span></h2>
+        <p>Here's what's happening with your store today.</p>
       </div>
-    </div>
+
+      {/* ── STAT CARDS ── */}
+      <div className="stat-grid">
+        {STAT_CARDS.map((card, i) => (
+          <div
+            key={card.label}
+            className={`stat-card animate-in animate-in-${i + 1}`}
+            style={{ '--card-gradient': card.gradient }}
+            onClick={() => router.push(card.href)}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: card.gradient, borderRadius: '16px 16px 0 0' }} />
+            <div className="stat-card-icon" dangerouslySetInnerHTML={{ __html: card.icon }} />
+            <div className="stat-card-value">{card.value}</div>
+            <div className="stat-card-label">{card.label}</div>
+            <div className="stat-card-glow" style={{ background: card.gradient }} />
+          </div>
+        ))}
+      </div>
+
+      {/* ── BOTTOM: RECENT ORDERS + QUICK ACTIONS ── */}
+      <div className="dash-bottom-grid">
+        {/* Recent Orders */}
+        <div className="recent-orders-card animate-in animate-in-4">
+          <div className="recent-orders-header">
+            <h3>Recent Orders</h3>
+            <button className="view-all-link" onClick={() => router.push('/admin/dashboard/orders')}>
+              View All →
+            </button>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon" dangerouslySetInnerHTML={{ __html: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>' }} />
+              <p>No orders yet. They'll appear here once customers start ordering.</p>
+            </div>
+          ) : (
+            <table className="recent-orders-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map(o => {
+                  const status = o.status || "Pending";
+                  const sc = STATUS_COLORS[status] || STATUS_COLORS.Pending;
+                  return (
+                    <tr key={o.docId}>
+                      <td className="order-id-cell">{o.orderId}</td>
+                      <td style={{ color: "var(--text)" }}>{o.customer?.name || "—"}</td>
+                      <td style={{ fontWeight: 600 }}>Rs. {o.total?.toLocaleString() || "0"}</td>
+                      <td>
+                        <span className="status-badge" style={{ background: sc.bg, color: sc.text, borderColor: sc.border }}>
+                          {status}
+                        </span>
+                      </td>
+                      <td style={{ color: "var(--text2)", fontSize: "12px" }}>
+                        {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Quick Actions + Summary */}
+        <div className="animate-in animate-in-5" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="quick-actions-card">
+            <div className="quick-actions-header">
+              <h3>Quick Actions</h3>
+            </div>
+            <div className="quick-actions-list">
+              {QUICK_ACTIONS.map(action => (
+                <button key={action.label} className="quick-action-item" onClick={() => router.push(action.href)}>
+                  <div className="quick-action-icon" dangerouslySetInnerHTML={{ __html: action.icon }} />
+                  <div>
+                    <div className="quick-action-label">{action.label}</div>
+                    <div className="quick-action-desc">{action.desc}</div>
+                  </div>
+                  <span className="quick-action-arrow">→</span>
+                </button>
+              ))}
+            </div>
+            <div className="summary-strip">
+              <div className="summary-mini">
+                <div className="summary-mini-value">{categories.length}</div>
+                <div className="summary-mini-label">Categories</div>
+              </div>
+              <div className="summary-mini">
+                <div className="summary-mini-value">{deliveredOrders}</div>
+                <div className="summary-mini-label">Delivered</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

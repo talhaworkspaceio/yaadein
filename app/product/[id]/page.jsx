@@ -67,6 +67,56 @@ const resizeImage = (base64Str, maxW = 200, maxH = 200) => {
   });
 };
 
+const DEFAULT_SIZES = [
+  { label: "8x10", displayLabel: '8" x 10"', priceDelta: -1500 },
+  { label: "12x16", displayLabel: '12" x 16"', priceDelta: 0 },
+  { label: "16x20", displayLabel: '16" x 20"', priceDelta: 2500 },
+  { label: "24x36", displayLabel: '24" x 36"', priceDelta: 6500 },
+];
+
+const matchFrame = (f, targetId) => {
+  if (!f || !targetId) return false;
+  const tId = decodeURIComponent(targetId).trim().toLowerCase().replace(/[-_]/g, ' ');
+  const fid = (f.id || "").toString().trim().toLowerCase().replace(/[-_]/g, ' ');
+  const fdocid = (f.docId || "").toString().trim().toLowerCase().replace(/[-_]/g, ' ');
+  return fid === tId || fdocid === tId;
+};
+
+const ProductPageLoader = () => (
+  <div style={{ 
+    minHeight: "100vh", 
+    background: "#0C0A08", 
+    color: "var(--accent)", 
+    display: "flex", 
+    flexDirection: "column",
+    gap: "16px",
+    alignItems: "center", 
+    justifyContent: "center", 
+    fontFamily: "var(--font-serif)" 
+  }}>
+    <style dangerouslySetInnerHTML={{__html: `
+      @keyframes loaderSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}} />
+    <svg 
+      width="40" 
+      height="40" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      style={{ animation: "loaderSpin 1.2s linear infinite" }}
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+    <span style={{ fontSize: "12px", letterSpacing: "0.08em", color: "var(--text2)", textTransform: "uppercase" }}>Loading product details...</span>
+  </div>
+);
+
 function ProductDetailContent({ params }) {
   const { id } = params;
   const router = useRouter();
@@ -90,7 +140,7 @@ function ProductDetailContent({ params }) {
   // Sync carousel index to show selected frame in center
   useEffect(() => {
     if (frames.length > 0 && selectedFrame) {
-      const idx = frames.findIndex((f) => f.id === selectedFrame.id);
+      const idx = frames.findIndex((f) => matchFrame(f, selectedFrame.id));
       if (idx !== -1) {
         const targetStart = (idx - 1 + frames.length) % frames.length;
         setCarouselIndex(targetStart);
@@ -116,6 +166,7 @@ function ProductDetailContent({ params }) {
       if (data) {
         const framesList = Object.entries(data).map(([key, val]) => ({
           id: key,
+          docId: key,
           ...val
         }));
         setFrames(framesList);
@@ -129,7 +180,7 @@ function ProductDetailContent({ params }) {
   // Update selected frame based on route param
   useEffect(() => {
     if (frames.length > 0 && id) {
-      const matched = frames.find((f) => f.id === id);
+      const matched = frames.find((f) => matchFrame(f, id));
       if (matched) {
         setSelectedFrame(matched);
         const queryOrientation = searchParams?.get("orientation");
@@ -159,7 +210,7 @@ function ProductDetailContent({ params }) {
 
   // Frame Switching Handler - local state update to prevent full page refresh
   const handleFrameChange = (frameId) => {
-    const matched = frames.find((f) => f.id === frameId);
+    const matched = frames.find((f) => matchFrame(f, frameId));
     if (matched) {
       setSelectedFrame(matched);
       if (typeof window !== "undefined") {
@@ -176,7 +227,7 @@ function ProductDetailContent({ params }) {
         const pathSegments = window.location.pathname.split("/");
         const frameId = pathSegments[pathSegments.length - 1];
         if (frameId && frames.length > 0) {
-          const matched = frames.find((f) => f.id === frameId);
+          const matched = frames.find((f) => matchFrame(f, frameId));
           if (matched) {
             setSelectedFrame(matched);
           }
@@ -213,25 +264,19 @@ function ProductDetailContent({ params }) {
     setUserUploadedImage(null);
   };
 
-  // Size specifications and price additions
-  const getSizePremium = (size) => {
-    switch (size) {
-      case "8x10": return -1500;
-      case "12x16": return 0;
-      case "16x20": return 2500;
-      case "24x36": return 6500;
-      default: return 0;
-    }
+  // Size specifications and price additions dynamically based on selected frame's settings
+  const frameSizes = selectedFrame?.sizes && selectedFrame.sizes.length > 0
+    ? selectedFrame.sizes
+    : DEFAULT_SIZES;
+
+  const getSizePremium = (sizeLabel) => {
+    const sizeObj = frameSizes.find(s => s.label === sizeLabel);
+    return sizeObj ? (parseInt(sizeObj.priceDelta) || 0) : 0;
   };
 
-  const getSizeLabel = (size) => {
-    switch (size) {
-      case "8x10": return '8" x 10"';
-      case "12x16": return '12" x 16"';
-      case "16x20": return '16" x 20"';
-      case "24x36": return '24" x 36"';
-      default: return 'Choose Size';
-    }
+  const getSizeLabel = (sizeLabel) => {
+    const sizeObj = frameSizes.find(s => s.label === sizeLabel);
+    return sizeObj ? sizeObj.displayLabel : 'Choose Size';
   };
 
   const basePriceNum = parsePrice(selectedFrame?.price);
@@ -295,6 +340,10 @@ function ProductDetailContent({ params }) {
 
   const handleAddToCart = async () => {
     if (!selectedFrame) return;
+    if (selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0) {
+      alert("This frame is currently out of stock!");
+      return;
+    }
     if (!selectedSize) {
       setSizeError(true);
       alert("Please select a size before adding to cart.");
@@ -336,11 +385,7 @@ function ProductDetailContent({ params }) {
   };
 
   if (!selectedFrame) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0C0A08", color: "var(--text2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-serif)" }}>
-        Loading product details...
-      </div>
-    );
+    return <ProductPageLoader />;
   }
 
   return (
@@ -722,6 +767,7 @@ function ProductDetailContent({ params }) {
           align-items: center;
           gap: 16px;
           margin-top: 2px;
+          flex-wrap: wrap;
         }
 
         .product-price-val {
@@ -730,6 +776,35 @@ function ProductDetailContent({ params }) {
           font-weight: 700;
           color: #8b1e1e; /* Vintage red ink stamp */
           text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6);
+        }
+
+        .stock-badge {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 4px;
+          text-transform: uppercase;
+        }
+
+        .stock-badge.in-stock {
+          background: rgba(34, 197, 94, 0.1);
+          color: #166534;
+          border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .stock-badge.out-of-stock {
+          background: rgba(239, 68, 68, 0.1);
+          color: #991b1b;
+          border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .action-row .btn-premium:disabled {
+          background: #cccccc !important;
+          color: #666666 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          box-shadow: none !important;
         }
 
         .product-desc-text {
@@ -1467,8 +1542,13 @@ function ProductDetailContent({ params }) {
           <div className="product-meta-header">
             <span className="product-tag">{selectedFrame.tag || "Bespoke Frame"}</span>
             <h1 className="product-title">{selectedFrame.name}</h1>
-            <div className="product-price-row">
+            <div className="product-price-row" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <span className="product-price-val">{calculatedPriceStr}</span>
+              {selectedFrame.stock !== undefined && (
+                <span className={`stock-badge ${parseInt(selectedFrame.stock) > 0 ? "in-stock" : "out-of-stock"}`}>
+                  {parseInt(selectedFrame.stock) > 0 ? `${selectedFrame.stock} in stock` : "Out of stock"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -1493,10 +1573,15 @@ function ProductDetailContent({ params }) {
                 }}
               >
                 <option value="">Choose Size</option>
-                <option value="8x10">8" x 10" (- Rs. 1,500)</option>
-                <option value="12x16">12" x 16" (Base Price)</option>
-                <option value="16x20">16" x 20" (+ Rs. 2,500)</option>
-                <option value="24x36">24" x 36" (+ Rs. 6,500)</option>
+                {frameSizes.map((size) => {
+                  const delta = parseInt(size.priceDelta) || 0;
+                  const deltaText = delta === 0 ? " (Base Price)" : delta > 0 ? ` (+ Rs. ${delta.toLocaleString()})` : ` (- Rs. ${Math.abs(delta).toLocaleString()})`;
+                  return (
+                    <option key={size.label} value={size.label}>
+                      {size.displayLabel}{deltaText}
+                    </option>
+                  );
+                })}
               </select>
               <span className="select-arrow">
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1530,8 +1615,12 @@ function ProductDetailContent({ params }) {
 
           {/* CTA Actions */}
           <div className="action-row">
-            <button className="btn-premium" onClick={handleAddToCart}>
-              Add to Cart
+            <button 
+              className="btn-premium" 
+              onClick={handleAddToCart}
+              disabled={selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0}
+            >
+              {selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0 ? "Out of Stock" : "Add to Cart"}
             </button>
             <button className="btn-premium-ghost" onClick={triggerFileUpload}>
               Upload Photo
@@ -1634,11 +1723,7 @@ function ProductDetailContent({ params }) {
 
 export default function ProductDetailPage({ params }) {
   return (
-    <Suspense fallback={
-      <div style={{ minHeight: "100vh", background: "#0C0A08", color: "var(--text2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-serif)" }}>
-        Loading product details...
-      </div>
-    }>
+    <Suspense fallback={<ProductPageLoader />}>
       <ProductDetailContent params={params} />
     </Suspense>
   );

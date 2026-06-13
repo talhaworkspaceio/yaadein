@@ -118,7 +118,7 @@ export default function AdminLogin() {
 
         .btn-login {
           width: 100%;
-          background: linear-gradient(135deg, #FF3E6C 0%, #FF6B4A 50%, #FFAF38 100%) !important;
+          background: var(--accent) !important;
           color: #0C0A08 !important;
           border: none !important;
           border-radius: 9999px !important;
@@ -130,12 +130,12 @@ export default function AdminLogin() {
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          box-shadow: 0 4px 15px rgba(255, 62, 108, 0.45);
+          box-shadow: 0 4px 15px rgba(201, 168, 76, 0.25);
         }
         .btn-login:hover {
-          filter: brightness(1.1) !important;
+          background: #E8D48B !important;
           transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 8px 24px rgba(255, 62, 108, 0.6);
+          box-shadow: 0 8px 24px rgba(201, 168, 76, 0.4);
         }
       ` }} />
 

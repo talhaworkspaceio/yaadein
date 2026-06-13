@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
-import { ref, push, set } from "firebase/database";
+import { ref, push, set, onValue } from "firebase/database";
 
 const CLOUDINARY_CLOUD = "hpikhwjw";
 const CLOUDINARY_PRESET = "ml_default";
@@ -85,6 +85,18 @@ export default function CheckoutPage() {
   const [selectedServices, setSelectedServices] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("EasyPaisa");
   const [paymentReceipt, setPaymentReceipt] = useState(null);
+  const [deliveryCharges, setDeliveryCharges] = useState(250);
+
+  useEffect(() => {
+    const settingsRef = ref(db, "settings/deliveryCharges");
+    const unsub = onValue(settingsRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val !== null) {
+        setDeliveryCharges(parseInt(val) ?? 250);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const toggleService = (service) => {
     if (selectedServices.some(s => s.id === service.id)) {
@@ -135,7 +147,7 @@ export default function CheckoutPage() {
   const framesSubtotal = getCartSubtotal();
   const servicesTotal = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const subtotal = framesSubtotal + servicesTotal;
-  const shipping = framesSubtotal > 0 ? 250 : 0;
+  const shipping = framesSubtotal > 0 ? deliveryCharges : 0;
   const total = subtotal + shipping;
 
   const handleSubmit = async (e) => {
