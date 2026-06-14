@@ -65,7 +65,8 @@ export default function ServicesPage() {
 
   return (
     <div className="services-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
           position: relative;
@@ -1038,9 +1039,9 @@ export default function ServicesPage() {
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
-          <button 
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-            onClick={() => setLightOn(!lightOn)} 
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
             aria-label="Toggle Studio Light"
           >
             <span className="light-switch-knob" />
@@ -1066,7 +1067,7 @@ export default function ServicesPage() {
               <img src="/images/bespoke_framing.png" alt="Bespoke Picture Framing" />
             </div>
             <div className="service-info">
-              <h2 className="service-name">Bespoke Picture Framing</h2>
+              <h2 className="service-name">Picture Framing</h2>
               <p className="service-desc">
                 Every frame is individually built by hand in our local workshop. We select high-grade local wood, cure it to prevent warping, and shape it with premium moulding profiles.
               </p>
@@ -1085,7 +1086,7 @@ export default function ServicesPage() {
               <img src="/images/fine_art_printing.png" alt="Giclée Fine Art Printing" />
             </div>
             <div className="service-info">
-              <h2 className="service-name">Giclée Fine Art Printing</h2>
+              <h2 className="service-name">Fine Art Printing</h2>
               <p className="service-desc">
                 Send us your digital images. We print on museum-grade canvas or fine-textured paper using professional wide-format pigment plotters. Colors are perfectly calibrated.
               </p>
@@ -1118,7 +1119,7 @@ export default function ServicesPage() {
           </div>
 
           {/* Service 4 */}
-          <div className="service-card">
+          {/* <div className="service-card">
             <div className="service-visual">
               <img src="/images/heritage_conservation.png" alt="Heritage Conservation" />
             </div>
@@ -1133,6 +1134,25 @@ export default function ServicesPage() {
                 <li>Dust and humidity-controlled rear framing seal</li>
               </ul>
               <a href="/services/heritage-conservation" className="btn-premium">Explore Details</a>
+            </div>
+          </div> */}
+
+          {/* Service 5 */}
+          <div className="service-card">
+            <div className="service-visual">
+              <img src="/images/photo_restoration.png" alt="Photo Restoration" />
+            </div>
+            <div className="service-info">
+              <h2 className="service-name">Old Photo Restoration</h2>
+              <p className="service-desc">
+                Bring your damaged, faded, or torn family photographs back to life. Our digital restoration specialists repair cracks, restore lost colors, and upscale resolutions for printing.
+              </p>
+              <ul className="service-features">
+                <li>Professional scratch, crack, and tear repair</li>
+                <li>Advanced AI colorization of black & white photos</li>
+                <li>High-fidelity upscaling and detail sharpening</li>
+              </ul>
+              <a href="/services/photo-restoration" className="btn-premium">Explore Details</a>
             </div>
           </div>
         </div>

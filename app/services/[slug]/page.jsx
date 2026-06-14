@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import BeforeAfterSlider from "../../components/BeforeAfterSlider";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -87,26 +88,80 @@ const SERVICES_DATA = {
       { img: "/images/wood-bg.png", caption: "Cohesive Material Palette" }
     ]
   },
-  "heritage-conservation": {
-    title: "Heritage Conservation",
-    tagline: "Preserving Family History",
-    desc: "Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.",
-    image: "/images/heritage_conservation.png",
-    priceInfo: "Conservation assessments and custom preservation starts from Rs. 8,000.",
+  // "heritage-conservation": {
+  //   title: "Heritage Conservation",
+  //   tagline: "Preserving Family History",
+  //   desc: "Preserve your original historical documents, hand-drawn sketches, vintage rugs, or family heirlooms. We package them securely inside acid-free preservation frames.",
+  //   image: "/images/heritage_conservation.png",
+  //   priceInfo: "Conservation assessments and custom preservation starts from Rs. 8,000.",
+  //   features: [
+  //     "Reversible mounting techniques (no adhesive damage)",
+  //     "99% UV-blocking conservation museum acrylic",
+  //     "Dust and humidity-controlled rear framing seal",
+  //     "Acid-free buffered mounting boards to prevent yellowing",
+  //     "Expert handling by certified preservation artisans"
+  //   ],
+  //   detailedText: "Valuable documents, historic heirlooms, and vintage objects deserve specialized care to protect them from environmental damage. Standard framing materials contain acid that yellow papers and degrade fabrics over time. Our heritage conservation framing uses 100% reversible mounting methods, acid-free mats, and specialized barrier boards. We use museum-grade acrylic that filters out 99% of harmful UV rays, protecting colors from fading and paper from becoming brittle. Rest assured that your family treasures will be safely preserved for future generations to cherish.",
+  //   ctaText: "Book Assessment",
+  //   ctaLink: "/contact",
+  //   gallery: [
+  //     { img: "/images/paper.png", caption: "Acid-Free Mounting Matting" },
+  //     { img: "/images/dummyImg.jpg", caption: "UV-Blocking Shielding Glass" },
+  //     { img: "/images/wood-bg.png", caption: "Humidity Controlled Sealed Backing" }
+  //   ]
+  // },
+  "photo-restoration": {
+    title: "Old Photo Restoration",
+    tagline: "Resurrecting Your Memories",
+    desc: "Bring your damaged, faded, or torn family photographs back to life. Our digital restoration specialists repair cracks, restore lost colors, and upscale resolutions for printing.",
+    image: "/images/photo_restoration.png",
+    priceInfo: "Restorations start from Rs. 1,499 per photo depending on level of damage.",
     features: [
-      "Reversible mounting techniques (no adhesive damage)",
-      "99% UV-blocking conservation museum acrylic",
-      "Dust and humidity-controlled rear framing seal",
-      "Acid-free buffered mounting boards to prevent yellowing",
-      "Expert handling by certified preservation artisans"
+      "Scratch, crease, and tear removal",
+      "Advanced AI colorization of black & white photos",
+      "High-fidelity upscaling and detail sharpening",
+      "Digital delivery + premium printing options",
+      "Water damage and stain reconstruction"
     ],
-    detailedText: "Valuable documents, historic heirlooms, and vintage objects deserve specialized care to protect them from environmental damage. Standard framing materials contain acid that yellow papers and degrade fabrics over time. Our heritage conservation framing uses 100% reversible mounting methods, acid-free mats, and specialized barrier boards. We use museum-grade acrylic that filters out 99% of harmful UV rays, protecting colors from fading and paper from becoming brittle. Rest assured that your family treasures will be safely preserved for future generations to cherish.",
-    ctaText: "Book Assessment",
+    detailedText: "Every photograph is a window to a moment in time, but physical prints degrade, fade, and tear. Our professional restoration service carefully reconstructs your cherished images pixel by pixel. We remove scratches, fix cracks, balance faded colors, and can even colorize monochrome photos to make them feel alive today. Combining state-of-the-art AI upscaling with meticulous digital painting, we ensure that the final result looks completely natural while retaining the vintage soul of the original capture.",
+    ctaText: "Upload Image for Quote",
     ctaLink: "/contact",
     gallery: [
-      { img: "/images/paper.png", caption: "Acid-Free Mounting Matting" },
-      { img: "/images/dummyImg.jpg", caption: "UV-Blocking Shielding Glass" },
-      { img: "/images/wood-bg.png", caption: "Humidity Controlled Sealed Backing" }
+      { img: "/images/restoration/couple_after.png", caption: "Vintage Portrait Restored" },
+      { img: "/images/restoration/family_after.png", caption: "Creases & Faded Colors Fixed" },
+      { img: "/images/restoration/soldier_after.png", caption: "Water Damage Repaired" }
+    ],
+    previews: [
+      {
+        before: "/images/restoration/couple_before.png",
+        after: "/images/restoration/couple_after.png",
+        title: "1940s Couple Portrait",
+        desc: "Removed deep scratches, yellowing, and creases while sharpening faces."
+      },
+      {
+        before: "/images/restoration/family_before.png",
+        after: "/images/restoration/family_after.png",
+        title: "Faded Color Family Photo",
+        desc: "Restored natural color tones, contrast, and fixed torn paper edges."
+      },
+      {
+        before: "/images/restoration/soldier_before.png",
+        after: "/images/restoration/soldier_after.png",
+        title: "Sepia Soldier Portrait",
+        desc: "Fixed heavy water stain damage and reconstructed missing corners."
+      },
+      {
+        before: "/images/restoration/child_before.png",
+        after: "/images/restoration/child_after.png",
+        title: "Blurry Childhood Memory",
+        desc: "AI upscaled, de-blurred, and enhanced facial details for printing."
+      },
+      {
+        before: "/images/restoration/landscape_before.png",
+        after: "/images/restoration/landscape_after.png",
+        title: "Sun-Faded Vintage Landscape",
+        desc: "Rebalanced color channels to remove yellow-blue shifts."
+      }
     ]
   }
 };
@@ -175,7 +230,8 @@ export default function ServiceDetailPage({ params }) {
 
   return (
     <div className="services-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
           position: relative;
@@ -1121,9 +1177,9 @@ export default function ServiceDetailPage({ params }) {
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
-          <button 
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-            onClick={() => setLightOn(!lightOn)} 
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
             aria-label="Toggle Studio Light"
           >
             <span className="light-switch-knob" />
@@ -1151,7 +1207,7 @@ export default function ServiceDetailPage({ params }) {
               <h2 className="service-name">{service.title}</h2>
               <div className="service-tagline">{service.tagline}</div>
               <p className="service-desc">{service.detailedText}</p>
-              
+
               <div className="service-price-box">
                 <strong>Price Detail:</strong><br />
                 {service.priceInfo}
@@ -1171,19 +1227,38 @@ export default function ServiceDetailPage({ params }) {
           </div>
 
           {/* Related Images / Process Section */}
-          <div className="service-gallery-section">
-            <h3 className="gallery-title">Process & Detail Gallery</h3>
-            <div className="gallery-grid">
-              {service.gallery.map((item, idx) => (
-                <div key={idx} className="gallery-card">
-                  <div className="gallery-img-wrap">
-                    <img src={item.img} alt={item.caption} />
+          {service.previews && (
+            <div className="service-gallery-section">
+              <h3 className="gallery-title">Interactive Before & After Previews</h3>
+              <p style={{ color: "var(--text2)", marginBottom: "32px", fontSize: "14px", fontFamily: "var(--font-serif)", lineHeight: "1.6" }}>
+                Drag the slider handle on each image to compare the original damaged photo (Left) with our fully restored version (Right).
+              </p>
+              <div className="previews-grid" style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "32px"
+              }}>
+                {service.previews.map((item, idx) => (
+                  <div key={idx} className="preview-card" style={{
+                    background: "var(--surface2)",
+                    borderRadius: "var(--radius)",
+                    border: "1.5px solid var(--border)",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    boxShadow: "0 8px 20px rgba(0,0,0,0.4)"
+                  }}>
+                    <BeforeAfterSlider before={item.before} after={item.after} />
+                    <div className="preview-info" style={{ textAlign: "left" }}>
+                      <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "16px", marginBottom: "4px", fontWeight: "600" }}>{item.title}</h4>
+                      <p className="preview-desc" style={{ fontSize: "13px", color: "var(--text2)", lineHeight: "1.4", fontFamily: "var(--font-serif)" }}>{item.desc}</p>
+                    </div>
                   </div>
-                  <div className="gallery-caption">{item.caption}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
