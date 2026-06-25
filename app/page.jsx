@@ -36,6 +36,30 @@ export default function HomePage() {
   const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [lightOn, setLightOn] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentReviewSlide, setCurrentReviewSlide] = useState(0);
+  const [currentSocialSlide, setCurrentSocialSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentReviewSlide((prev) => (prev + 1) % 2);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSocialSlide((prev) => (prev + 1) % 2);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -181,11 +205,84 @@ export default function HomePage() {
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  const displayedProducts = products.filter(p =>
-    searchQuery.trim() === "" ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  const portraitProducts = products.filter(p => p.orientation === 'portrait').slice(0, 3);
+  const landscapeProducts = products.filter(p => p.orientation === 'landscape').slice(0, 3);
+  const boardGames = products.filter(p => p.orientation === 'square').slice(0, 3);
+
+  const renderProductCard = (p) => (
+    <div key={p.id} className="product-card">
+      <div className="ribbon">{p.orientation === "square" ? "Board Game" : "Featured"}</div>
+      <div className="card-thumb-wrap">
+        <div
+          className="card-frame"
+          style={{
+            position: "relative",
+            aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+            width: p.orientation === "landscape" ? "100%" : "auto",
+            height: p.orientation === "landscape" ? "auto" : "100%",
+            boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden"
+          }}
+        >
+          {/* Frame image background */}
+          {p.imageUrl && (
+            <img
+              src={p.imageUrl}
+              alt={p.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "fill",
+                position: "absolute",
+                inset: 0,
+                zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                pointerEvents: "none"
+              }}
+            />
+          )}
+
+          {/* Inner matted print opening */}
+          {p.orientation !== "square" && (
+            <div
+              className="card-frame-inner"
+              style={{
+                position: "absolute",
+                top: `${p.paddingTop || 0}%`,
+                left: `${p.paddingLeft || 0}%`,
+                bottom: `${p.paddingBottom || 0}%`,
+                right: `${p.paddingRight || 0}%`,
+                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                background: "#2D2822",
+                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                overflow: "hidden"
+              }}
+            >
+              <img 
+                src="/images/dummyImg.jpg" 
+                alt="Frame Art Preview" 
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="product-info">
+        <div className="product-header-row">
+          <h3 className="product-name">{p.name}</h3>
+          <span className="product-price">{p.price}</span>
+        </div>
+        <span className="product-tag">{p.tag}</span>
+        <p className="product-desc">{p.desc}</p>
+      </div>
+
+      <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+        {p.orientation === "square" ? "View Game" : "View Frame"}
+      </a>
+    </div>
   );
 
   return (
@@ -466,6 +563,109 @@ export default function HomePage() {
           box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
         }
 
+        /* CAROUSEL SYSTEM */
+        .carousel-wrapper {
+          position: relative;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .carousel-viewport {
+          overflow: hidden;
+          width: 100%;
+          max-width: 1050px;
+          margin: 0 40px;
+        }
+
+        .carousel-track {
+          display: flex;
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+          width: 300%;
+        }
+
+        .carousel-slide {
+          width: 33.333%;
+          display: flex;
+          justify-content: center;
+          gap: 30px;
+          flex-shrink: 0;
+          padding: 10px 0;
+        }
+
+        .carousel-arrow {
+          background: rgba(20, 17, 14, 0.8);
+          border: 1px solid rgba(212, 175, 55, 0.3);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--accent);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          z-index: 10;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .carousel-arrow:hover {
+          background: var(--accent);
+          color: #000;
+          border-color: var(--accent);
+          transform: scale(1.1);
+        }
+
+        .carousel-indicators {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 30px;
+        }
+
+        .carousel-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          padding: 0;
+        }
+
+        .carousel-dot:hover {
+          background: rgba(255, 255, 255, 0.5);
+        }
+
+        .carousel-dot.active {
+          background: var(--accent);
+          transform: scale(1.2);
+          box-shadow: 0 0 8px var(--accent);
+        }
+
+        @media (max-width: 1100px) {
+          .carousel-viewport {
+            max-width: 960px;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .carousel-viewport {
+            max-width: 100%;
+            margin: 0;
+          }
+          .carousel-slide {
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+          }
+          .carousel-arrow {
+            display: none;
+          }
+        }
+
         /* GRID */
         .catalog-grid {
           display: flex;
@@ -539,15 +739,7 @@ export default function HomePage() {
         }
 
         .glow {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          background: #fff;
-          opacity: 0;
+          display: none;
         }
         .catalog-section.animate-lamps .glow {
           opacity: 1;
@@ -603,11 +795,31 @@ export default function HomePage() {
 
         .particle {
           position: absolute;
-          top: calc(50% - 5px);
-          left: calc(50% - 5px);
-          width: 10px;
-          height: 10px;
+          top: calc(50% - 2.5px);
+          left: calc(50% - 2.5px);
+          width: 5px;
+          height: 5px;
           border-radius: 50%;
+        }
+        .particle::before, .particle::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          width: 4px;
+          height: 4px;
+          box-shadow: inherit;
+        }
+        .particle::before {
+          top: -30px;
+          left: 25px;
+          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
+        }
+        .particle::after {
+          width: 3px;
+          height: 3px;
+          top: 35px;
+          left: -30px;
+          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
         }
 
         @keyframes glow-warm {
@@ -645,9 +857,17 @@ export default function HomePage() {
             opacity: 1;
           }
           100% {
-            transform: translate3d(100px,100px,0);
+            transform: translate3d(180px, 140px, 0);
             opacity: 0;
           }
+        }
+        @keyframes float-firefly-1 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100px, -80px, 0); }
+        }
+        @keyframes float-firefly-2 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(100px, -120px, 0); }
         }
 
         @keyframes pulse {
@@ -1144,7 +1364,7 @@ export default function HomePage() {
         }
 
         .exquisite-title {
-          font-family: 'Instrument Sans', sans-serif;
+          font-family: var(--font-display);
           font-size: 48px;
           font-weight: 800;
           line-height: 1.15;
@@ -1252,7 +1472,7 @@ export default function HomePage() {
         }
 
         .exquisite-glow-container {
-          top: 68px !important;
+          top: 108px !important;
         }
         
         .exquisite-glow-container.on .glow {
@@ -1289,7 +1509,7 @@ export default function HomePage() {
 
         .lamp-arm {
           width: 6px;
-          height: 38px;
+          height: 78px;
           background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
           box-shadow: 2px 0 5px rgba(0,0,0,0.4);
           position: relative;
@@ -1345,7 +1565,7 @@ export default function HomePage() {
           left: 15%;
           right: 15%;
           height: 4px;
-          background: #fff;
+          background: transparent;
           border-radius: 2px;
           box-shadow: 0 0 12px 3px #fae7b5, 0 0 24px 8px #fae7b5;
           opacity: 0;
@@ -1358,7 +1578,7 @@ export default function HomePage() {
 
         .lamp-light-beam {
           position: absolute;
-          top: 76px;
+          top: 116px;
           left: 50%;
           transform: translateX(-50%);
           width: 480px;
@@ -1628,8 +1848,8 @@ export default function HomePage() {
           margin-bottom: 12px;
         }
         .reviews-title {
-          font-family: 'Instrument Sans', sans-serif;
-          font-size: 42px;
+          font-family: var(--font-display);
+          font-size: 48px;
           font-weight: 800;
           color: var(--text);
           letter-spacing: -0.01em;
@@ -1680,10 +1900,53 @@ export default function HomePage() {
           font-size: 11px;
           color: var(--text2);
         }
-        .reviews-grid {
+        /* REVIEWS CAROUSEL SYSTEM */
+        .reviews-carousel-wrapper {
+          position: relative;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .reviews-carousel-viewport {
+          overflow: hidden;
+          width: 100%;
+          max-width: 1200px;
+          margin: 0 40px;
+        }
+
+        .reviews-carousel-track {
+          display: flex;
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+          width: 200%; /* 2 slides */
+        }
+
+        .reviews-carousel-slide {
+          width: 50%;
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
+          flex-shrink: 0;
+          padding: 10px 0;
+        }
+
+        .reviews-carousel-indicators {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 30px;
+        }
+
+        @media (max-width: 1024px) {
+          .reviews-carousel-viewport {
+            max-width: 100%;
+            margin: 0;
+          }
+          .reviews-carousel-slide {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
         }
         .review-card {
           background: linear-gradient(135deg, rgba(20, 17, 14, 0.8) 0%, rgba(16, 13, 11, 0.9) 100%);
@@ -1823,7 +2086,7 @@ export default function HomePage() {
           margin-bottom: 12px;
         }
         .social-feed-title {
-          font-family: 'Instrument Sans', sans-serif;
+          font-family: var(--font-display);
           font-size: 42px;
           font-weight: 800;
           color: var(--text);
@@ -1838,10 +2101,53 @@ export default function HomePage() {
           max-width: 500px;
           margin: 14px auto 0;
         }
-        .social-feed-grid {
+        /* SOCIAL FEED CAROUSEL SYSTEM */
+        .social-carousel-wrapper {
+          position: relative;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .social-carousel-viewport {
+          overflow: hidden;
+          width: 100%;
+          max-width: 1200px;
+          margin: 0 40px;
+        }
+
+        .social-carousel-track {
+          display: flex;
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+          width: 200%; /* 2 slides */
+        }
+
+        .social-carousel-slide {
+          width: 50%;
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 18px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+          flex-shrink: 0;
+          padding: 10px 0;
+        }
+
+        .social-carousel-indicators {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 30px;
+        }
+
+        @media (max-width: 1024px) {
+          .social-carousel-viewport {
+            max-width: 100%;
+            margin: 0;
+          }
+          .social-carousel-slide {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
         }
         .social-post-card {
           background: rgba(20, 17, 14, 0.6);
@@ -1988,13 +2294,15 @@ export default function HomePage() {
 
         @media (max-width: 768px) {
           .reviews-section { padding: 60px 20px; }
-          .reviews-title { font-size: 28px; }
+          .reviews-title { font-size: 32px; }
           .reviews-grid { grid-template-columns: 1fr; gap: 16px; }
+          .reviews-carousel-slide { grid-template-columns: 1fr; gap: 16px; }
           .reviews-summary-bar { flex-direction: column; gap: 12px; padding: 16px; }
           .reviews-avg-score { font-size: 36px; }
           .social-feed-section { padding: 60px 20px; }
           .social-feed-title { font-size: 28px; }
           .social-feed-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .social-carousel-slide { grid-template-columns: 1fr; gap: 12px; }
           .social-links { flex-direction: column; }
         }
       ` }} />
@@ -2133,82 +2441,63 @@ export default function HomePage() {
             <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0", fontFamily: "var(--font-typewriter)" }}>
               Loading catalog from database...
             </div>
-          ) : (
+          ) : searchQuery.trim() !== "" ? (
             <div className="catalog-grid">
-              {displayedProducts.map((p) => (
-                <div key={p.id} className="product-card">
-                  <div className="ribbon">Featured</div>
-                  <div className="card-thumb-wrap">
-                    <div
-                      className="card-frame"
-                      style={{
-                        position: "relative",
-                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                        width: p.orientation === "landscape" ? "100%" : "auto",
-                        height: p.orientation === "landscape" ? "auto" : "100%",
-                        boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        overflow: "hidden"
-                      }}
-                    >
-                      {/* Frame image background */}
-                      {p.imageUrl && (
-                        <img
-                          src={p.imageUrl}
-                          alt={p.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "fill",
-                            position: "absolute",
-                            inset: 0,
-                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                            pointerEvents: "none"
-                          }}
-                        />
-                      )}
-
-                      {/* Inner matted print opening */}
-                      <div
-                        className="card-frame-inner"
-                        style={{
-                          position: "absolute",
-                          top: `${p.paddingTop || 0}%`,
-                          left: `${p.paddingLeft || 0}%`,
-                          bottom: `${p.paddingBottom || 0}%`,
-                          right: `${p.paddingRight || 0}%`,
-                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
-                          background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
-                          overflow: "hidden"
-                        }}
-                      >
-                        <img 
-                          src="/images/dummyImg.jpg" 
-                          alt="Frame Art Preview" 
-                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="product-info">
-                    <div className="product-header-row">
-                      <h3 className="product-name">{p.name}</h3>
-                      <span className="product-price">{p.price}</span>
-                    </div>
-                    <span className="product-tag">{p.tag}</span>
-                    <p className="product-desc">{p.desc}</p>
-                  </div>
-
-                  <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-                    View Frame
-                  </a>
-                </div>
-              ))}
+              {products.filter(p =>
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
+              ).map((p) => renderProductCard(p))}
             </div>
+          ) : (
+            <>
+              <div className="carousel-wrapper">
+                <button 
+                  className="carousel-arrow prev" 
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + 3) % 3)}
+                  aria-label="Previous Slide"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+
+                <div className="carousel-viewport">
+                  <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}>
+                    <div className="carousel-slide">
+                      {portraitProducts.map((p) => renderProductCard(p))}
+                    </div>
+                    <div className="carousel-slide">
+                      {landscapeProducts.map((p) => renderProductCard(p))}
+                    </div>
+                    <div className="carousel-slide">
+                      {boardGames.map((p) => renderProductCard(p))}
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  className="carousel-arrow next" 
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % 3)}
+                  aria-label="Next Slide"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <div className="carousel-indicators">
+                {[0, 1, 2].map((idx) => (
+                  <button
+                    key={idx}
+                    className={`carousel-dot ${currentSlide === idx ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(idx)}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -2342,8 +2631,8 @@ export default function HomePage() {
 
         <div className="reviews-container">
           <div className="reviews-header">
-            <p className="reviews-tagline">What Our Customers Say</p>
-            <h2 className="reviews-title">Trusted by Art Lovers Nationwide</h2>
+            <p className="reviews-tagline">Trusted by Art Lovers Nationwide</p>
+            <h2 className="reviews-title">What Our Clients Say</h2>
             <p className="reviews-subtitle">
               Real reviews from our verified customers on Google. Every frame tells a story — here's what they have to say.
             </p>
@@ -2358,96 +2647,137 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="reviews-grid">
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">AK</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Ayesha Khan</span>
-                  <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+          <div className="reviews-carousel-wrapper">
+            <button 
+              className="carousel-arrow prev" 
+              onClick={() => setCurrentReviewSlide((prev) => (prev - 1 + 2) % 2)}
+              aria-label="Previous Reviews"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <div className="reviews-carousel-viewport">
+              <div className="reviews-carousel-track" style={{ transform: `translateX(-${currentReviewSlide * 50}%)` }}>
+                {/* Slide 1 */}
+                <div className="reviews-carousel-slide">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">AK</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Ayesha Khan</span>
+                        <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">HA</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Hassan Ali</span>
+                        <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">SM</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Sara Malik</span>
+                        <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 2 */}
+                <div className="reviews-carousel-slide">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">OA</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Omar Ahmed</span>
+                        <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★☆</div>
+                    <p className="review-text">
+                      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">FZ</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Fatima Zahra</span>
+                        <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">BI</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Bilal Iqbal</span>
+                        <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
                 </div>
               </div>
-              <div className="review-stars-row">★★★★★</div>
-              <p className="review-text">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
             </div>
 
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">HA</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Hassan Ali</span>
-                  <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
-                </div>
-              </div>
-              <div className="review-stars-row">★★★★★</div>
-              <p className="review-text">
-                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
-            </div>
+            <button 
+              className="carousel-arrow next" 
+              onClick={() => setCurrentReviewSlide((prev) => (prev + 1) % 2)}
+              aria-label="Next Reviews"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
 
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">SM</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Sara Malik</span>
-                  <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
-                </div>
-              </div>
-              <div className="review-stars-row">★★★★★</div>
-              <p className="review-text">
-                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
-            </div>
-
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">OA</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Omar Ahmed</span>
-                  <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
-                </div>
-              </div>
-              <div className="review-stars-row">★★★★☆</div>
-              <p className="review-text">
-                Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
-            </div>
-
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">FZ</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Fatima Zahra</span>
-                  <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
-                </div>
-              </div>
-              <div className="review-stars-row">★★★★★</div>
-              <p className="review-text">
-                Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
-            </div>
-
-            <div className="review-card">
-              <div className="review-card-header">
-                <div className="review-avatar">BI</div>
-                <div className="review-author-info">
-                  <span className="review-author-name">Bilal Iqbal</span>
-                  <span className="review-author-meta">📍 Multan • 1 week ago</span>
-                </div>
-              </div>
-              <div className="review-stars-row">★★★★★</div>
-              <p className="review-text">
-                Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
-              </p>
-              <div className="review-google-badge">🇬 Posted on Google</div>
-            </div>
+          <div className="reviews-carousel-indicators">
+            {[0, 1].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${currentReviewSlide === idx ? 'active' : ''}`}
+                onClick={() => setCurrentReviewSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
 
           <div className="reviews-cta">
@@ -2484,106 +2814,197 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="social-feed-grid">
-            <div className="social-post-card">
-              <div className="social-post-image">
-                <img src="/images/dummyImg.jpg" alt="Customer frame setup" />
-                <div className="social-post-overlay">
-                  <div className="social-post-stats">
-                    <span>❤️ 234</span>
-                    <span>💬 18</span>
+          <div className="social-carousel-wrapper">
+            <button 
+              className="carousel-arrow prev" 
+              onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + 2) % 2)}
+              aria-label="Previous Posts"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <div className="social-carousel-viewport">
+              <div className="social-carousel-track" style={{ transform: `translateX(-${currentSocialSlide * 50}%)` }}>
+                {/* Slide 1 */}
+                <div className="social-carousel-slide">
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Customer frame setup" />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 234</span>
+                          <span>💬 18</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">Y</div>
+                        <div>
+                          <div className="social-post-author-name">yaadein.studio</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dignissim lacinia nunc. 🖼️✨ #YaadeinFrames #HomeDecor
+                      </p>
+                      <span className="social-post-date">2 days ago</span>
+                    </div>
+                  </div>
+
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 189</span>
+                          <span>💬 12</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">A</div>
+                        <div>
+                          <div className="social-post-author-name">ayesha.interiors</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi. My living room transformation! 🏡 #InteriorDesign
+                      </p>
+                      <span className="social-post-date">5 days ago</span>
+                    </div>
+                  </div>
+
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 312</span>
+                          <span>💬 27</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">Y</div>
+                        <div>
+                          <div className="social-post-author-name">yaadein.studio</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. New collection drop! 🎨 #ArtFraming #BespokeFrames
+                      </p>
+                      <span className="social-post-date">1 week ago</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="social-post-body">
-                <div className="social-post-author">
-                  <div className="social-post-author-avatar">Y</div>
-                  <div>
-                    <div className="social-post-author-name">yaadein.studio</div>
-                    <div className="social-post-platform">Instagram</div>
+
+                {/* Slide 2 */}
+                <div className="social-carousel-slide">
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 156</span>
+                          <span>💬 9</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">H</div>
+                        <div>
+                          <div className="social-post-author-name">hassan.captures</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        Excepteur sint occaecat cupidatat non proident, sunt in culpa. Gallery wall completed! 📸 #WallArt #Photography
+                      </p>
+                      <span className="social-post-date">2 weeks ago</span>
+                    </div>
+                  </div>
+
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Oak frames bedroom decor" style={{ objectPosition: "center center" }} />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 245</span>
+                          <span>💬 19</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">Z</div>
+                        <div>
+                          <div className="social-post-author-name">zainab.frames</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        Absolutely in love with the classic oak frame! It matches my bedroom aesthetic perfectly. 🌿✨ #AestheticHome #Decor
+                      </p>
+                      <span className="social-post-date">3 weeks ago</span>
+                    </div>
+                  </div>
+
+                  <div className="social-post-card">
+                    <div className="social-post-image">
+                      <img src="/images/dummyImg.jpg" alt="Art studio gallery" style={{ objectPosition: "center 40%" }} />
+                      <div className="social-post-overlay">
+                        <div className="social-post-stats">
+                          <span>❤️ 198</span>
+                          <span>💬 14</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="social-post-body">
+                      <div className="social-post-author">
+                        <div className="social-post-author-avatar">M</div>
+                        <div>
+                          <div className="social-post-author-name">maryam.spaces</div>
+                          <div className="social-post-platform">Instagram</div>
+                        </div>
+                      </div>
+                      <p className="social-post-caption">
+                        The gold frame detailing is even more beautiful in person. Handcrafted perfection! 💛 #ArtStudio #LuxuryHome
+                      </p>
+                      <span className="social-post-date">1 month ago</span>
+                    </div>
                   </div>
                 </div>
-                <p className="social-post-caption">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dignissim lacinia nunc. 🖼️✨ #YaadeinFrames #HomeDecor
-                </p>
-                <span className="social-post-date">2 days ago</span>
               </div>
             </div>
 
-            <div className="social-post-card">
-              <div className="social-post-image">
-                <img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} />
-                <div className="social-post-overlay">
-                  <div className="social-post-stats">
-                    <span>❤️ 189</span>
-                    <span>💬 12</span>
-                  </div>
-                </div>
-              </div>
-              <div className="social-post-body">
-                <div className="social-post-author">
-                  <div className="social-post-author-avatar">A</div>
-                  <div>
-                    <div className="social-post-author-name">ayesha.interiors</div>
-                    <div className="social-post-platform">Instagram</div>
-                  </div>
-                </div>
-                <p className="social-post-caption">
-                  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi. My living room transformation! 🏡 #InteriorDesign
-                </p>
-                <span className="social-post-date">5 days ago</span>
-              </div>
-            </div>
+            <button 
+              className="carousel-arrow next" 
+              onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % 2)}
+              aria-label="Next Posts"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
 
-            <div className="social-post-card">
-              <div className="social-post-image">
-                <img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} />
-                <div className="social-post-overlay">
-                  <div className="social-post-stats">
-                    <span>❤️ 312</span>
-                    <span>💬 27</span>
-                  </div>
-                </div>
-              </div>
-              <div className="social-post-body">
-                <div className="social-post-author">
-                  <div className="social-post-author-avatar">Y</div>
-                  <div>
-                    <div className="social-post-author-name">yaadein.studio</div>
-                    <div className="social-post-platform">Instagram</div>
-                  </div>
-                </div>
-                <p className="social-post-caption">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. New collection drop! 🎨 #ArtFraming #BespokeFrames
-                </p>
-                <span className="social-post-date">1 week ago</span>
-              </div>
-            </div>
-
-            <div className="social-post-card">
-              <div className="social-post-image">
-                <img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} />
-                <div className="social-post-overlay">
-                  <div className="social-post-stats">
-                    <span>❤️ 156</span>
-                    <span>💬 9</span>
-                  </div>
-                </div>
-              </div>
-              <div className="social-post-body">
-                <div className="social-post-author">
-                  <div className="social-post-author-avatar">H</div>
-                  <div>
-                    <div className="social-post-author-name">hassan.captures</div>
-                    <div className="social-post-platform">Instagram</div>
-                  </div>
-                </div>
-                <p className="social-post-caption">
-                  Excepteur sint occaecat cupidatat non proident, sunt in culpa. Gallery wall completed! 📸 #WallArt #Photography
-                </p>
-                <span className="social-post-date">2 weeks ago</span>
-              </div>
-            </div>
+          <div className="social-carousel-indicators">
+            {[0, 1].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
+                onClick={() => setCurrentSocialSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
 
           <div className="social-feed-footer">

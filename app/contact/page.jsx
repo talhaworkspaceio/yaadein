@@ -557,7 +557,7 @@ export default function ContactPage() {
 
         .lamp-arm {
           width: 6px;
-          height: 38px;
+          height: 78px;
           background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
           box-shadow: 2px 0 5px rgba(0,0,0,0.4);
           position: relative;
@@ -629,7 +629,7 @@ export default function ContactPage() {
 
         .lamp-light-beam {
           position: absolute;
-          top: 76px;
+          top: 116px;
           left: 50%;
           transform: translateX(-50%);
           width: 480px;
@@ -653,7 +653,7 @@ export default function ContactPage() {
 
         /* GLOW & PARTICLES */
         .exquisite-glow-container {
-          top: 68px !important;
+          top: 108px !important;
         }
         .lamp-glow-container {
           position: absolute;
@@ -665,15 +665,7 @@ export default function ContactPage() {
         }
 
         .glow {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          background: #fff;
-          opacity: 0;
+          display: none;
         }
         .exquisite-glow-container.on .glow {
           opacity: 1;
@@ -729,11 +721,31 @@ export default function ContactPage() {
 
         .particle {
           position: absolute;
-          top: calc(50% - 5px);
-          left: calc(50% - 5px);
-          width: 10px;
-          height: 10px;
+          top: calc(50% - 2.5px);
+          left: calc(50% - 2.5px);
+          width: 5px;
+          height: 5px;
           border-radius: 50%;
+        }
+        .particle::before, .particle::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          width: 4px;
+          height: 4px;
+          box-shadow: inherit;
+        }
+        .particle::before {
+          top: -30px;
+          left: 25px;
+          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
+        }
+        .particle::after {
+          width: 3px;
+          height: 3px;
+          top: 35px;
+          left: -30px;
+          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
         }
 
         @keyframes glow-warm {
@@ -771,9 +783,17 @@ export default function ContactPage() {
             opacity: 1;
           }
           100% {
-            transform: translate3d(100px,100px,0);
+            transform: translate3d(180px, 140px, 0);
             opacity: 0;
           }
+        }
+        @keyframes float-firefly-1 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100px, -80px, 0); }
+        }
+        @keyframes float-firefly-2 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(100px, -120px, 0); }
         }
 
         @keyframes pulse {

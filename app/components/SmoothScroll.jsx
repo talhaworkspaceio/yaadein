@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { gsap } from "gsap";
@@ -9,6 +9,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 export default function SmoothScroll({ children }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin");
+  const lenisRef = useRef(null);
 
   useEffect(() => {
     // Skip Lenis on admin routes — it hijacks native scroll in dashboard panels
@@ -27,6 +28,8 @@ export default function SmoothScroll({ children }) {
       touchMultiplier: 2.0,
     });
 
+    lenisRef.current = lenis;
+
     // Update ScrollTrigger on every scroll event
     lenis.on("scroll", ScrollTrigger.update);
 
@@ -42,8 +45,18 @@ export default function SmoothScroll({ children }) {
     return () => {
       lenis.destroy();
       gsap.ticker.remove(rafCallback);
+      lenisRef.current = null;
     };
   }, [isAdmin]);
+
+  // Scroll to top immediately on page change/back-button navigation to prevent scroll mismatch
+  useEffect(() => {
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
 
   return <>{children}</>;
 }

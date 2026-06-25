@@ -89,7 +89,7 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
   };
 
   return (
-    <nav className={`global-navbar ${pathname === "/" && !scrolled ? "transparent" : ""}`}>
+    <>
       <style dangerouslySetInnerHTML={{
         __html: `
         .global-navbar {
@@ -102,9 +102,9 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
           
-          display: flex;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          justify-content: space-between;
           padding: 0 40px;
           z-index: 1000;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -122,6 +122,7 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           align-items: center;
           transition: transform 0.2s ease;
           text-decoration: none;
+          justify-self: start;
         }
         .nav-brand:hover {
           transform: scale(1.03);
@@ -135,6 +136,7 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           display: flex;
           align-items: center;
           gap: 28px;
+          justify-self: center;
         }
         .nav-link-item {
           color: var(--text2) !important;
@@ -155,6 +157,7 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           display: flex;
           align-items: center;
           gap: 20px;
+          justify-self: end;
         }
         
         /* SEARCH CONTAINER */
@@ -231,9 +234,9 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           position: absolute;
           top: -2px;
           right: -4px;
-          background: radial-gradient(circle, var(--accent2) 0%, var(--accent) 100%);
-          border: 1px solid #7E631F;
-          color: #1A1100;
+          background: #FFFFFF;
+          border: 1px solid #000000;
+          color: #000000;
           font-family: var(--font-typewriter);
           font-size: 10px;
           font-weight: 700;
@@ -320,6 +323,8 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
         }
       ` }} />
 
+    <nav className={`global-navbar ${pathname === "/" && !scrolled ? "transparent" : ""}`}>
+      {/* Actual nav content start */}
       <a href="/" className="nav-brand">
         <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
       </a>
@@ -328,17 +333,16 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
         <a href="/" onClick={(e) => handleNavClick(e, "/")} className={`nav-link-item ${pathname === "/" && !searchVal ? "active" : ""}`}>Home</a>
         <a href="/catalog" className={`nav-link-item ${pathname === "/catalog" ? "active" : ""}`}>Catalog</a>
         <a href="/new-arrivals" className={`nav-link-item ${pathname === "/new-arrivals" ? "active" : ""}`}>New Arrivals</a>
-
         <a href="/services" className={`nav-link-item ${pathname === "/services" ? "active" : ""}`}>Services</a>
+        <a href="/track-order" className={`nav-link-item ${pathname === "/track-order" ? "active" : ""}`}>Track</a>
         <a href="/contact" className={`nav-link-item ${pathname === "/contact" ? "active" : ""}`}>Contact</a>
-
       </div>
 
       <div className="nav-actions-right">
         <form onSubmit={handleSearchSubmit} className="search-container">
           <input
             type="text"
-            placeholder="Search frames..."
+            placeholder="Search"
             value={searchVal}
             onChange={handleSearchInputChange}
             className="search-input"
@@ -350,12 +354,6 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
             </svg>
           </button>
         </form>
-
-        <a href="/track-order" className="btn-nav-cart" title="Track Order">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-icon-svg" style={{ width: "22px", height: "22px" }}>
-            <path d="M12.378 1.602a.75.75 0 0 0-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03ZM21.75 7.93l-9 5.25v9l9-5.25v-9ZM2.25 7.93v9l9 5.25v-9l-9-5.25Z" />
-          </svg>
-        </a>
 
         <button className="btn-nav-cart" onClick={onCartOpen} title="View Cart">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-icon-svg">
@@ -374,9 +372,10 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
         <a href="/catalog" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Catalog</a>
         <a href="/new-arrivals" className="mobile-nav-link">New Arrivals</a>
         <a href="/services" className="mobile-nav-link">Services</a>
+        <a href="/track-order" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Track</a>
         <a href="/contact" className="mobile-nav-link">Contact</a>
-        <a href="/track-order" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Track Order</a>
       </div>
     </nav>
+    </>
   );
 }

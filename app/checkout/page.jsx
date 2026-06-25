@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { ref, push, set, onValue } from "firebase/database";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const CLOUDINARY_CLOUD = "hpikhwjw";
 const CLOUDINARY_PRESET = "ml_default";
@@ -12,32 +14,31 @@ const UPSELL_SERVICES = [
     id: "editing",
     name: "Photo Editing",
     price: 499,
-    icon: "📷",
+    image: "/images/fine_art_printing.png",
     desc: "Professional color grading, blemish removal, and brightness adjustment."
   },
   {
     id: "restoration",
     name: "Old Photo Restoration",
     price: 1499,
-    icon: "🎨",
+    image: "/images/photo_restoration.png",
     desc: "Repair cracks, restore faded colors, and upscale resolutions."
   },
   {
     id: "boardgames",
     name: "Board Games",
     price: 2499,
-    icon: "🎲",
+    image: "/images/ludo.png",
     desc: "Custom framing setup suited for game prints, puzzle setups, or cards."
   },
   {
     id: "nikkah",
     name: "Nikkah Naama",
     price: 3999,
-    icon: "📜",
+    image: "/images/heritage_conservation.png",
     desc: "Premium frame treatment with elegant marriage certificate matting style."
   }
 ];
-
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -86,6 +87,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("EasyPaisa");
   const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [deliveryCharges, setDeliveryCharges] = useState(250);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [lightOn, setLightOn] = useState(true);
 
   useEffect(() => {
     const settingsRef = ref(db, "settings/deliveryCharges");
@@ -137,6 +140,26 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const removeCartItem = (index) => {
+    const newCart = [...cartItems];
+    newCart.splice(index, 1);
+    setCartItems(newCart);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fs_cart", JSON.stringify(newCart));
+      window.dispatchEvent(new Event("fs-cart-updated"));
+    }
+  };
+
+  const updateCartItemQuantity = (index, delta) => {
+    const newCart = [...cartItems];
+    newCart[index].quantity = Math.max(1, (newCart[index].quantity || 1) + delta);
+    setCartItems(newCart);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fs_cart", JSON.stringify(newCart));
+      window.dispatchEvent(new Event("fs-cart-updated"));
+    }
+  };
+
   const getCartSubtotal = () => {
     return cartItems.reduce((acc, item) => {
       const priceVal = parseInt((item.price || "0").replace(/[^0-9]/g, "")) || 0;
@@ -172,36 +195,33 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!paymentReceipt) {
-      setErrorMsg("Please upload a screenshot of your payment receipt to complete order verification.");
-      return;
-    }
-
     setIsSubmitting(true);
     const randomId = "FS-" + Math.floor(100000 + Math.random() * 900000);
 
     try {
-      // 1. Upload payment receipt screenshot
+      // 1. Upload payment receipt screenshot if exists
       let receiptUrl = "";
-      try {
-        const dataUpload = new FormData();
-        dataUpload.append("file", paymentReceipt);
-        dataUpload.append("upload_preset", CLOUDINARY_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
-          method: "POST",
-          body: dataUpload,
-        });
-        if (!res.ok) {
-          throw new Error("Failed to upload payment receipt");
+      if (paymentReceipt) {
+        try {
+          const dataUpload = new FormData();
+          dataUpload.append("file", paymentReceipt);
+          dataUpload.append("upload_preset", CLOUDINARY_PRESET);
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+            method: "POST",
+            body: dataUpload,
+          });
+          if (!res.ok) {
+            throw new Error("Failed to upload payment receipt");
+          }
+          const result = await res.json();
+          receiptUrl = result.secure_url;
+          setPaymentReceipt(receiptUrl);
+        } catch (err) {
+          console.error("Receipt upload error:", err);
+          setErrorMsg("Failed to upload payment receipt screenshot securely. Please try again.");
+          setIsSubmitting(false);
+          return;
         }
-        const result = await res.json();
-        receiptUrl = result.secure_url;
-        setPaymentReceipt(receiptUrl);
-      } catch (err) {
-        console.error("Receipt upload error:", err);
-        setErrorMsg("Failed to upload payment receipt screenshot securely. Please try again.");
-        setIsSubmitting(false);
-        return;
       }
 
       // 2. Process cart items
@@ -239,13 +259,13 @@ export default function CheckoutPage() {
         frameColor: "#1C0F07",
         size: "Service Upgrade",
         orientation: "N/A",
-        image: ""
+        image: s.image
       }));
 
       const orderData = {
         customer: {
           ...formData,
-          fullName: formData.name // Safe mapping for order tracking page recipient view
+          fullName: formData.name
         },
         items: [...processedItems, ...serviceItems],
         subtotal,
@@ -265,7 +285,7 @@ export default function CheckoutPage() {
       setOrderId(randomId);
       setOrderSuccess(true);
 
-      // Automated WhatsApp order confirmation message redirect
+      // Automated WhatsApp order confirmation message redirect (sends to Studio WhatsApp +923007001977)
       try {
         const messageText = `*Yaadein Order Confirmation* 🌟\n\n` +
           `Order Reference: *${randomId}*\n` +
@@ -275,7 +295,7 @@ export default function CheckoutPage() {
           `Payment Method: *${paymentMethod}*\n` +
           `Grand Total: *Rs. ${total.toLocaleString()}*\n\n` +
           `Please find the attached receipt screenshot below. Thank you!`;
-        const whatsappUrl = `https://wa.me/${getWhatsAppNumber(formData.phone)}?text=${encodeURIComponent(messageText)}`;
+        const whatsappUrl = `https://wa.me/923007001977?text=${encodeURIComponent(messageText)}`;
         if (typeof window !== "undefined") {
           window.open(whatsappUrl, "_blank");
         }
@@ -318,49 +338,349 @@ export default function CheckoutPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          position: relative;
         }
 
-        /* ── NAVBAR ── */
-        .navbar {
-          height: 72px;
-          background: rgba(0, 0, 0, 0.95);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 24px;
-          z-index: 1000;
-          position: sticky;
+        /* ── DYNAMIC LIQUID BACKDROP ── */
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(12, 10, 8, 0.45);
+          backdrop-filter: blur(35px) saturate(140%);
+          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
+          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+
+        .catalog-glow {
+          position: absolute;
           top: 0;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          left: 0;
+          width: 1000px;
+          height: 1000px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 1;
+          animation: catalog-glow-auto 10s infinite ease-in-out;
         }
-        .nav-brand {
+
+        @keyframes catalog-glow-auto {
+          0% { transform: translate(-20%, -20%) scale(1); }
+          25% { transform: translate(100%, 10%) scale(1.2); }
+          50% { transform: translate(40%, 40%) scale(0.9); }
+          75% { transform: translate(-10%, 30%) scale(1.1); }
+          100% { transform: translate(-20%, -20%) scale(1); }
+        }
+
+        .liquid-blob-1 {
+          position: absolute;
+          top: -10%;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .liquid-blob-2 {
+          position: absolute;
+          bottom: -15%;
+          right: 5%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes liquid-move-1 {
+          0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%; }
+          33% { transform: translate(80px, -60px) scale(1.15) rotate(45deg); border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%; }
+          66% { transform: translate(-40px, 80px) scale(0.9) rotate(90deg); border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%; }
+          100% { transform: translate(0, 0) scale(1) rotate(180deg); border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%; }
+        }
+
+        @keyframes liquid-move-2 {
+          0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%; }
+          50% { transform: translate(-100px, 50px) scale(1.2) rotate(120deg); border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%; }
+          100% { transform: translate(60px, -70px) scale(0.9) rotate(-60deg); border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%; }
+        }
+
+        /* ── HERO BANNER ── */
+        .hero-banner {
+          position: relative;
+          padding: 170px 40px 60px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          z-index: 10;
+        }
+
+        .hero-title {
+          font-family: var(--font-display);
+          font-size: 52px;
+          color: var(--text);
+          letter-spacing: 0.05em;
+        }
+
+        .hero-title span {
+          color: var(--accent);
+        }
+
+        .hero-desc {
+          font-family: var(--font-serif);
+          font-size: 16px;
+          color: var(--text2);
+          max-width: 650px;
+          line-height: 1.7;
+        }
+
+        /* LIGHT SWITCH TOGGLE STYLING */
+        .light-control-panel {
           display: flex;
           align-items: center;
-          transition: transform 0.2s ease;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
         }
-        .nav-brand:hover {
-          transform: scale(1.03);
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
         }
-        .nav-logo-img {
-          height: 38px;
-          width: auto;
-          display: block;
-        }
-        .btn-back {
-          color: var(--text2);
-          text-decoration: none;
-          font-family: var(--font-display);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
           text-transform: uppercase;
-          transition: color 0.15s ease;
-          white-space: nowrap;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
         }
-        .btn-back:hover { color: var(--accent); }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
+        }
+
+        /* Suspended Lamp structure */
+        .exquisite-lamp {
+          position: absolute;
+          top: 0px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 240px;
+        }
+        .catalog-lamp .lamp-head {
+          width: 440px; /* Cover the title */
+        }
+        .lamp-rod {
+          width: 4px;
+          height: 100vh;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 1px 0 3px rgba(0,0,0,0.4);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+        }
+        .lamp-mount {
+          width: 32px;
+          height: 18px;
+          background: linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b);
+          border: 1px solid #1a1205;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
+          border-radius: 2px;
+          position: relative;
+          z-index: 12;
+        }
+        .lamp-arm {
+          width: 6px;
+          height: 108px;
+          background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
+          box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+          position: relative;
+        }
+        .lamp-arm::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: -4px;
+          width: 14px;
+          height: 6px;
+          background: #5e461b;
+          border-radius: 2px;
+        }
+        .lamp-head {
+          width: 180px;
+          height: 24px;
+          background: linear-gradient(to bottom, #362710 0%, #8f723b 25%, #dfc38a 45%, #fae7b5 55%, #8f723b 75%, #362710 100%);
+          border: 1px solid #1a1205;
+          border-radius: 12px;
+          box-shadow: 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.3);
+          position: relative;
+        }
+        .lamp-head::before, .lamp-head::after {
+          content: '';
+          position: absolute;
+          top: -1px;
+          width: 8px;
+          height: 24px;
+          background: linear-gradient(to bottom, #1a1205, #5e461b, #1a1205);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+        }
+        .lamp-head::before { left: -4px; }
+        .lamp-head::after { right: -4px; }
+        .lamp-bulb {
+          position: absolute;
+          bottom: 0px;
+          left: 15%;
+          right: 15%;
+          height: 4px;
+          background: #fff;
+          border-radius: 2px;
+          box-shadow: 0 0 12px 3px #fae7b5, 0 0 24px 8px #fae7b5;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          z-index: 5;
+        }
+        .lamp-bulb.on { opacity: 1; }
+        .lamp-light-beam {
+          position: absolute;
+          top: 116px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 480px;
+          height: 480px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
+          filter: blur(30px);
+          pointer-events: none;
+          z-index: 15;
+          opacity: 0;
+          transition: opacity 0.25s ease-in-out;
+        }
+        .lamp-light-beam.on { opacity: 1; }
+        .catalog-lamp .lamp-light-beam {
+          width: 650px;
+          height: 500px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
+        }
+
+        /* GLOW & PARTICLES */
+        .exquisite-glow-container { top: 108px !important; }
+        .lamp-glow-container {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+        }
+        .glow { display: none !important; }
+        .particles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100px;
+          height: 100px;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        .exquisite-glow-container.on .particles { opacity: 1; }
+        .rotate {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          animation: rotate 20s linear 0s infinite alternate;
+        }
+        .angle { position: absolute; top: 0; left: 0; }
+        .size { position: absolute; top: 0; left: 0; }
+        .position { position: absolute; top: 0; left: 0; }
+        .pulse { position: absolute; top: 0; left: 0; animation: pulse 1.5s linear 0s infinite alternate; }
+        .particle { position: absolute; top: calc(50% - 2.5px); left: calc(50% - 2.5px); width: 5px; height: 5px; border-radius: 50%; }
+        .particle::before, .particle::after { content: ''; position: absolute; border-radius: 50%; width: 4px; height: 4px; box-shadow: inherit; }
+        .particle::before { top: -30px; left: 25px; animation: float-firefly-1 3.5s ease-in-out infinite alternate; }
+        .particle::after { width: 3px; height: 3px; top: 35px; left: -30px; animation: float-firefly-2 4.5s ease-in-out infinite alternate; }
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(.5); } }
+        @keyframes float-firefly-1 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100px, -80px, 0); } }
+        @keyframes float-firefly-2 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(100px, -120px, 0); } }
+        @keyframes particle-warm {
+          0% { box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D; }
+          33.33% { box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D; }
+          33.34% { box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF; }
+          66.66% { box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF; }
+          66.67% { box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00; }
+          100% { box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00; }
+        }
+        .rotate .angle:nth-child(1) { animation: angle 10s steps(5) 0s infinite; }
+        .rotate .angle:nth-child(1) .size { animation: size 10s steps(5) 0s infinite; }
+        .rotate .angle:nth-child(1) .particle { animation: particle-warm 6s linear infinite alternate; }
+        .rotate .angle:nth-child(1) .position { animation: position 2s linear 0s infinite; }
+        .rotate .angle:nth-child(2) { animation: angle 4.95s steps(3) -1.65s infinite; }
+        .rotate .angle:nth-child(2) .size { animation: size 4.95s steps(3) -1.65s infinite alternate; }
+        .rotate .angle:nth-child(2) .particle { animation: particle-warm 4.95s linear -3.3s infinite alternate; }
+        .rotate .angle:nth-child(2) .position { animation: position 1.65s linear 0s infinite; }
+        .rotate .angle:nth-child(3) { animation: angle 13.76s steps(8) -6.88s infinite; }
+        .rotate .angle:nth-child(3) .size { animation: size 6.88s steps(4) -5.16s infinite alternate; }
+        .rotate .angle:nth-child(3) .particle { animation: particle-warm 5.16s linear -1.72s infinite alternate; }
+        .rotate .angle:nth-child(3) .position { animation: position 1.72s linear 0s infinite; }
 
         /* ── LAYOUT ── */
         .checkout-container {
@@ -368,7 +688,9 @@ export default function CheckoutPage() {
           max-width: 1200px;
           width: 100%;
           margin: 0 auto;
-          padding: 52px 40px;
+          padding: 20px 40px 80px;
+          position: relative;
+          z-index: 10;
         }
 
         /* ── GRID ── */
@@ -440,7 +762,6 @@ export default function CheckoutPage() {
         }
         .form-control:focus { border-color: var(--accent); }
 
-        /* sub-row */
         .sub-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -448,7 +769,6 @@ export default function CheckoutPage() {
         }
         .sub-row .form-group { margin-bottom: 0; }
 
-        /* ── COD ── */
         .cod-badge {
           background: rgba(212, 175, 55, 0.03);
           border: 1.5px dashed var(--accent);
@@ -469,12 +789,29 @@ export default function CheckoutPage() {
         .cod-details p { font-size: 13px; line-height: 1.6; color: var(--text2); }
 
         .btn-order {
+          max-width: 280px;
           width: 100%;
-          margin-top: 22px;
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
+          margin: 22px auto 0;
+          display: block;
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          background: var(--accent) !important;
+          color: #1A1100 !important;
+          font-family: var(--font-display) !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.08em;
+          text-align: center;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+          transition: all 0.3s ease;
+          text-transform: uppercase;
         }
-        .btn-order:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-order:hover {
+          background: #dfc38a !important;
+          transform: translateY(-1px);
+        }
+        .btn-order:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
         /* ── SIDEBAR ── */
         .checkout-sidebar {
@@ -499,13 +836,35 @@ export default function CheckoutPage() {
           padding-bottom: 12px;
           letter-spacing: 0.05em;
         }
+        .checkout-sidebar-col {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
         .summary-items-list {
           display: flex;
           flex-direction: column;
           gap: 14px;
-          max-height: 260px;
+          max-height: 320px;
           overflow-y: auto;
+          padding-right: 16px;
         }
+
+        /* CUSTOM THIN SCROLLBAR */
+        .summary-items-list::-webkit-scrollbar {
+          width: 5px;
+        }
+        .summary-items-list::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .summary-items-list::-webkit-scrollbar-thumb {
+          background: var(--accent);
+          border-radius: 999px;
+        }
+        .summary-items-list::-webkit-scrollbar-thumb:hover {
+          background: #dfc38a;
+        }
+
         .summary-item { 
           display: flex; 
           gap: 12px; 
@@ -514,6 +873,46 @@ export default function CheckoutPage() {
           border: 2px solid #1C0F07;
           padding: 8px;
           border-radius: var(--radius);
+          position: relative;
+        }
+
+        /* Quantity Counter in Summary */
+        .summary-qty-counter {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(181, 139, 92, 0.25);
+          border-radius: 9999px;
+          padding: 2px 6px;
+          width: fit-content;
+        }
+        .qty-btn-minus, .qty-btn-plus {
+          background: none;
+          border: none;
+          color: var(--accent);
+          font-size: 13px;
+          cursor: pointer;
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          outline: none;
+          user-select: none;
+        }
+        .qty-btn-minus:hover, .qty-btn-plus:hover {
+          color: var(--text);
+          transform: scale(1.15);
+        }
+        .qty-val {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          color: var(--text);
+          font-weight: 700;
+          min-width: 14px;
+          text-align: center;
         }
         .summary-thumb {
           width: 48px; height: 48px;
@@ -522,6 +921,7 @@ export default function CheckoutPage() {
           flex-shrink: 0;
           padding: 3px;
           box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          background: #111;
         }
         .summary-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
         .summary-thumb-placeholder {
@@ -533,7 +933,7 @@ export default function CheckoutPage() {
           font-size: 16px;
           color: rgba(201,168,76,0.15);
         }
-        .summary-details { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .summary-details { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-right: 20px; }
         .summary-name {
           font-family: var(--font-display);
           font-size: 13px;
@@ -545,6 +945,24 @@ export default function CheckoutPage() {
         .summary-meta { font-family: var(--font-typewriter); font-size: 9px; color: var(--text2); text-transform: uppercase; }
         .summary-price-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); }
         .summary-price { font-family: var(--font-typewriter); color: var(--accent); font-weight: 700; }
+
+        .btn-summary-remove {
+          position: absolute;
+          top: 6px;
+          right: 8px;
+          background: none;
+          border: none;
+          color: rgba(255, 90, 90, 0.6);
+          font-size: 18px;
+          cursor: pointer;
+          line-height: 1;
+          transition: color 0.15s ease;
+          padding: 4px;
+          z-index: 10;
+        }
+        .btn-summary-remove:hover {
+          color: #FF5A5A;
+        }
 
         .summary-totals {
           border-top: 2px solid #1C0F07;
@@ -651,9 +1069,6 @@ export default function CheckoutPage() {
 
         /* ── MOBILE ── */
         @media (max-width: 580px) {
-          .navbar { padding: 0 16px; height: 54px; }
-          .nav-logo-img { height: 32px; }
-          .btn-back { font-size: 11px; }
           .checkout-container {
             padding: 20px 16px 48px;
             display: flex;
@@ -679,7 +1094,7 @@ export default function CheckoutPage() {
           .cod-icon  { font-size: 22px; }
           .cod-details h4 { font-size: 13px; }
           .cod-details p  { font-size: 11px; }
-          .btn-order { padding: 17px; font-size: 13px; margin-top: 18px; border-radius: 9999px !important; }
+          .btn-order { padding: 12px 24px; font-size: 13px; margin-top: 18px; border-radius: 9999px !important; }
           .summary-items-list { max-height: 190px; }
           .totals-row.grand   { font-size: 17px; }
           .success-card  { margin: 20px 0 40px; padding: 28px 18px; border-radius: var(--radius); gap: 14px; }
@@ -691,7 +1106,7 @@ export default function CheckoutPage() {
 
         /* ── RECEIPT UPLOADER ── */
         .receipt-uploader-zone {
-          margin-top: 18px;
+          margin-top: 10px;
           border: 2px dashed rgba(181, 139, 92, 0.3);
           border-radius: var(--radius);
           padding: 24px;
@@ -737,7 +1152,7 @@ export default function CheckoutPage() {
         }
 
         .receipt-preview-container {
-          margin-top: 18px;
+          margin-top: 10px;
           border: 2px solid rgba(181, 139, 92, 0.25);
           border-radius: var(--radius);
           background: rgba(30, 25, 20, 0.5);
@@ -926,74 +1341,102 @@ export default function CheckoutPage() {
 
         /* ── ADDITIONAL SERVICES UPSELL ── */
         .services-upsell-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
           margin-top: 10px;
         }
         .upsell-card {
           background: rgba(30, 25, 20, 0.4);
           border: 2px solid #1C0F07;
           border-radius: var(--radius);
-          padding: 18px;
+          padding: 12px;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
           display: flex;
-          flex-direction: column;
-          gap: 10px;
+          flex-direction: row;
+          gap: 14px;
+          align-items: center;
           position: relative;
           text-align: left;
         }
         .upsell-card:hover {
           border-color: rgba(181, 139, 92, 0.4);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .upsell-card.selected {
           border-color: var(--accent);
           background: rgba(181, 139, 92, 0.05);
-          box-shadow: 0 0 15px rgba(181, 139, 92, 0.15);
+          box-shadow: 0 0 10px rgba(181, 139, 92, 0.1);
         }
-        .upsell-header {
+        .upsell-header-image {
+          width: 70px;
+          height: 70px;
+          border-radius: 12px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .upsell-header-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .upsell-details {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex-grow: 1;
+          min-width: 0;
+        }
+        .upsell-meta-row {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-        }
-        .upsell-icon {
-          font-size: 24px;
-        }
-        .upsell-price {
-          font-family: var(--font-typewriter);
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--accent);
+          align-items: baseline;
+          gap: 8px;
         }
         .upsell-name {
           font-family: var(--font-display);
-          font-size: 14px;
+          font-size: 13px;
           color: var(--text);
-          font-weight: 600;
+          font-weight: 700;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .upsell-price-tag {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--accent);
+          flex-shrink: 0;
         }
         .upsell-desc {
-          font-size: 12px;
+          font-size: 11px;
           color: var(--text2);
-          line-height: 1.5;
-          flex-grow: 1;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .btn-upsell-action {
-          width: 100%;
+          align-self: flex-start;
+          width: auto;
           background: transparent;
           border: 1px solid rgba(181, 139, 92, 0.3);
           color: var(--accent);
           font-family: var(--font-display);
-          font-size: 11px;
+          font-size: 9px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          padding: 8px;
-          border-radius: var(--radius);
+          padding: 4px 10px;
+          border-radius: 9999px;
           cursor: pointer;
           transition: all 0.2s ease;
+          margin-top: 2px;
+          pointer-events: none;
         }
         .upsell-card:hover .btn-upsell-action {
           background: rgba(181, 139, 92, 0.05);
@@ -1136,18 +1579,64 @@ export default function CheckoutPage() {
         }
       ` }} />
 
+      {/* DYNAMIC LIQUID BACKDROP ELEMENTS */}
+      <div className="catalog-glass-bg">
+        <div className="liquid-blob-1" />
+        <div className="liquid-blob-2" />
+        <div className="catalog-glow" />
+      </div>
+
+      {/* Frosted Glass overlay sheet */}
+      <div className="catalog-glass-pane" />
+
       {/* NAVBAR */}
-      <nav className="navbar">
-        <a href="/" className="nav-brand">
-          <img src="/images/logo-white.png" alt="Yaadein Logo" className="nav-logo-img" />
-        </a>
-        <a href="/catalog" className="btn-back">← Return to Catalog</a>
-      </nav>
+      <Navbar onCartOpen={() => setCartOpen(true)} />
+
+      {/* HERO BANNER BLOCK WITH TITLE & LAMP */}
+      <div className="hero-banner">
+        {/* Suspended Brass Lamp */}
+        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow" style={{ display: 'none' }}></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle"><div className="size"><div className="position"><div className="pulse"><div className="particle"></div></div></div></div></div>
+                <div className="angle"><div className="size"><div className="position"><div className="pulse"><div className="particle"></div></div></div></div></div>
+                <div className="angle"><div className="size"><div className="position"><div className="pulse"><div className="particle"></div></div></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h1 className="hero-title">Secure <span>Checkout</span></h1>
+        <p className="hero-desc">
+          Review your order details and complete your prepaid digital transfer to initiate framing.
+        </p>
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Light Switch</span>
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
+            type="button"
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
+      </div>
 
       {/* BODY */}
       <div className="checkout-container">
         {orderSuccess ? (
-          <div className="success-card">
+          <div className="success-card" style={{ position: "relative", zIndex: 10 }}>
             <div className="success-icon">✓</div>
             <h2 className="success-title">Order Placed!</h2>
             <div className="success-order-id">Reference: {orderId}</div>
@@ -1169,10 +1658,10 @@ export default function CheckoutPage() {
                 <strong style={{ textAlign: "right", maxWidth: "220px" }}>
                   {formData.address}, {formData.city}, {formData.state} {formData.zip}
                 </strong>
-                <div className="success-row">
-                  <span>Payment Method:</span>
-                  <strong>{paymentMethod}</strong>
-                </div>
+              </div>
+              <div className="success-row">
+                <span>Payment Method:</span>
+                <strong>{paymentMethod}</strong>
               </div>
               <div className="success-row" style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", marginTop: "4px" }}>
                 <span>Amount Transferred:</span>
@@ -1221,21 +1710,19 @@ export default function CheckoutPage() {
                     <div><span>Account Number:</span> <strong>0123-4567-8910-1112</strong></div>
                     <div><span>IBAN:</span> <strong>PK12ALFH0123456789101112</strong></div>
                   </div>
-                  <p className="instruction-note">Once paid, email the transaction receipt or WhatsApp to <strong>+92 300 7001977</strong> with Reference ID <strong>{orderId}</strong>.</p>
+                  <p className="instruction-note">Once paid, share the payment receipt screenshot with Reference ID <strong>{orderId}</strong> on WhatsApp at <strong>+92 300 7001977</strong>.</p>
                 </div>
               )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginTop: "16px" }}>
               <a
-                href={`https://wa.me/${getWhatsAppNumber(formData.phone)}?text=${encodeURIComponent(
-                  `*Yaadein Order Confirmation* 🌟\n\n` +
+                href={`https://wa.me/923007001977?text=${encodeURIComponent(
+                  `*Yaadein Order Receipt* 🌟\n\n` +
                   `Order Reference: *${orderId}*\n` +
                   `Customer Name: *${formData.name}*\n` +
                   `Phone: *${formData.phone}*\n` +
-                  `Address: *${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}*\n` +
-                  `Payment Method: *${paymentMethod}*\n` +
                   `Grand Total: *Rs. ${total.toLocaleString()}*\n\n` +
-                  `Please find the attached receipt screenshot below. Thank you!`
+                  `Attached is my receipt screenshot reference. Please confirm my order status!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1243,23 +1730,32 @@ export default function CheckoutPage() {
                 style={{
                   textAlign: "center",
                   width: "100%",
-                  background: "#25D366 !important",
-                  color: "#FFFFFF !important",
-                  boxShadow: "0 4px 15px rgba(37, 211, 102, 0.25)"
+                  background: "#25D366",
+                  color: "#FFFFFF",
+                  boxShadow: "0 4px 15px rgba(37, 211, 102, 0.25)",
+                  display: "block",
+                  padding: "12px",
+                  borderRadius: "var(--radius)",
+                  textDecoration: "none",
+                  fontWeight: "bold"
                 }}
               >
-                💬 Confirm Order on WhatsApp
+                💬 Send Receipt Screenshot via WhatsApp
               </a>
-              <a href={`/track-order?id=${orderId}`} className="btn-success" style={{ textAlign: "center", width: "100%" }}>
+              <a href={`/track-order?id=${orderId}`} className="btn-success" style={{ textAlign: "center", width: "100%", display: "block", padding: "12px", borderRadius: "var(--radius)", textDecoration: "none", background: "var(--accent)", color: "#1A1100", fontWeight: "bold" }}>
                 Track Order Status
               </a>
               <a href="/" className="btn-success" style={{
                 textAlign: "center",
                 width: "100%",
-                background: "rgba(20, 17, 14, 0.6) !important",
-                border: "1.5px solid var(--accent) !important",
-                color: "var(--accent) !important",
-                boxShadow: "none"
+                background: "rgba(20, 17, 14, 0.6)",
+                border: "1.5px solid var(--accent)",
+                color: "var(--accent)",
+                boxShadow: "none",
+                display: "block",
+                padding: "12px",
+                borderRadius: "var(--radius)",
+                textDecoration: "none"
               }}>
                 Back to Gallery
               </a>
@@ -1281,6 +1777,7 @@ export default function CheckoutPage() {
                     <input
                       type="text" name="name" className="form-control"
                       placeholder="e.g. Ali Khan"
+                      required
                       value={formData.name} onChange={handleChange}
                     />
                   </div>
@@ -1291,6 +1788,7 @@ export default function CheckoutPage() {
                       <input
                         type="email" name="email" className="form-control"
                         placeholder="e.g. ali@example.com"
+                        required
                         value={formData.email} onChange={handleChange}
                       />
                     </div>
@@ -1299,6 +1797,7 @@ export default function CheckoutPage() {
                       <input
                         type="tel" name="phone" className="form-control"
                         placeholder="e.g. +92 300 1234567"
+                        required
                         value={formData.phone} onChange={handleChange}
                       />
                     </div>
@@ -1309,6 +1808,7 @@ export default function CheckoutPage() {
                     <input
                       type="text" name="address" className="form-control"
                       placeholder="House, Street, Area"
+                      required
                       value={formData.address} onChange={handleChange}
                     />
                   </div>
@@ -1320,17 +1820,19 @@ export default function CheckoutPage() {
                       <input
                         type="text" name="city" className="form-control"
                         placeholder="e.g. Lahore"
+                        required
                         value={formData.city} onChange={handleChange}
                       />
                     </div>
 
-                    {/* Province + ZIP always side-by-side via sub-row */}
+                    {/* Province / State + ZIP Code */}
                     <div className="sub-row">
                       <div className="form-group">
-                        <label>Province / State</label>
+                        <label>Province</label>
                         <input
                           type="text" name="state" className="form-control"
                           placeholder="e.g. Punjab"
+                          required
                           value={formData.state} onChange={handleChange}
                         />
                       </div>
@@ -1339,6 +1841,7 @@ export default function CheckoutPage() {
                         <input
                           type="text" name="zip" className="form-control"
                           placeholder="ZIP"
+                          required
                           value={formData.zip} onChange={handleChange}
                         />
                       </div>
@@ -1354,42 +1857,9 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* ── SECTION 2: ADDITIONAL SERVICES UPSELL ── */}
+                {/* ── SECTION 2: PAYMENT OPTIONS ── */}
                 <div className="checkout-card">
-                  <h3 className="card-title">2. Enhance Your Memories</h3>
-                  <p style={{ color: "var(--text2)", fontSize: "13px", marginBottom: "18px", lineHeight: "1.5", textAlign: "left" }}>
-                    Select professional studio services to complement your premium handcrafted frames.
-                  </p>
-                  <div className="services-upsell-grid">
-                    {UPSELL_SERVICES.map((service) => {
-                      const isSelected = selectedServices.some(s => s.id === service.id);
-                      return (
-                        <div
-                          key={service.id}
-                          className={`upsell-card ${isSelected ? 'selected' : ''}`}
-                          onClick={() => toggleService(service)}
-                        >
-                          <div className="upsell-header">
-                            <span className="upsell-icon">{service.icon}</span>
-                            <span className="upsell-price">+Rs. {service.price.toLocaleString()}</span>
-                          </div>
-                          <h4 className="upsell-name">{service.name}</h4>
-                          <p className="upsell-desc">{service.desc}</p>
-                          <button
-                            type="button"
-                            className={`btn-upsell-action ${isSelected ? 'added' : ''}`}
-                          >
-                            {isSelected ? "✓ Added" : "+ Add Service"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ── SECTION 3: PAYMENT OPTIONS ── */}
-                <div className="checkout-card">
-                  <h3 className="card-title">3. Payment Method</h3>
+                  <h3 className="card-title">2. Payment Method</h3>
                   <p style={{ color: "var(--text2)", fontSize: "13px", marginBottom: "18px", textAlign: "left" }}>
                     We support secure prepaid digital transfers. Please select your preferred method:
                   </p>
@@ -1425,7 +1895,7 @@ export default function CheckoutPage() {
                     {paymentMethod === 'EasyPaisa' && (
                       <div className="payment-details-pane">
                         <strong>EasyPaisa Mobile Wallet</strong>
-                        <p>Transfer the final invoice amount directly to our EasyPaisa account. Share receipt screenshot on WhatsApp to initiate production.</p>
+                        <p>Transfer the final invoice amount directly to our EasyPaisa account.</p>
                         <div className="pane-info-row">
                           <span>Account Title:</span> <strong>Yaadein Art Studio</strong>
                         </div>
@@ -1437,7 +1907,7 @@ export default function CheckoutPage() {
                     {paymentMethod === 'JazzCash' && (
                       <div className="payment-details-pane">
                         <strong>JazzCash Mobile Wallet</strong>
-                        <p>Transfer the final invoice amount directly to our JazzCash account. Share receipt screenshot on WhatsApp to initiate production.</p>
+                        <p>Transfer the final invoice amount directly to our JazzCash account.</p>
                         <div className="pane-info-row">
                           <span>Account Title:</span> <strong>Yaadein Art Studio</strong>
                         </div>
@@ -1467,129 +1937,206 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Receipt screenshot uploader */}
-                  {!paymentReceipt ? (
-                    <div className="receipt-uploader-zone">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleReceiptChange}
-                        className="upload-receipt-input"
-                        id="receipt-file-input"
-                      />
-                      <div className="uploader-prompt-content">
-                        <span className="uploader-prompt-icon">📸</span>
-                        <span className="uploader-prompt-title">Upload Payment Receipt Screenshot</span>
-                        <span className="uploader-prompt-desc">Tap or drag image here (JPEG, PNG, WebP)</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="receipt-preview-container">
-                      <div
-                        className="receipt-preview-image-wrapper"
-                        onClick={() => {
-                          const overlay = document.createElement('div');
-                          overlay.className = 'receipt-lightbox-overlay';
-                          overlay.onclick = () => overlay.remove();
-                          const closeBtn = document.createElement('button');
-                          closeBtn.className = 'receipt-lightbox-close';
-                          closeBtn.innerHTML = '✕';
-                          closeBtn.onclick = (e) => { e.stopPropagation(); overlay.remove(); };
-                          const img = document.createElement('img');
-                          img.src = paymentReceipt;
-                          img.alt = 'Payment Receipt Full View';
-                          overlay.appendChild(closeBtn);
-                          overlay.appendChild(img);
-                          document.body.appendChild(overlay);
-                        }}
-                      >
-                        <img src={paymentReceipt} alt="Payment Receipt Preview" />
-                      </div>
-                      <div className="receipt-preview-footer">
-                        <div className="receipt-preview-info">
-                          <div className="receipt-preview-check">✓</div>
-                          <div className="receipt-preview-details">
-                            <span className="receipt-preview-title">receipt_screenshot.png</span>
-                            <span className="receipt-preview-status">✓ Ready to submit</span>
-                          </div>
+                  <div style={{ marginTop: "18px", padding: "16px", background: "rgba(20, 16, 12, 0.4)", border: "1px dashed rgba(181, 139, 92, 0.3)", borderRadius: "var(--radius)", textAlign: "left" }}>
+                    <p style={{ fontSize: "12px", lineHeight: "1.6", color: "var(--text2)", marginBottom: "12px" }}>
+                      💡 <strong>Verification Receipt:</strong> Upload your transfer screenshot below. Alternatively, if you are ordering from a PC, you can transfer from your phone and send the receipt screenshot to our WhatsApp at <strong>+92 300 7001977</strong> along with your name.
+                    </p>
+                    
+                    {!paymentReceipt ? (
+                      <div className="receipt-uploader-zone">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleReceiptChange}
+                          className="upload-receipt-input"
+                          id="receipt-file-input"
+                        />
+                        <div className="uploader-prompt-content">
+                          <span className="uploader-prompt-icon">📸</span>
+                          <span className="uploader-prompt-title">Upload Payment Receipt Screenshot</span>
+                          <span className="uploader-prompt-desc">Tap or drag image here (Optional)</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={removeReceipt}
-                          className="btn-remove-receipt"
-                        >
-                          Remove
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="receipt-preview-container">
+                        <div
+                          className="receipt-preview-image-wrapper"
+                          onClick={() => {
+                            const overlay = document.createElement('div');
+                            overlay.className = 'receipt-lightbox-overlay';
+                            overlay.onclick = () => overlay.remove();
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'receipt-lightbox-close';
+                            closeBtn.innerHTML = '✕';
+                            closeBtn.onclick = (e) => { e.stopPropagation(); overlay.remove(); };
+                            const img = document.createElement('img');
+                            img.src = paymentReceipt;
+                            img.alt = 'Payment Receipt Full View';
+                            overlay.appendChild(closeBtn);
+                            overlay.appendChild(img);
+                            document.body.appendChild(overlay);
+                          }}
+                        >
+                          <img src={paymentReceipt} alt="Payment Receipt Preview" />
+                        </div>
+                        <div className="receipt-preview-footer">
+                          <div className="receipt-preview-info">
+                            <div className="receipt-preview-check">✓</div>
+                            <div className="receipt-preview-details">
+                              <span className="receipt-preview-title">Receipt screenshot</span>
+                              <span className="receipt-preview-status">✓ Ready to submit</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeReceipt}
+                            className="btn-remove-receipt"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <button type="submit" className="btn-order" disabled={isSubmitting}>
-                    {isSubmitting ? "Placing Order..." : `Place Order (Prepaid via ${paymentMethod})`}
+                    {isSubmitting ? "Placing Order..." : "Place Order"}
                   </button>
                 </div>
               </div>
 
-              {/* ── RIGHT: ORDER SUMMARY ── */}
-              <div className="checkout-sidebar">
-                <h3 className="sidebar-title">Order Summary</h3>
+              {/* ── RIGHT: SIDEBAR COLUMN ── */}
+              <div className="checkout-sidebar-col">
+                <div className="checkout-sidebar">
+                  <h3 className="sidebar-title">Order Summary</h3>
 
-                <div className="summary-items-list">
-                  {cartItems.length === 0 ? (
-                    <div style={{ color: "var(--text2)", fontSize: "13px", textAlign: "center", padding: "20px 0" }}>
-                      No custom frames in order summary.
+                  <div className="summary-items-list">
+                    {cartItems.length === 0 ? (
+                      <div style={{ color: "var(--text2)", fontSize: "13px", textAlign: "center", padding: "20px 0" }}>
+                        No custom frames in order summary.
+                      </div>
+                    ) : (
+                      <>
+                        {cartItems.map((item, idx) => (
+                          <div key={idx} className="summary-item">
+                            <div className="summary-thumb" style={{ background: item.frameColor }}>
+                              {item.image ? (
+                                <img src={item.image} alt={item.frameName} />
+                              ) : (
+                                <div className="summary-thumb-placeholder">Y</div>
+                              )}
+                            </div>
+                            <div className="summary-details">
+                              <h4 className="summary-name">{item.frameName}</h4>
+                              <span className="summary-meta">{item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}</span>
+                              <div className="summary-price-row">
+                                <div className="summary-qty-counter">
+                                  <button
+                                    type="button"
+                                    className="qty-btn-minus"
+                                    onClick={() => updateCartItemQuantity(idx, -1)}
+                                  >
+                                    –
+                                  </button>
+                                  <span className="qty-val">{item.quantity || 1}</span>
+                                  <button
+                                    type="button"
+                                    className="qty-btn-plus"
+                                    onClick={() => updateCartItemQuantity(idx, 1)}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                                <span className="summary-price">{item.price}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn-summary-remove"
+                              onClick={() => removeCartItem(idx)}
+                              title="Remove Frame"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        {selectedServices.map((service, idx) => (
+                          <div key={`service-${idx}`} className="summary-item" style={{ borderStyle: "dashed", borderColor: "rgba(181, 139, 92, 0.3)" }}>
+                            <div className="summary-thumb">
+                              <img src={service.image} alt={service.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "var(--radius)" }} />
+                            </div>
+                            <div className="summary-details">
+                              <h4 className="summary-name">{service.name}</h4>
+                              <span className="summary-meta">Service Upgrade</span>
+                              <div className="summary-price-row">
+                                <span>Qty: 1</span>
+                                <span className="summary-price">Rs. {service.price.toLocaleString()}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn-summary-remove"
+                              onClick={() => toggleService(service)}
+                              title="Remove Service"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="summary-totals">
+                    <div className="totals-row">
+                      <span>Subtotal</span>
+                      <span>Rs. {subtotal.toLocaleString()}</span>
                     </div>
-                  ) : (
-                    <>
-                      {cartItems.map((item, idx) => (
-                        <div key={idx} className="summary-item">
-                          <div className="summary-thumb" style={{ background: item.frameColor }}>
-                            {item.image ? (
-                              <img src={item.image} alt={item.frameName} />
-                            ) : (
-                              <div className="summary-thumb-placeholder">Y</div>
-                            )}
-                          </div>
-                          <div className="summary-details">
-                            <h4 className="summary-name">{item.frameName}</h4>
-                            <span className="summary-meta">{item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}</span>
-                            <div className="summary-price-row">
-                              <span>Qty: {item.quantity}</span>
-                              <span className="summary-price">{item.price}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {selectedServices.map((service, idx) => (
-                        <div key={`service-${idx}`} className="summary-item" style={{ borderStyle: "dashed", borderColor: "rgba(181, 139, 92, 0.3)" }}>
-                          <div className="summary-thumb" style={{ background: "#1C0F07", border: "1px dashed var(--accent)" }}>
-                            <div className="summary-thumb-placeholder" style={{ color: "var(--accent)", fontSize: "18px" }}>{service.icon}</div>
-                          </div>
-                          <div className="summary-details">
-                            <h4 className="summary-name">{service.name}</h4>
-                            <span className="summary-meta">Service Upgrade</span>
-                            <div className="summary-price-row">
-                              <span>Qty: 1</span>
-                              <span className="summary-price">Rs. {service.price.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                    <div className="totals-row">
+                      <span>Courier Delivery (14-day Standard)</span>
+                      <span>{shipping > 0 ? `Rs. ${shipping.toLocaleString()}` : "Rs. 0"}</span>
+                    </div>
+                    <div className="totals-row grand">
+                      <span>Grand Total</span>
+                      <span>Rs. {total.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="summary-totals">
-                  <div className="totals-row">
-                    <span>Subtotal</span>
-                    <span>Rs. {subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="totals-row">
-                    <span>Courier Delivery (14-day Standard)</span>
-                    <span>{shipping > 0 ? `Rs. ${shipping.toLocaleString()}` : "Rs. 0"}</span>
-                  </div>
-                  <div className="totals-row grand">
-                    <span>Grand Total</span>
-                    <span>Rs. {total.toLocaleString()}</span>
+                {/* ── SECTION 3: ADDITIONAL SERVICES UPSELL (Enhance Your Memories) ── */}
+                <div className="checkout-card">
+                  <h3 className="card-title">3. Enhance Your Memories</h3>
+                  <p style={{ color: "var(--text2)", fontSize: "13px", marginBottom: "18px", lineHeight: "1.5", textAlign: "left" }}>
+                    Select professional studio services to complement your premium handcrafted frames.
+                  </p>
+                  <div className="services-upsell-grid">
+                    {UPSELL_SERVICES.map((service) => {
+                      const isSelected = selectedServices.some(s => s.id === service.id);
+                      return (
+                        <div
+                          key={service.id}
+                          className={`upsell-card ${isSelected ? 'selected' : ''}`}
+                          onClick={() => toggleService(service)}
+                        >
+                          <div className="upsell-header-image">
+                            <img src={service.image} alt={service.name} />
+                          </div>
+                          <div className="upsell-details">
+                            <div className="upsell-meta-row">
+                              <h4 className="upsell-name">{service.name}</h4>
+                              <span className="upsell-price-tag">+Rs. {service.price.toLocaleString()}</span>
+                            </div>
+                            <p className="upsell-desc">{service.desc}</p>
+                            <button
+                              type="button"
+                              className={`btn-upsell-action ${isSelected ? 'added' : ''}`}
+                            >
+                              {isSelected ? "✓ Added" : "+ Add Service"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1598,6 +2145,8 @@ export default function CheckoutPage() {
           </form>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -45,6 +45,11 @@
   --font-typewriter: 'Special Elite', monospace;
 }
 
+html {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 /* Global body overrides */
 body {
   background-color: var(--bg) !important;
@@ -52,6 +57,7 @@ body {
   font-family: var(--font-serif);
   line-height: 1.6;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Sepia tone and film grain overlays for the 1900s texture */

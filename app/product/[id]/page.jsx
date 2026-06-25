@@ -125,6 +125,9 @@ function ProductDetailContent({ params }) {
   const [frames, setFrames] = useState([]);
   const [selectedFrame, setSelectedFrame] = useState(null);
 
+  // Filter only frames, excluding board games
+  const onlyFrames = frames.filter((f) => f.category !== "Board Games");
+
   // Set orientation initially based on query parameters if present, defaulting to portrait
   const [orientation, setOrientation] = useState(searchParams?.get("orientation") || "portrait");
   const [selectedSize, setSelectedSize] = useState("");
@@ -139,23 +142,25 @@ function ProductDetailContent({ params }) {
 
   // Sync carousel index to show selected frame in center
   useEffect(() => {
-    if (frames.length > 0 && selectedFrame) {
-      const idx = frames.findIndex((f) => matchFrame(f, selectedFrame.id));
+    if (onlyFrames.length > 0 && selectedFrame) {
+      const idx = onlyFrames.findIndex((f) => matchFrame(f, selectedFrame.id));
       if (idx !== -1) {
-        const targetStart = (idx - 1 + frames.length) % frames.length;
+        const targetStart = (idx - 1 + onlyFrames.length) % onlyFrames.length;
         setCarouselIndex(targetStart);
+      } else {
+        setCarouselIndex(0);
       }
     }
   }, [frames, selectedFrame]);
 
   const handlePrevFrame = () => {
-    if (frames.length === 0) return;
-    setCarouselIndex((prev) => (prev - 1 + frames.length) % frames.length);
+    if (onlyFrames.length === 0) return;
+    setCarouselIndex((prev) => (prev - 1 + onlyFrames.length) % onlyFrames.length);
   };
 
   const handleNextFrame = () => {
-    if (frames.length === 0) return;
-    setCarouselIndex((prev) => (prev + 1) % frames.length);
+    if (onlyFrames.length === 0) return;
+    setCarouselIndex((prev) => (prev + 1) % onlyFrames.length);
   };
 
   // Fetch all frames from Firebase database
@@ -293,11 +298,11 @@ function ProductDetailContent({ params }) {
 
   // Get visible frames for the switcher carousel
   const getVisibleFrames = () => {
-    if (frames.length === 0) return [];
+    if (onlyFrames.length === 0) return [];
     const visible = [];
     for (let i = 0; i < 3; i++) {
-      const idx = (carouselIndex + i) % frames.length;
-      visible.push(frames[idx]);
+      const idx = (carouselIndex + i) % onlyFrames.length;
+      visible.push(onlyFrames[idx]);
     }
     return visible;
   };
@@ -429,7 +434,7 @@ function ProductDetailContent({ params }) {
           position: relative;
           width: 100%;
           max-width: 380px;
-          padding-top: 110px;
+          padding-top: 180px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -441,10 +446,10 @@ function ProductDetailContent({ params }) {
           top: -20px;
           left: 50%;
           transform: translateX(-50%);
-          width: 400px;
-          height: 400px;
-          background: radial-gradient(circle, rgba(255, 238, 180, 0.14) 0%, rgba(255, 238, 180, 0.04) 50%, transparent 80%);
-          filter: blur(24px);
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(255, 238, 180, 0.22) 0%, rgba(255, 238, 180, 0.08) 50%, transparent 80%);
+          filter: blur(32px);
           z-index: 1;
           pointer-events: none;
           opacity: 0;
@@ -492,7 +497,7 @@ function ProductDetailContent({ params }) {
 
         .lamp-arm {
           width: 6px;
-          height: 38px;
+          height: 108px;
           background: linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d);
           box-shadow: 2px 0 5px rgba(0,0,0,0.4);
           position: relative;
@@ -560,13 +565,13 @@ function ProductDetailContent({ params }) {
 
         .lamp-light-beam {
           position: absolute;
-          top: 80px;
+          top: 110px;
           left: 50%;
           transform: translateX(-50%);
-          width: 460px;
-          height: 480px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
-          filter: blur(30px);
+          width: 600px;
+          height: 650px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.45) 0%, rgba(255, 238, 180, 0.2) 35%, rgba(255, 238, 180, 0.06) 65%, transparent 85%);
+          filter: blur(35px);
           pointer-events: none;
           z-index: 15;
           opacity: 0;
@@ -602,6 +607,9 @@ function ProductDetailContent({ params }) {
         }
         .exquisite-wood-frame.rotated-landscape {
           transform: rotate(90deg);
+        }
+        .exquisite-wood-frame.square-frame {
+          aspect-ratio: 1 / 1;
         }
 
         .exquisite-wood-frame::after {
@@ -703,8 +711,20 @@ function ProductDetailContent({ params }) {
           max-width: 460px;
           width: 100%;
           margin: 0 auto;
-          align-self: end;
-          transform: translateY(40px);
+          align-self: center;
+          transform: translateY(0);
+        }
+
+        .product-config-column {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          align-self: center;
+          max-width: 460px;
+          width: 100%;
+          margin: 0 auto;
+          position: relative;
+          z-index: 10;
         }
 
         .product-config-pane::before {
@@ -939,6 +959,127 @@ function ProductDetailContent({ params }) {
           }
         }
 
+        /* PRODUCT DETAIL SECTION WRAPPER & BACKDROP GLOW Styles */
+        .product-detail-section {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          display: flex;
+          flex: 1;
+          align-items: center;
+        }
+
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(12, 10, 8, 0.45);
+          backdrop-filter: blur(35px) saturate(140%);
+          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          border-top: 1px solid rgba(181, 139, 92, 0.15);
+          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
+          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+
+        .catalog-glow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 1000px;
+          height: 1000px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 1;
+          animation: catalog-glow-auto 10s infinite ease-in-out;
+        }
+
+        @keyframes catalog-glow-auto {
+          0% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+          25% {
+            transform: translate(100%, 10%) scale(1.2);
+          }
+          50% {
+            transform: translate(40%, 40%) scale(0.9);
+          }
+          75% {
+            transform: translate(-10%, 30%) scale(1.1);
+          }
+          100% {
+            transform: translate(-20%, -20%) scale(1);
+          }
+        }
+
+        .liquid-blob-1 {
+          position: absolute;
+          top: -10%;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .liquid-blob-2 {
+          position: absolute;
+          bottom: -15%;
+          right: 5%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes liquid-move-1 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+          33% {
+            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
+            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
+          }
+          66% {
+            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
+            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
+          }
+          100% {
+            transform: translate(0, 0) scale(1) rotate(180deg);
+            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+          }
+        }
+
+        @keyframes liquid-move-2 {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+          50% {
+            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
+            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
+          }
+          100% {
+            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
+            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+          }
+        }
+
         /* LIGHT SWITCH TOGGLE STYLING */
         .light-control-panel {
           display: flex;
@@ -995,6 +1136,232 @@ function ProductDetailContent({ params }) {
         .light-switch-btn.on .light-switch-knob {
           transform: translateX(20px);
           background: linear-gradient(135deg, #dfc38a, #fae7b5);
+        }
+
+        /* Scoped Switch Styling for details card */
+        .product-config-pane .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(44, 30, 17, 0.05);
+          border: 1px dashed rgba(139, 94, 60, 0.45);
+          padding: 6px 14px;
+          border-radius: 999px;
+          z-index: 30;
+          margin-top: 0px;
+          margin-bottom: 6px;
+          box-shadow: none;
+          transition: all 0.3s ease;
+          width: fit-content;
+          align-self: flex-start;
+        }
+        .product-config-pane .light-control-panel:hover {
+          border-color: rgba(139, 94, 60, 0.8);
+          background: rgba(44, 30, 17, 0.1);
+        }
+        .product-config-pane .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #2c1e11;
+          user-select: none;
+        }
+        .product-config-pane .light-switch-btn {
+          width: 42px;
+          height: 22px;
+          background: #f6f0df;
+          border: 1.5px solid #8b5e3c;
+          border-radius: 999px;
+          position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .product-config-pane .light-switch-btn.on {
+          background: #8b5e3c;
+          border-color: #2c1e11;
+          box-shadow: 0 0 6px rgba(139, 94, 60, 0.3);
+        }
+        .product-config-pane .light-switch-knob {
+          width: 14px;
+          height: 14px;
+          background: linear-gradient(135deg, #dfc38a, #8f723b);
+          border: 1px solid #2c1e11;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-config-pane .light-switch-btn.on .light-switch-knob {
+          transform: translateX(18px);
+          background: linear-gradient(135deg, #f6f0df, #dfc38a);
+        }
+
+        /* GLOW & PARTICLES */
+        .exquisite-glow-container {
+          top: 138px !important;
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+          z-index: 18;
+        }
+        .lamp-glow-container {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 100px;
+          pointer-events: none;
+        }
+        .glow {
+          display: none !important;
+        }
+        .particles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100px;
+          height: 100px;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        .exquisite-glow-container.on .particles {
+          opacity: 1;
+        }
+        .rotate {
+          position: absolute;
+          top: calc(50% - 5px);
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          animation: rotate 20s linear 0s infinite alternate;
+        }
+        .angle {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        .size {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        .position {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        .pulse {
+          position: absolute;
+          top: 0;
+          left: 0;
+          animation: pulse 1.5s linear 0s infinite alternate;
+        }
+        .particle {
+          position: absolute;
+          top: calc(50% - 2.5px);
+          left: calc(50% - 2.5px);
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+        }
+        .particle::before, .particle::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          width: 4px;
+          height: 4px;
+          box-shadow: inherit;
+        }
+        .particle::before {
+          top: -30px;
+          left: 25px;
+          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
+        }
+        .particle::after {
+          width: 3px;
+          height: 3px;
+          top: 35px;
+          left: -30px;
+          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
+        }
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          100% { transform: scale(.5); }
+        }
+        @keyframes particle-warm {
+          0% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
+          }
+          33.33% {
+            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
+          }
+          33.34% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
+          }
+          66.66% {
+            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
+          }
+          66.67% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
+          }
+          100% {
+            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
+          }
+        }
+        .rotate .angle:nth-child(1) {
+          animation: angle 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .size {
+          animation: size 10s steps(5) 0s infinite;
+        }
+        .rotate .angle:nth-child(1) .particle {
+          animation: particle-warm 6s linear infinite alternate;
+        }
+        .rotate .angle:nth-child(1) .position {
+          animation: position 2s linear 0s infinite;
+        }
+        .rotate .angle:nth-child(2) {
+          animation: angle 4.95s steps(3) -1.65s infinite;
+        }
+        .rotate .angle:nth-child(2) .size {
+          animation: size 4.95s steps(3) -1.65s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .particle {
+          animation: particle-warm 4.95s linear -3.3s infinite alternate;
+        }
+        .rotate .angle:nth-child(2) .position {
+          animation: position 1.65s linear 0s infinite;
+        }
+        .rotate .angle:nth-child(3) {
+          animation: angle 13.76s steps(8) -6.88s infinite;
+        }
+        .rotate .angle:nth-child(3) .size {
+          animation: size 6.88s steps(4) -5.16s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .particle {
+          animation: particle-warm 5.16s linear -1.72s infinite alternate;
+        }
+        .rotate .angle:nth-child(3) .position {
+          animation: position 1.72s linear 0s infinite;
+        }
+        @keyframes float-firefly-1 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100px, -80px, 0); }
+        }
+        @keyframes float-firefly-2 {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(100px, -120px, 0); }
         }
 
         /* Redesigned Select Dropdown Styling */
@@ -1119,15 +1486,16 @@ function ProductDetailContent({ params }) {
         .carousel-thumbnails-wrapper {
           display: flex;
           gap: 10px;
-          overflow: hidden;
+          overflow: visible;
           justify-content: center;
           flex: 1;
+          padding: 8px 0;
         }
         .carousel-thumb-card {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           cursor: pointer;
           transition: all 0.25s ease;
           width: 76px;
@@ -1171,8 +1539,7 @@ function ProductDetailContent({ params }) {
           color: #dfc38a;
           text-align: center;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          overflow: visible;
           width: 100%;
         }
         .carousel-arrow {
@@ -1194,7 +1561,8 @@ function ProductDetailContent({ params }) {
           display: flex;
           justify-content: center;
           gap: 6px;
-          margin-top: 10px;
+          margin-top: 16px;
+          margin-bottom: 10px;
           z-index: 10;
         }
         .carousel-dot {
@@ -1439,40 +1807,75 @@ function ProductDetailContent({ params }) {
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
-      <div className="product-container">
-        {/* LEFT COLUMN: VISUAL FRAME PREVIEW */}
-        <div className="product-visual-pane">
-          <div className="exquisite-frame-component">
-            {/* Ambient Wall Glow */}
-            <div className={`exquisite-wall-glow ${lightOn ? "on" : ""}`} />
+      <section className="product-detail-section">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
 
-            {/* Suspended Lamp */}
-            <div className="exquisite-lamp">
-              <div className="lamp-rod" />
-              <div className="lamp-mount" />
-              <div className="lamp-arm" />
-              <div className="lamp-head">
-                <div className={`lamp-bulb ${lightOn ? "on" : ""}`} />
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="product-container" style={{ position: "relative", zIndex: 3 }}>
+          {/* LEFT COLUMN: VISUAL FRAME PREVIEW */}
+          <div className="product-visual-pane">
+            <div className="exquisite-frame-component">
+              {/* Ambient Wall Glow */}
+              <div className={`exquisite-wall-glow ${lightOn ? "on" : ""}`} />
+
+              {/* Suspended Lamp */}
+              <div className="exquisite-lamp">
+                <div className="lamp-rod" />
+                <div className="lamp-mount" />
+                <div className="lamp-arm" />
+                <div className="lamp-head">
+                  <div className={`lamp-bulb ${lightOn ? "on" : ""}`} />
+                </div>
+
+                {/* Soft light beam */}
+                <div className={`lamp-light-beam ${lightOn ? "on" : ""}`} />
+
+                {/* Lamp glow & particle system */}
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow" style={{ display: 'none' }}></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Soft light beam */}
-              <div className={`lamp-light-beam ${lightOn ? "on" : ""}`} />
-            </div>
-
-            {/* Toggle switch panel (Placed on top of the frame) */}
-            <div className="light-control-panel" style={{ marginBottom: "20px", alignSelf: "center", width: "fit-content", zIndex: 30 }}>
-              <span className="light-control-label">Studio Light</span>
-              <button 
-                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-                onClick={() => setLightOn(!lightOn)} 
-                aria-label="Toggle Studio Light"
-              >
-                <span className="light-switch-knob" />
-              </button>
-            </div>
-
             {/* Picture Frame */}
-            <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${orientation === "landscape" ? "rotated-landscape" : ""}`}>
+            <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${orientation === "landscape" ? "rotated-landscape" : ""} ${orientation === "square" ? "square-frame" : ""}`}>
               {selectedFrame.imageUrl && (
                 <img
                   src={selectedFrame.imageUrl}
@@ -1482,18 +1885,20 @@ function ProductDetailContent({ params }) {
               )}
 
               {/* Photo opening */}
-              <div className="exquisite-inner-photo">
-                <img
-                  src={currentPhoto}
-                  alt="Customized preview print"
-                  className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
-                />
-                <div className="glass-reflection" />
-              </div>
+              {orientation !== "square" && (
+                <div className="exquisite-inner-photo">
+                  <img
+                    src={currentPhoto}
+                    alt="Customized preview print"
+                    className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
+                  />
+                  <div className="glass-reflection" />
+                </div>
+              )}
             </div>
 
             {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
-            {frames.length > 0 && (
+            {onlyFrames.length > 0 && (
               <>
                 <div className="frame-thumbnails-carousel">
                   <button className="carousel-arrow left" onClick={handlePrevFrame} aria-label="Previous frames">
@@ -1523,7 +1928,7 @@ function ProductDetailContent({ params }) {
                 </div>
                 {/* Dot Indicators */}
                 <div className="carousel-dots">
-                  {frames.map((f) => (
+                  {onlyFrames.map((f) => (
                     <span
                       key={f.id}
                       className={`carousel-dot ${f.id === selectedFrame.id ? "active" : ""}`}
@@ -1538,17 +1943,37 @@ function ProductDetailContent({ params }) {
         </div>
 
         {/* RIGHT COLUMN: CONFIGURATION PANEL */}
-        <div className="product-config-pane">
+        <div className="product-config-column">
+          {/* Light Switch panel (Placed above the paper card) */}
+          <div className="light-control-panel" style={{ alignSelf: "center", marginTop: 0, marginBottom: 0 }}>
+            <span className="light-control-label">Light Switch</span>
+            <button 
+              className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+              onClick={() => setLightOn(!lightOn)} 
+              aria-label="Toggle Light Switch"
+            >
+              <span className="light-switch-knob" />
+            </button>
+          </div>
+
+          <div className="product-config-pane">
+
           <div className="product-meta-header">
-            <span className="product-tag">{selectedFrame.tag || "Bespoke Frame"}</span>
+            {/* Title moved to top position, removing tag header */}
             <h1 className="product-title">{selectedFrame.name}</h1>
-            <div className="product-price-row" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <span className="product-price-val">{calculatedPriceStr}</span>
-              {selectedFrame.stock !== undefined && (
+            
+            {/* Stock status badge moved to the place of the main heading */}
+            {selectedFrame.stock !== undefined && (
+              <div style={{ marginTop: "4px" }}>
                 <span className={`stock-badge ${parseInt(selectedFrame.stock) > 0 ? "in-stock" : "out-of-stock"}`}>
                   {parseInt(selectedFrame.stock) > 0 ? `${selectedFrame.stock} in stock` : "Out of stock"}
                 </span>
-              )}
+              </div>
+            )}
+            
+            {/* Price below stock badge */}
+            <div className="product-price-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
+              <span className="product-price-val">{calculatedPriceStr}</span>
             </div>
           </div>
 
@@ -1593,38 +2018,43 @@ function ProductDetailContent({ params }) {
           </div>
 
           {/* Orientation selection */}
-          <div className="config-section" style={{ marginTop: "6px" }}>
-            <span className="config-label">Select Orientation</span>
-            <div className="orientation-btns">
-              <button
-                className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
-                onClick={() => handleOrientationChange("portrait")}
-              >
-                <div className="orientation-btn-icon" />
-                <span className="orientation-btn-label">Portrait</span>
-              </button>
-              <button
-                className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
-                onClick={() => handleOrientationChange("landscape")}
-              >
-                <div className="orientation-btn-icon" />
-                <span className="orientation-btn-label">Landscape</span>
-              </button>
+          {selectedFrame.orientation !== "square" && (
+            <div className="config-section" style={{ marginTop: "6px" }}>
+              <span className="config-label">Select Orientation</span>
+              <div className="orientation-btns">
+                <button
+                  className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
+                  onClick={() => handleOrientationChange("portrait")}
+                >
+                  <div className="orientation-btn-icon" />
+                  <span className="orientation-btn-label">Portrait</span>
+                </button>
+                <button
+                  className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
+                  onClick={() => handleOrientationChange("landscape")}
+                >
+                  <div className="orientation-btn-icon" />
+                  <span className="orientation-btn-label">Landscape</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* CTA Actions */}
           <div className="action-row">
-            <button 
-              className="btn-premium" 
-              onClick={handleAddToCart}
-              disabled={selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0}
-            >
-              {selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0 ? "Out of Stock" : "Add to Cart"}
-            </button>
-            <button className="btn-premium-ghost" onClick={triggerFileUpload}>
-              Upload Photo
-            </button>
+            {!(selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0) && (
+              <button 
+                className="btn-premium" 
+                onClick={handleAddToCart}
+              >
+                Add to Cart
+              </button>
+            )}
+            {selectedFrame.orientation !== "square" && (
+              <button className="btn-premium-ghost" onClick={triggerFileUpload}>
+                Upload Photo
+              </button>
+            )}
             {userUploadedImage && (
               <button 
                 className="remove-photo-link" 
@@ -1647,6 +2077,8 @@ function ProductDetailContent({ params }) {
           </div>
         </div>
       </div>
+      </div>
+      </section>
 
       <Footer />
 

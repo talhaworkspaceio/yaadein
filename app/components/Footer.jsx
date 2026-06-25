@@ -8,6 +8,8 @@ export default function Footer() {
           background: #080605;
           border-top: 2px solid #1C0F07;
           padding: 80px 40px 40px;
+          position: relative;
+          z-index: 10;
         }
         .footer-grid {
           max-width: 1300px;
@@ -93,7 +95,7 @@ export default function Footer() {
       <div className="footer-grid">
         <div className="footer-brand-col">
           <a href="/" className="footer-brand">
-            <img src="/images/logo-white.png" alt="Yaadein Logo" className="footer-logo-img" />
+            <img src="/images/logo-white-orig.png" alt="Yaadein Logo" className="footer-logo-img" />
           </a>
           <p className="footer-tagline">
             Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.
@@ -126,13 +128,14 @@ export default function Footer() {
             <span className="footer-link" style={{ cursor: "default" }}>Mon - Fri: 9:00 AM - 6:00 PM</span>
             <span className="footer-link" style={{ cursor: "default" }}>Support: team@yaadein.com</span>
             <span className="footer-link" style={{ cursor: "default" }}>Designed in Pakistan</span>
+            <a href="https://www.linkedin.com/in/talharshad/" target="_blank" rel="noopener noreferrer" className="footer-link">Developer LinkedIn</a>
           </div>
         </div>
       </div>
 
       <div className="footer-bottom">
         <p>© {new Date().getFullYear()} Yaadein. All rights reserved.</p>
-        <p>Crafted with <span>Y</span> for timeless galleries.</p>
+        <p>Crafted with <span>♥</span> for timeless memories.</p>
       </div>
     </footer>
   );
