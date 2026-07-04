@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { db } from "../../lib/firebase";
+import { db } from "../../../lib/firebase";
 import { ref, onValue } from "firebase/database";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -22,7 +22,8 @@ const saveCart = (cart) => {
   window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
-export default function NewArrivalsPage() {
+export default function CategoryPage({ params }) {
+  const { category } = params; // "portrait", "landscape", or "board-games"
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -84,13 +85,35 @@ export default function NewArrivalsPage() {
     }, 0);
   };
 
-  // We will highlight "Antique Gold" and "Gallery Landscape" as new arrivals, but show all with premium badges
   const isNewArrival = (id) => {
     return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
   };
 
+  const isFeatured = (id) => {
+    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
+  };
+
+  // Filter products by category
+  const filteredProducts = products.filter(p => {
+    if (category === "portrait") return p.category !== "Board Games" && p.orientation !== "landscape";
+    if (category === "landscape") return p.category !== "Board Games" && p.orientation === "landscape";
+    if (category === "board-games") return p.category === "Board Games";
+    return false;
+  });
+
+  const categoryTitle = 
+    category === "portrait" ? "Portrait Collection" :
+    category === "landscape" ? "Landscape Collection" :
+    category === "board-games" ? "Board Games" : "Collection";
+
+  const categoryDesc =
+    category === "portrait" ? "Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments." :
+    category === "landscape" ? "Timeless horizontal borders crafted for panoramas, landscapes, and wide memories." :
+    category === "board-games" ? "Luxury wooden board games crafted for family fun and timeless aesthetic value." : 
+    "Choose from our catalog of premium frames.";
+
   return (
-    <div className="new-arrivals-root">
+    <div className="catalog-root">
       <style dangerouslySetInnerHTML={{ __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
@@ -103,8 +126,8 @@ export default function NewArrivalsPage() {
           z-index: 20;
         }
 
-        .new-arrivals-lamp {
-          margin-top: -30px; /* Pull it slightly higher in the padding */
+        .catalog-lamp {
+          margin-top: -30px;
         }
 
         .lamp-rod {
@@ -168,8 +191,8 @@ export default function NewArrivalsPage() {
           position: relative;
         }
 
-        .new-arrivals-lamp .lamp-head {
-          width: 440px; /* Cover the title */
+        .catalog-lamp .lamp-head {
+          width: 440px;
         }
 
         .lamp-head::before, .lamp-head::after {
@@ -204,13 +227,13 @@ export default function NewArrivalsPage() {
 
         .lamp-light-beam {
           position: absolute;
-          top: 116px;
+          top: 72px;
           left: 50%;
           transform: translateX(-50%);
-          width: 480px;
-          height: 480px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
-          filter: blur(30px);
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.42) 0%, rgba(255, 238, 180, 0.16) 30%, rgba(255, 238, 180, 0.04) 60%, transparent 80%);
+          filter: blur(35px);
           pointer-events: none;
           z-index: 15;
           opacity: 0;
@@ -220,268 +243,279 @@ export default function NewArrivalsPage() {
           opacity: 1;
         }
 
-        .new-arrivals-lamp .lamp-light-beam {
-          width: 650px;
-          height: 500px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.38) 0%, rgba(255, 238, 180, 0.15) 35%, rgba(255, 238, 180, 0.04) 60%, transparent 75%);
-        }
-
-        /* GLOW & PARTICLES */
+        /* Particles / Fireflies */
         .exquisite-glow-container {
-          top: 108px !important;
-        }
-        .lamp-glow-container {
-          position: absolute;
+          position: absolute !important;
+          top: 66px !important;
           left: 50%;
-          transform: translate(-50%, -50%);
-          width: 100px;
-          height: 100px;
+          transform: translateX(-50%);
+          width: 150px;
+          height: 150px;
           pointer-events: none;
+          z-index: 18;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .exquisite-glow-container.on {
+          opacity: 1;
         }
 
-        .glow {
-          display: none;
-        }
-        .exquisite-glow-container.on .glow {
-          opacity: 1;
-          animation: glow-warm 3s linear infinite alternate;
+        .exquisite-glow-container .glow {
+          display: none !important;
         }
 
         .particles {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100px;
-          height: 100px;
-          opacity: 0;
-          transition: opacity 0.5s ease;
-        }
-        .exquisite-glow-container.on .particles {
-          opacity: 1;
+          width: 100%;
+          height: 100%;
+          filter: blur(0.5px);
         }
 
         .rotate {
           position: absolute;
-          top: calc(50% - 5px);
-          left: calc(50% - 5px);
-          width: 10px;
-          height: 10px;
-          animation: rotate 20s linear 0s infinite alternate;
+          width: 100%;
+          height: 100%;
+          animation: rotate 60s linear infinite;
+        }
+
+        @keyframes rotate {
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         .angle {
           position: absolute;
-          top: 0;
-          left: 0;
+          width: 100%;
+          height: 100%;
         }
+
+        .angle:nth-child(1) { transform: rotate(45deg); }
+        .angle:nth-child(2) { transform: rotate(135deg); }
+        .angle:nth-child(3) { transform: rotate(225deg); }
 
         .size {
           position: absolute;
-          top: 0;
-          left: 0;
+          width: 100%;
+          height: 100%;
+          animation: float-firefly-1 15s ease-in-out infinite alternate;
+        }
+
+        .angle:nth-child(2) .size {
+          animation: float-firefly-2 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes float-firefly-1 {
+          0% { transform: scale(0.8) translate(0, 0); }
+          100% { transform: scale(1.2) translate(10px, -15px); }
+        }
+
+        @keyframes float-firefly-2 {
+          0% { transform: scale(1.1) translate(0, 0); }
+          100% { transform: scale(0.8) translate(-15px, 10px); }
         }
 
         .position {
           position: absolute;
-          top: 0;
-          left: 0;
+          width: 100%;
+          height: 100%;
+          animation: rotate 12s linear infinite reverse;
         }
 
         .pulse {
           position: absolute;
-          top: 0;
-          left: 0;
-          animation: pulse 1.5s linear 0s infinite alternate;
+          width: 100%;
+          height: 100%;
+          animation: pulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 0.3; }
+          100% { opacity: 0.9; }
         }
 
         .particle {
           position: absolute;
-          top: calc(50% - 2.5px);
-          left: calc(50% - 2.5px);
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-        }
-        .particle::before, .particle::after {
-          content: '';
-          position: absolute;
-          border-radius: 50%;
           width: 4px;
           height: 4px;
-          box-shadow: inherit;
-        }
-        .particle::before {
-          top: -30px;
-          left: 25px;
-          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
-        }
-        .particle::after {
-          width: 3px;
-          height: 3px;
-          top: 35px;
-          left: -30px;
-          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
+          background: #fae7b5;
+          border-radius: 50%;
+          box-shadow: 0 0 10px 2px #dfc38a, 0 0 20px 4px #fae7b5;
         }
 
-        @keyframes glow-warm {
-          0% {
-            transform: translate(-50%, -50%) rotate(0deg);
-            box-shadow: 0 0 100px 35px rgba(251, 191, 36, 0.85), 35px 20px 75px 15px #fff, -5px -35px 45px 8px #fff;
-          }
-          100% {
-            transform: translate(-50%, -50%) rotate(5deg);
-            box-shadow: 0 0 140px 35px rgba(251, 191, 36, 0.95), 50px 30px 60px 15px #fff, -45px -45px 60px 8px #fff;
-          }
-        }
+        .angle:nth-child(1) .particle { top: 30px; left: 40px; }
+        .angle:nth-child(2) .particle { top: 80px; left: 110px; width: 3px; height: 3px; }
+        .angle:nth-child(3) .particle { top: 110px; left: 30px; width: 5px; height: 5px; }
 
-        @keyframes rotate {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        @keyframes angle {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        @keyframes size {
-          0% { transform: scale(.2); }
-          100% { transform: scale(.6); }
-        }
-
-        @keyframes position {
-          0% {
-            transform: translate3d(0,0,0);
-            opacity: 1;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate3d(180px, 140px, 0);
-            opacity: 0;
-          }
-        }
-        @keyframes float-firefly-1 {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-100px, -80px, 0); }
-        }
-        @keyframes float-firefly-2 {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(100px, -120px, 0); }
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          100% { transform: scale(.5); }
-        }
-
-        @keyframes particle-warm {
-          0% {
-            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 30px 5px #F59E0B, inset 0 0 40px 40px #FFF59D;
-          }
-          33.33% {
-            box-shadow: inset 0 0 10px 10px #D4AF37, 0 0 60px 5px #F59E0B, inset 0 0 25px 25px #FFF59D;
-          }
-          33.34% {
-            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 30px 5px #FCD34D, inset 0 0 40px 40px #FFF;
-          }
-          66.66% {
-            box-shadow: inset 0 0 10px 10px #FCD34D, 0 0 60px 5px #FCD34D, inset 0 0 25px 25px #FFF;
-          }
-          66.67% {
-            box-shadow: inset 0 0 10px 10px #D97706, 0 0 30px 5px #D97706, inset 0 0 40px 40px #FF8A00;
-          }
-          100% {
-            box-shadow: inset 0 0 10px 10px #D97706, 0 0 60px 5px #D97706, inset 0 0 25px 25px #FF8A00;
-          }
-        }
-
-        .rotate .angle:nth-child(1) {
-          animation: angle 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .size {
-          animation: size 10s steps(5) 0s infinite;
-        }
-        .rotate .angle:nth-child(1) .particle {
-          animation: particle-warm 6s linear infinite alternate;
-        }
-        .rotate .angle:nth-child(1) .position {
-          animation: position 2s linear 0s infinite;
-        }
-
-        .rotate .angle:nth-child(2) {
-          animation: angle 4.95s steps(3) -1.65s infinite;
-        }
-        .rotate .angle:nth-child(2) .size {
-          animation: size 4.95s steps(3) -1.65s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .particle {
-          animation: particle-warm 4.95s linear -3.3s infinite alternate;
-        }
-        .rotate .angle:nth-child(2) .position {
-          animation: position 1.65s linear 0s infinite;
-        }
-
-        .rotate .angle:nth-child(3) {
-          animation: angle 13.76s steps(8) -6.88s infinite;
-        }
-        .rotate .angle:nth-child(3) .size {
-          animation: size 6.88s steps(4) -5.16s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .particle {
-          animation: particle-warm 5.16s linear -1.72s infinite alternate;
-        }
-        .rotate .angle:nth-child(3) .position {
-          animation: position 1.72s linear 0s infinite;
-        }
-
-        .new-arrivals-root {
-          font-family: var(--font-serif);
-          background: var(--bg);
+        /* CATALOG LAYOUT & BACKGROUND */
+        .catalog-root {
+          background: #090706;
           color: var(--text);
           min-height: 100vh;
+          font-family: var(--font-sans);
+          position: relative;
           overflow-x: hidden;
         }
-        
+
         .hero-banner {
-          position: relative;
-          padding: 120px 40px 80px;
-          background: linear-gradient(to bottom, #14110E 0%, #080605 100%);
-          border-bottom: 2px solid #1C0F07;
-          text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 20px;
+          justify-content: center;
+          text-align: center;
+          padding: 140px 20px 60px;
+          border-bottom: 2px solid #1C0F07;
+          position: relative;
+          z-index: 10;
+          background: #0C0A08;
         }
-        
+
         .hero-title {
           font-family: var(--font-display);
-          font-size: 52px;
+          font-size: 56px;
+          font-weight: 800;
+          margin-bottom: 16px;
+          letter-spacing: -0.02em;
           color: var(--text);
-          letter-spacing: 0.05em;
         }
-        
+
         .hero-title span {
           color: var(--accent);
+          position: relative;
         }
-        
+
         .hero-desc {
           font-family: var(--font-serif);
           font-size: 16px;
           color: var(--text2);
-          max-width: 650px;
+          max-width: 600px;
           line-height: 1.7;
+          margin-bottom: 30px;
         }
-        
-        .exhibition-section {
-          padding: 80px 40px;
+
+        /* Light Switch Control Panel */
+        .light-control-panel {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+        .light-control-label {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
+        }
+        .light-switch-btn {
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
           position: relative;
+          cursor: pointer;
+          padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
+        }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        .light-switch-knob {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
+          border-radius: 50%;
+          position: absolute;
+          top: 2.5px;
+          left: 3px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .light-switch-btn.on .light-switch-knob {
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
+        }
+
+        /* EXHIBITION SECTION GRID */
+        .exhibition-section {
+          padding: 100px 40px;
+          position: relative;
+        }
+
+        .catalog-glass-bg {
+          position: absolute;
+          inset: 0;
           overflow: hidden;
-          background: #080605;
-          max-width: 100%;
-          width: 100%;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .liquid-blob-1, .liquid-blob-2 {
+          position: absolute;
+          width: 600px;
+          height: 600px;
+          border-radius: 50%;
+          filter: blur(140px);
+          opacity: 0.12;
+        }
+
+        .liquid-blob-1 {
+          background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+          top: -10%;
+          left: -10%;
+          animation: liquid-move-1 25s infinite alternate ease-in-out;
+        }
+
+        .liquid-blob-2 {
+          background: radial-gradient(circle, #dfc38a 0%, transparent 70%);
+          bottom: -10%;
+          right: -10%;
+          animation: liquid-move-2 30s infinite alternate ease-in-out;
+        }
+
+        @keyframes liquid-move-1 {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(120px, 80px) scale(1.15); }
+        }
+
+        @keyframes liquid-move-2 {
+          0% { transform: translate(0, 0) scale(1.1); }
+          100% { transform: translate(-100px, -120px) scale(0.9); }
+        }
+
+        .catalog-glow {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 800px;
+          height: 800px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.04) 0%, transparent 75%);
+          filter: blur(80px);
+          pointer-events: none;
+        }
+
+        .catalog-glass-pane {
+          position: absolute;
+          inset: 0;
+          background: rgba(9, 7, 6, 0.4);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 2;
+          pointer-events: none;
         }
         
         .exhibition-container {
@@ -496,6 +530,7 @@ export default function NewArrivalsPage() {
           flex-wrap: wrap;
           justify-content: center;
           gap: 40px;
+          width: 100%;
         }
         
         .arrival-card {
@@ -536,152 +571,112 @@ export default function NewArrivalsPage() {
           z-index: 10;
         }
 
-        /* Pull chain switch removed */
-        
-        .chain-handle::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 1px;
-          width: 4px;
-          height: 4px;
-          background: #8f723b;
-          border-radius: 50%;
-        }
-        
         .card-thumb-wrap {
-          aspect-ratio: 4/5;
+          height: 280px;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
-          overflow: hidden;
+          background: rgba(12, 10, 8, 0.5);
+          border: 1px solid rgba(212, 175, 55, 0.1);
+          border-radius: var(--radius);
           padding: 20px;
         }
-        
-        .card-frame {
-          border: 8px solid #2D1A0F;
-          outline: 1px solid var(--accent);
-          outline-offset: -3px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-          display: flex;
-          position: relative;
-        }
-        
-        .card-frame-inner {
-          flex: 1;
-          background: #2D2822;
-          box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
-          position: relative;
-        }
-        
+
         .product-info {
           display: flex;
           flex-direction: column;
-          gap: 10px;
-          flex: 1;
-        }
-        
-        .product-header-row {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
           gap: 8px;
         }
-        
+
+        .product-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 12px;
+        }
+
         .product-name {
           font-family: var(--font-display);
-          font-size: 21px;
+          font-size: 20px;
+          font-weight: 700;
           color: var(--text);
         }
-        
+
         .product-price {
           font-family: var(--font-typewriter);
           font-size: 16px;
           font-weight: 700;
           color: var(--accent);
         }
-        
+
         .product-tag {
           font-family: var(--font-typewriter);
           font-size: 11px;
-          color: var(--text2);
-          align-self: flex-start;
-          border-bottom: 1.5px solid var(--accent);
-          padding-bottom: 2px;
+          color: var(--accent2);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
-        
+
         .product-desc {
           font-family: var(--font-serif);
-          font-size: 14px;
-          line-height: 1.6;
+          font-size: 13.5px;
           color: var(--text2);
-        }
-        
-        .btn-card {
-          width: 100%;
-          text-align: center;
-          padding: 12px;
-          margin-top: auto;
+          line-height: 1.5;
         }
 
         /* CART DRAWER SLIDE-OVER */
         .cart-drawer-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.85);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          z-index: 2000;
+          background: rgba(0, 0, 0, 0.8);
           opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
+          visibility: hidden;
+          transition: all 0.4s ease;
+          z-index: 998;
         }
         .cart-drawer-overlay.open {
           opacity: 1;
-          pointer-events: auto;
+          visibility: visible;
         }
         .cart-drawer {
           position: fixed;
           top: 0;
-          right: 0;
+          right: -420px;
           bottom: 0;
-          width: 400px;
-          max-width: 100vw;
-          background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
-          border-left: 3px solid #1C0F07;
-          outline: 1px solid var(--border);
-          outline-offset: -4px;
-          z-index: 2001;
-          transform: translateX(100%);
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          width: 100%;
+          max-width: 420px;
+          background: #0C0A08;
+          border-left: 2px solid #1C0F07;
+          box-shadow: -10px 0 30px rgba(0,0,0,0.9);
           display: flex;
           flex-direction: column;
-          box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+          z-index: 999;
+          transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .cart-drawer.open {
-          transform: translateX(0);
+          right: 0;
         }
         .cart-drawer-header {
           padding: 24px;
           border-bottom: 2px solid #1C0F07;
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
+          background: var(--surface);
         }
         .cart-drawer-header h3 {
           font-family: var(--font-display);
           font-size: 20px;
-          color: var(--accent);
+          color: var(--text);
         }
         .cart-close-btn {
           background: none;
           border: none;
-          color: var(--text2);
+          color: var(--text);
           font-size: 28px;
           cursor: pointer;
           line-height: 1;
-          transition: color 0.15s ease;
         }
         .cart-close-btn:hover {
           color: var(--accent);
@@ -718,21 +713,19 @@ export default function NewArrivalsPage() {
           background: var(--surface2);
           border: 3px solid #1C0F07;
           outline: 1px solid var(--border);
-          outline-offset: -3px;
+          padding: 16px;
           border-radius: var(--radius);
-          padding: 12px;
           position: relative;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .cart-item-thumb {
           width: 70px;
           height: 70px;
           border-radius: var(--radius);
           overflow: hidden;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          border: 1px solid var(--border2);
           display: flex;
-          position: relative;
-          padding: 6px;
+          align-items: center;
+          justify-content: center;
         }
         .cart-item-thumb img {
           width: 100%;
@@ -842,189 +835,11 @@ export default function NewArrivalsPage() {
           font-size: 22px;
           color: var(--accent);
         }
-        .cart-footer-note {
-          font-family: var(--font-serif);
-          font-size: 11px;
-          color: var(--text2);
-          text-align: center;
-          font-style: italic;
-        }
         .btn-checkout-primary {
           display: block;
           width: 100%;
           text-align: center;
           padding: 14px;
-        }
-
-        /* DYNAMIC LIQUID BACKDROP ELEMENTS */
-        .catalog-glass-bg {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-        }
-
-        .catalog-glass-pane {
-          position: absolute;
-          inset: 0;
-          z-index: 2;
-          background: rgba(12, 10, 8, 0.45);
-          backdrop-filter: blur(35px) saturate(140%);
-          -webkit-backdrop-filter: blur(35px) saturate(140%);
-          border-top: 1px solid rgba(181, 139, 92, 0.15);
-          border-bottom: 1px solid rgba(181, 139, 92, 0.15);
-          box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
-          pointer-events: none;
-        }
-
-        .catalog-glow {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 1000px;
-          height: 1000px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
-          pointer-events: none;
-          z-index: 1;
-          opacity: 1;
-          animation: catalog-glow-auto 10s infinite ease-in-out;
-        }
-
-        @keyframes catalog-glow-auto {
-          0% {
-            transform: translate(-20%, -20%) scale(1);
-          }
-          25% {
-            transform: translate(100%, 10%) scale(1.2);
-          }
-          50% {
-            transform: translate(40%, 40%) scale(0.9);
-          }
-          75% {
-            transform: translate(-10%, 30%) scale(1.1);
-          }
-          100% {
-            transform: translate(-20%, -20%) scale(1);
-          }
-        }
-
-        /* LIQUID BLOBS */
-        .liquid-blob-1 {
-          position: absolute;
-          top: -10%;
-          left: 10%;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
-          border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-          animation: liquid-move-1 25s infinite alternate ease-in-out;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        .liquid-blob-2 {
-          position: absolute;
-          bottom: -15%;
-          right: 5%;
-          width: 550px;
-          height: 550px;
-          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
-          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-          animation: liquid-move-2 30s infinite alternate ease-in-out;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        @keyframes liquid-move-1 {
-          0% {
-            transform: translate(0, 0) scale(1) rotate(0deg);
-            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-          }
-          33% {
-            transform: translate(80px, -60px) scale(1.15) rotate(45deg);
-            border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%;
-          }
-          66% {
-            transform: translate(-40px, 80px) scale(0.9) rotate(90deg);
-            border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%;
-          }
-          100% {
-            transform: translate(0, 0) scale(1) rotate(180deg);
-            border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-          }
-        }
-
-        @keyframes liquid-move-2 {
-          0% {
-            transform: translate(0, 0) scale(1) rotate(0deg);
-            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-          }
-          50% {
-            transform: translate(-100px, 50px) scale(1.2) rotate(120deg);
-            border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%;
-          }
-          100% {
-            transform: translate(60px, -70px) scale(0.9) rotate(-60deg);
-            border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-          }
-        }
-
-        /* LIGHT SWITCH TOGGLE STYLING */
-        .light-control-panel {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          background: rgba(20, 17, 14, 0.6);
-          border: 1.5px solid rgba(212, 175, 55, 0.25);
-          padding: 8px 18px;
-          border-radius: 999px;
-          z-index: 30;
-          margin-top: 10px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-          transition: border-color 0.3s ease;
-        }
-        .light-control-panel:hover {
-          border-color: rgba(212, 175, 55, 0.5);
-        }
-        .light-control-label {
-          font-family: var(--font-typewriter);
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: #dfc38a;
-          user-select: none;
-        }
-        .light-switch-btn {
-          width: 46px;
-          height: 24px;
-          background: #1a1205;
-          border: 1.5px solid #5e461b;
-          border-radius: 999px;
-          position: relative;
-          cursor: pointer;
-          padding: 0;
-          outline: none;
-          transition: all 0.3s ease;
-        }
-        .light-switch-btn.on {
-          background: #5e461b;
-          border-color: #dfc38a;
-          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
-        }
-        .light-switch-knob {
-          width: 16px;
-          height: 16px;
-          background: linear-gradient(135deg, #8f723b, #dfc38a);
-          border: 1px solid #1a1205;
-          border-radius: 50%;
-          position: absolute;
-          top: 2.5px;
-          left: 3px;
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .light-switch-btn.on .light-switch-knob {
-          transform: translateX(20px);
-          background: linear-gradient(135deg, #dfc38a, #fae7b5);
         }
 
         @media (max-width: 768px) {
@@ -1038,8 +853,8 @@ export default function NewArrivalsPage() {
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
       <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of New Arrivals heading */}
-        <div className={`exquisite-lamp new-arrivals-lamp ${lightOn ? 'on' : ''}`}>
+        {/* Suspended Brass Lamp on top of Our Catalog heading */}
+        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
           <div className="lamp-rod" />
           <div className="lamp-mount" />
           <div className="lamp-arm" />
@@ -1087,13 +902,16 @@ export default function NewArrivalsPage() {
           </div>
         </div>
 
-        <h1 className="hero-title">New <span>Arrivals</span></h1>
-        <p className="hero-desc">
-          Experience the latest additions to the Yaadein catalogue. Exquisite styles handpicked by our designers to turn your photographs into museum-quality centerpieces.
-        </p>
+        <h1 className="hero-title">{categoryTitle}</h1>
+        <p className="hero-desc">{categoryDesc}</p>
+
+        {/* Back breadcrumb */}
+        <a href="/catalog" className="btn-nav-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: "1.5px solid var(--accent)", padding: "10px 20px", borderRadius: "999px", textDecoration: "none", fontSize: "13px", fontWeight: "700" }}>
+          &larr; Back to Catalog
+        </a>
         
         {/* Toggle switch panel */}
-        <div className="light-control-panel">
+        <div className="light-control-panel" style={{ marginTop: "24px" }}>
           <span className="light-control-label">Studio Light</span>
           <button 
             className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
@@ -1119,28 +937,32 @@ export default function NewArrivalsPage() {
         <div className="exhibition-container">
           {products.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-              Discovering new frame arrivals...
+              Loading frame catalog...
             </div>
           ) : (
             <div className="gallery-grid">
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <div key={p.id} className="arrival-card">
-                  {isNewArrival(p.id) && <div className="ribbon">New Arrival</div>}
+                  {isNewArrival(p.id) ? (
+                    <div className="ribbon">New Arrival</div>
+                  ) : isFeatured(p.id) ? (
+                    <div className="ribbon">Featured</div>
+                  ) : null}
                   
                   <div className="card-thumb-wrap">
                     <div
-                      className="card-frame"
-                      style={{
-                        position: "relative",
-                        aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                        width: p.orientation === "landscape" ? "100%" : "auto",
-                        height: p.orientation === "landscape" ? "auto" : "100%",
-                        boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        overflow: "hidden"
-                      }}
+                       className="card-frame"
+                       style={{
+                         position: "relative",
+                         aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+                         width: p.orientation === "landscape" ? "100%" : "auto",
+                         height: p.orientation === "landscape" ? "auto" : "100%",
+                         boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+                         display: "flex",
+                         alignItems: "center",
+                         justifyContent: "center",
+                         overflow: "hidden"
+                       }}
                     >
                       {p.imageUrl && (
                         <img

@@ -1172,7 +1172,9 @@ export default function HomePage() {
           color: var(--text2);
         }
         .cart-empty-icon {
-          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: var(--accent);
         }
         
         .cart-items-list {
@@ -1414,7 +1416,7 @@ export default function HomePage() {
         }
 
         .exquisite-btn {
-          margin-top: 10px;
+          margin: 0;
         }
 
         .exquisite-visual {
@@ -1427,12 +1429,13 @@ export default function HomePage() {
 
         .exquisite-frame-component {
           position: relative;
-          padding-top: 110px;
+          padding-top: 160px;
           width: 320px;
           display: flex;
           flex-direction: column;
           align-items: center;
           transition: transform 0.4s ease;
+          flex-shrink: 0;
         }
 
         .exquisite-frame-component:hover {
@@ -1442,13 +1445,13 @@ export default function HomePage() {
         /* Ambient wall glow behind the lamp */
         .exquisite-wall-glow {
           position: absolute;
-          top: -20px;
+          top: -40px;
           left: 50%;
           transform: translateX(-50%);
-          width: 360px;
-          height: 360px;
-          background: radial-gradient(circle, rgba(255, 238, 180, 0.14) 0%, rgba(255, 238, 180, 0.04) 50%, transparent 80%);
-          filter: blur(20px);
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(255, 238, 180, 0.22) 0%, rgba(255, 238, 180, 0.06) 50%, transparent 80%);
+          filter: blur(30px);
           z-index: 1;
           pointer-events: none;
           opacity: 0;
@@ -1581,10 +1584,10 @@ export default function HomePage() {
           top: 116px;
           left: 50%;
           transform: translateX(-50%);
-          width: 480px;
-          height: 480px;
-          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.32) 0%, rgba(255, 238, 180, 0.12) 30%, rgba(255, 238, 180, 0.03) 55%, transparent 70%);
-          filter: blur(30px);
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(ellipse at top, rgba(255, 238, 180, 0.42) 0%, rgba(255, 238, 180, 0.16) 30%, rgba(255, 238, 180, 0.04) 60%, transparent 80%);
+          filter: blur(35px);
           pointer-events: none;
           z-index: 15;
           opacity: 0;
@@ -1613,6 +1616,7 @@ export default function HomePage() {
           z-index: 10;
           width: 320px;
           height: 420px;
+          flex-shrink: 0;
           box-shadow: 0 25px 50px rgba(0,0,0,0.85);
           overflow: hidden;
           background: #000;
@@ -1712,17 +1716,23 @@ export default function HomePage() {
           .lamp-wrapper { display: none; }
           .exquisite-section { padding: 60px 20px; }
           .exquisite-container { flex-direction: column; gap: 40px; text-align: center; }
-          .exquisite-content { align-items: center; position: relative; z-index: 10; width: 100%; }
-          .exquisite-content .light-control-panel {
-            margin-top: 0 !important;
-            margin-bottom: 43px !important;
-            align-self: center !important;
-            z-index: 25;
+          .exquisite-actions {
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            align-items: center;
+            margin-bottom: 20px;
+          }
+          .exquisite-actions .exquisite-btn,
+          .exquisite-actions .light-control-panel {
+            width: 100%;
+            max-width: 280px;
+            justify-content: center;
           }
           .exquisite-title { font-size: 32px; }
           .feature-item { flex-direction: column; align-items: center; gap: 8px; }
-          .exquisite-frame-component { width: 300px; }
-          .exquisite-wood-frame { width: 300px; height: 394px; }
+          .exquisite-frame-component { width: 300px; flex-shrink: 0; }
+          .exquisite-wood-frame { width: 300px; height: 394px; flex-shrink: 0; }
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
           .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
@@ -1759,32 +1769,45 @@ export default function HomePage() {
           z-index: 10;
         }
 
-        .light-control-panel {
+        .exquisite-actions {
           display: flex;
           align-items: center;
+          gap: 16px;
+          margin-top: 12px;
+          z-index: 30;
+        }
+
+        .light-control-panel {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           gap: 12px;
           background: rgba(20, 17, 14, 0.6);
-          border: 1.5px solid rgba(212, 175, 55, 0.25);
-          padding: 8px 18px;
-          border-radius: 999px;
-          z-index: 30;
-          margin-top: 10px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-          transition: border-color 0.3s ease;
+          border: 1.5px solid rgba(212, 175, 55, 0.3);
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+          outline: none;
+          height: 43px;
+          box-sizing: border-box;
+          user-select: none;
         }
         .light-control-panel:hover {
-          border-color: rgba(212, 175, 55, 0.5);
+          border-color: rgba(212, 175, 55, 0.6);
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
         }
-        .exquisite-content .light-control-panel {
-          margin-top: 24px;
-          align-self: flex-start;
-          width: fit-content;
+        .light-control-panel:active {
+          transform: translateY(0) scale(0.98);
         }
         .light-control-label {
-          font-family: var(--font-typewriter);
-          font-size: 11px;
-          text-transform: uppercase;
+          font-family: var(--font-display) !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
           letter-spacing: 0.1em;
+          text-transform: uppercase;
           color: #dfc38a;
           user-select: none;
         }
@@ -2521,19 +2544,21 @@ export default function HomePage() {
             <p className="exquisite-desc">
               Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments.
             </p>
-            <a href="/catalog" className="btn-premium exquisite-btn">
-              Browse Catalog
-            </a>
+            <div className="exquisite-actions">
+              <a href="/catalog" className="btn-premium exquisite-btn">
+                Browse Catalog
+              </a>
 
-            {/* Toggle switch panel */}
-            <div className="light-control-panel">
-              <span className="light-control-label">Studio Light</span>
+              {/* Toggle switch button styled identical to Browse Catalog */}
               <button 
-                className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+                className="light-control-panel"
                 onClick={() => setLightOn(!lightOn)} 
-                aria-label="Toggle Studio Light"
+                aria-label="Toggle Light Switch"
               >
-                <span className="light-switch-knob" />
+                <span className="light-control-label">Light Switch</span>
+                <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
+                  <span className="light-switch-knob" />
+                </div>
               </button>
             </div>
           </div>
@@ -3037,7 +3062,9 @@ export default function HomePage() {
         <div className="cart-drawer-body">
           {cartItems.length === 0 ? (
             <div className="cart-empty">
-              <span className="cart-empty-icon">👜</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
+                <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+              </svg>
               <p>Your shopping cart is empty.</p>
               <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
                 Explore Collections

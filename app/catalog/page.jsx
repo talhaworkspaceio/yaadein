@@ -28,6 +28,19 @@ export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [lightOn, setLightOn] = useState(true);
 
+  // Carousel slider indices
+  const [portraitIndex, setPortraitIndex] = useState(0);
+  const [landscapeIndex, setLandscapeIndex] = useState(0);
+  const [boardGamesIndex, setBoardGamesIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Fetch products from Firebase
   useEffect(() => {
     const framesRef = ref(db, "frames");
@@ -90,6 +103,105 @@ export default function CatalogPage() {
 
   const isFeatured = (id) => {
     return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
+  };
+
+  // Categorize products
+  const portraitProducts = products.filter(p => p.category !== "Board Games" && p.orientation !== "landscape");
+  const landscapeProducts = products.filter(p => p.category !== "Board Games" && p.orientation === "landscape");
+  const boardGamesProducts = products.filter(p => p.category === "Board Games");
+
+  const itemsPerPage = isMobile ? 1 : 3;
+
+  // Translation values
+  const portraitTranslation = isMobile 
+    ? `calc(-${portraitIndex} * (100% + 24px))` 
+    : `calc(-${portraitIndex} * (100% / 3 + 8px))`;
+
+  const landscapeTranslation = isMobile 
+    ? `calc(-${landscapeIndex} * (100% + 24px))` 
+    : `calc(-${landscapeIndex} * (100% / 3 + 8px))`;
+
+  const boardGamesTranslation = isMobile 
+    ? `calc(-${boardGamesIndex} * (100% + 24px))` 
+    : `calc(-${boardGamesIndex} * (100% / 3 + 8px))`;
+
+  const renderProductCard = (p) => {
+    return (
+      <div className="arrival-card" style={{ width: "100%", margin: 0 }}>
+        {isNewArrival(p.id) ? (
+          <div className="ribbon">New Arrival</div>
+        ) : isFeatured(p.id) ? (
+          <div className="ribbon">Featured</div>
+        ) : null}
+        
+        <div className="card-thumb-wrap">
+          <div
+             className="card-frame"
+             style={{
+               position: "relative",
+               aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+               width: p.orientation === "landscape" ? "100%" : "auto",
+               height: p.orientation === "landscape" ? "auto" : "100%",
+               boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+               display: "flex",
+               alignItems: "center",
+               justifyContent: "center",
+               overflow: "hidden",
+               margin: "0 auto"
+             }}
+          >
+            {p.imageUrl && (
+              <img
+                src={p.imageUrl}
+                alt={p.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "fill",
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                  pointerEvents: "none"
+                }}
+              />
+            )}
+            <div
+              className="card-frame-inner"
+              style={{
+                position: "absolute",
+                top: `${p.paddingTop || 0}%`,
+                left: `${p.paddingLeft || 0}%`,
+                bottom: `${p.paddingBottom || 0}%`,
+                right: `${p.paddingRight || 0}%`,
+                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                background: "#2D2822",
+                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                overflow: "hidden"
+              }}
+            >
+              <img 
+                src="/images/dummyImg.jpg" 
+                alt="Frame Art Preview" 
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="product-info">
+          <div className="product-header-row">
+            <h3 className="product-name">{p.name}</h3>
+            <span className="product-price">{p.price}</span>
+          </div>
+          <span className="product-tag">{p.tag}</span>
+          <p className="product-desc">{p.desc}</p>
+        </div>
+
+        <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
+          View Frame
+        </a>
+      </div>
+    );
   };
 
   return (
@@ -494,6 +606,170 @@ export default function CatalogPage() {
           z-index: 3;
         }
         
+        .carousels-container {
+          display: flex;
+          flex-direction: column;
+          gap: 80px;
+          width: 100%;
+        }
+
+        .carousel-section {
+          width: 100%;
+          position: relative;
+          z-index: 5;
+        }
+
+        .carousel-section-header {
+          margin-bottom: 28px;
+        }
+
+        .carousel-section-title {
+          font-family: var(--font-display);
+          font-size: 32px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: -0.01em;
+          margin-bottom: 8px;
+        }
+
+        .carousel-section-desc {
+          font-family: var(--font-serif);
+          font-size: 15px;
+          color: var(--text2);
+          max-width: 800px;
+          line-height: 1.5;
+        }
+
+        .carousel-row {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          width: 100%;
+        }
+
+        .carousel-viewport-wrapper {
+          flex: 1;
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .carousel-viewport {
+          width: 100%;
+          overflow: hidden;
+          padding: 12px 0;
+        }
+
+        .carousel-track {
+          display: flex;
+          gap: 24px;
+          transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .carousel-slide {
+          flex: 0 0 calc((100% - 48px) / 3);
+          box-sizing: border-box;
+        }
+
+        .carousel-slide .arrival-card {
+          width: 100% !important;
+          max-width: none !important;
+          height: 100%;
+        }
+
+        /* Chevrons */
+        .carousel-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(12, 10, 8, 0.9);
+          border: 1.5px solid rgba(212, 175, 55, 0.35);
+          color: var(--accent);
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+        .carousel-arrow:hover {
+          background: var(--accent);
+          color: #0C0A08;
+          border-color: var(--accent);
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+        .carousel-arrow-prev {
+          left: -22px;
+        }
+        .carousel-arrow-next {
+          right: -22px;
+        }
+
+        .carousel-view-all-link {
+          font-family: var(--font-display) !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: var(--accent) !important;
+          text-decoration: none !important;
+          letter-spacing: 0.1em !important;
+          text-transform: uppercase;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .carousel-view-all-link:hover {
+          color: var(--accent2) !important;
+          transform: translateX(4px);
+        }
+
+        /* View All Card */
+        .view-all-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 24px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          text-decoration: none;
+          gap: 16px;
+          flex: 0 0 200px;
+          background: rgba(20, 17, 14, 0.55);
+          border: 1.5px dashed rgba(212, 175, 55, 0.25);
+          border-radius: var(--radius);
+        }
+        .view-all-card:hover {
+          border-color: var(--accent);
+          background: rgba(20, 17, 14, 0.8);
+          transform: translateY(-6px);
+          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.15);
+        }
+        .view-all-title {
+          font-family: var(--font-display);
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          line-height: 1.4;
+        }
+        .view-all-arrow-svg {
+          width: 28px;
+          height: 28px;
+          color: var(--accent);
+          transition: transform 0.3s ease;
+        }
+        .view-all-card:hover .view-all-arrow-svg {
+          transform: translateX(4px);
+        }
+
         .gallery-grid {
           display: flex;
           flex-wrap: wrap;
@@ -863,7 +1139,9 @@ export default function CatalogPage() {
           color: var(--text2);
         }
         .cart-empty-icon {
-          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: var(--accent);
         }
         
         .cart-items-list {
@@ -1013,6 +1291,40 @@ export default function CatalogPage() {
           .exhibition-section { padding: 40px 20px; }
           .gallery-grid { gap: 20px; }
           .arrival-card { width: 100%; max-width: 320px; }
+          
+          .carousel-row {
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+          }
+          .carousel-slide {
+            flex: 0 0 100%;
+          }
+          .carousel-viewport {
+            padding: 8px 0;
+          }
+          .carousel-arrow {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+          }
+          .carousel-arrow-prev {
+            left: -10px;
+          }
+          .carousel-arrow-next {
+            right: -10px;
+          }
+          .view-all-card {
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            padding: 16px;
+            flex-direction: row;
+            justify-content: center;
+            border-style: solid;
+            gap: 12px;
+          }
         }
       ` }} />
 
@@ -1103,82 +1415,120 @@ export default function CatalogPage() {
               Loading frame catalog...
             </div>
           ) : (
-            <div className="gallery-grid">
-              {products.map((p) => (
-                <div key={p.id} className="arrival-card">
-                  {isNewArrival(p.id) ? (
-                    <div className="ribbon">New Arrival</div>
-                  ) : isFeatured(p.id) ? (
-                    <div className="ribbon">Featured</div>
-                  ) : null}
-                  
-                  <div className="card-thumb-wrap">
-                    <div
-                       className="card-frame"
-                       style={{
-                         position: "relative",
-                         aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                         width: p.orientation === "landscape" ? "100%" : "auto",
-                         height: p.orientation === "landscape" ? "auto" : "100%",
-                         boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                         display: "flex",
-                         alignItems: "center",
-                         justifyContent: "center",
-                         overflow: "hidden"
-                       }}
-                    >
-                      {p.imageUrl && (
-                        <img
-                          src={p.imageUrl}
-                          alt={p.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "fill",
-                            position: "absolute",
-                            inset: 0,
-                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                            pointerEvents: "none"
-                          }}
-                        />
+            <div className="carousels-container">
+              {/* PORTRAIT SECTION */}
+              {portraitProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Portrait Frames</h2>
+                      <a href="/catalog/portrait" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {portraitIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setPortraitIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
                       )}
-                      <div
-                        className="card-frame-inner"
-                        style={{
-                          position: "absolute",
-                          top: `${p.paddingTop || 0}%`,
-                          left: `${p.paddingLeft || 0}%`,
-                          bottom: `${p.paddingBottom || 0}%`,
-                          right: `${p.paddingRight || 0}%`,
-                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
-                          background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
-                          overflow: "hidden"
-                        }}
-                      >
-                        <img 
-                          src="/images/dummyImg.jpg" 
-                          alt="Frame Art Preview" 
-                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
-                        />
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${portraitTranslation})` }}>
+                          {portraitProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                      {portraitIndex < portraitProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setPortraitIndex(p => Math.min(portraitProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="product-info">
-                    <div className="product-header-row">
-                      <h3 className="product-name">{p.name}</h3>
-                      <span className="product-price">{p.price}</span>
-                    </div>
-                    <span className="product-tag">{p.tag}</span>
-                    <p className="product-desc">{p.desc}</p>
-                  </div>
-
-                  <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-                    View Frame
-                  </a>
                 </div>
-              ))}
+              )}
+
+              {/* LANDSCAPE SECTION */}
+              {landscapeProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Landscape Frames</h2>
+                      <a href="/catalog/landscape" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Timeless horizontal borders crafted for panoramas, landscapes, and wide memories.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {landscapeIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setLandscapeIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${landscapeTranslation})` }}>
+                          {landscapeProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {landscapeIndex < landscapeProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setLandscapeIndex(p => Math.min(landscapeProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BOARD GAMES SECTION */}
+              {boardGamesProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Board Games</h2>
+                      <a href="/catalog/board-games" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Luxury wooden board games crafted for family fun and timeless aesthetic value.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {boardGamesIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setBoardGamesIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${boardGamesTranslation})` }}>
+                          {boardGamesProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {boardGamesIndex < boardGamesProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setBoardGamesIndex(p => Math.min(boardGamesProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1196,7 +1546,9 @@ export default function CatalogPage() {
         <div className="cart-drawer-body">
           {cartItems.length === 0 ? (
             <div className="cart-empty">
-              <span className="cart-empty-icon">👜</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
+                <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+              </svg>
               <p>Your shopping cart is empty.</p>
               <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
                 Explore Collections

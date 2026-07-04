@@ -829,7 +829,9 @@ export default function ServicesPage() {
           color: var(--text2);
         }
         .cart-empty-icon {
-          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: var(--accent);
         }
         
         .cart-items-list {
@@ -1190,7 +1192,9 @@ export default function ServicesPage() {
         <div className="cart-drawer-body">
           {cartItems.length === 0 ? (
             <div className="cart-empty">
-              <span className="cart-empty-icon">👜</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
+                <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+              </svg>
               <p>Your shopping cart is empty.</p>
               <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
                 Explore Collections
