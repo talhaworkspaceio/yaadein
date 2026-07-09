@@ -1839,7 +1839,6 @@ const SERVICES_DATA = {
   },
   "photo-restoration": {
     title: "Old Photo Restoration",
-    tagline: "Resurrecting Your Memories",
     desc: "Bring your damaged, faded, or torn family photographs back to life. Our digital restoration specialists repair cracks, restore lost colors, and upscale resolutions for printing.",
     image: "/images/photo_restoration.png",
     priceInfo: "Restorations start from Rs. 1,499 per photo depending on level of damage.",
@@ -1888,6 +1887,39 @@ const SERVICES_DATA = {
         after: "/images/restoration/landscape_after.png",
         title: "Sun-Faded Vintage Landscape",
         desc: "Rebalanced color channels to remove yellow-blue shifts."
+      }
+    ],
+    // Black & white vs. colorized pairs shown in the main frame swiper and the grid below
+    colorPreviews: [
+      {
+        bw: "/images/restoration/couple_after.png",
+        color: "/images/restoration/couple_color.png",
+        title: "1940s Couple Portrait",
+        desc: "Hand-tinted colorization applied to a black & white studio portrait."
+      },
+      {
+        bw: "/images/restoration/family_bw.png",
+        color: "/images/restoration/family_after.png",
+        title: "Family Dinner Photo",
+        desc: "Full color restored alongside a true black & white rendition."
+      },
+      {
+        bw: "/images/restoration/soldier_bw.png",
+        color: "/images/restoration/soldier_after.png",
+        title: "Sepia Soldier Portrait",
+        desc: "Vintage sepia tone compared with a neutral black & white version."
+      },
+      {
+        bw: "/images/restoration/child_bw.png",
+        color: "/images/restoration/child_after.png",
+        title: "Childhood Garden Memory",
+        desc: "Vivid color print compared with a true black & white rendition."
+      },
+      {
+        bw: "/images/restoration/landscape_bw.png",
+        color: "/images/restoration/landscape_after.png",
+        title: "Vintage Landscape",
+        desc: "Rebalanced natural color compared with a true black & white rendition."
       }
     ]
   }
@@ -1939,6 +1971,18 @@ export default function ServiceDetailPage({ params }) {
 
   // Active slide index for restoration swiper
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Lock background page scroll while a modal (frame picker or cart drawer) is open.
+  // The page scrolls via <html>, not <body>, so both must be locked.
+  useEffect(() => {
+    const shouldLock = frameModalOpen || cartOpen;
+    document.documentElement.style.overflow = shouldLock ? "hidden" : "";
+    document.body.style.overflow = shouldLock ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [frameModalOpen, cartOpen]);
 
   // Fetch all frames from Firebase database (for the optional frame picker)
   useEffect(() => {
@@ -3277,13 +3321,26 @@ export default function ServiceDetailPage({ params }) {
           width: 100%;
         }
 
+        /* Shell around the frame — invisible to layout except on the restoration page,
+           where it anchors the swiper arrows outside the frame */
+        .restoration-frame-shell {
+          display: contents;
+        }
+        .photo-restoration-page .restoration-frame-shell {
+          display: block;
+          position: relative;
+          width: 100%;
+          max-width: 480px;
+          margin: 30px 0 0 0;
+        }
+
         /* Prevent frame rotation and apply landscape proportions */
         .photo-restoration-page .exquisite-wood-frame.restoration-frame {
           transform: none !important;
           aspect-ratio: 1.5 !important;
           max-width: 480px !important;
           width: 100% !important;
-          margin: 30px 0 0 0 !important;
+          margin: 0 !important;
           box-shadow: 0 20px 45px rgba(0,0,0,0.85);
         }
 
@@ -3376,20 +3433,35 @@ export default function ServiceDetailPage({ params }) {
           right: -48px;
         }
 
+        /* On narrow viewports there is no room beside the frame — tuck arrows inside */
+        @media (max-width: 640px) {
+          .photo-restoration-page .swiper-arrow-prev {
+            left: 8px;
+            background: rgba(28, 15, 7, 0.7);
+          }
+          .photo-restoration-page .swiper-arrow-next {
+            right: 8px;
+            background: rgba(28, 15, 7, 0.7);
+          }
+        }
+
         /* Pagination Dots */
         .photo-restoration-page .swiper-pagination {
           position: absolute;
-          bottom: 12px;
+          bottom: 14px;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
-          gap: 8px;
+          gap: 10px;
           z-index: 30;
+          padding: 6px 10px;
+          background: rgba(28, 15, 7, 0.55);
+          border-radius: 999px;
         }
 
         .photo-restoration-page .swiper-dot {
-          width: 7px;
-          height: 7px;
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.4);
           border: none;
@@ -3402,18 +3474,6 @@ export default function ServiceDetailPage({ params }) {
           background: #dfc38a;
           transform: scale(1.2);
           box-shadow: 0 0 6px #dfc38a;
-        }
-
-        /* Swiper Arrows in small viewports */
-        @media (max-width: 640px) {
-          .photo-restoration-page .swiper-arrow-prev {
-            left: 8px;
-            background: rgba(28, 15, 7, 0.7);
-          }
-          .photo-restoration-page .swiper-arrow-next {
-            right: 8px;
-            background: rgba(28, 15, 7, 0.7);
-          }
         }
       ` }} />
 
@@ -3453,97 +3513,103 @@ export default function ServiceDetailPage({ params }) {
                 <LampParticles lightOn={lightOn} />
               </div>
 
-              {/* Landscape Picture Frame */}
-              <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${slug === "photo-restoration" ? "restoration-frame" : ""}`}>
-                {slug === "photo-restoration" ? (
-                  <img
-                    src={selectedCustomFrame?.imageUrl || "/frames/landscape/frame-04-correct-size.webp"}
-                    alt={selectedCustomFrame?.name || "Landscape Oak Frame"}
-                    className="wood-frame-overlay"
-                  />
-                ) : selectedCustomFrame?.imageUrl ? (
-                  <img
-                    src={selectedCustomFrame.imageUrl}
-                    alt={selectedCustomFrame.name}
-                    className="wood-frame-overlay"
-                  />
-                ) : (
-                  <div className="default-frame-border" />
-                )}
-
-                {/* Photo opening */}
-                <div className="exquisite-inner-photo">
-                  {slug === "photo-restoration" && !userUploadedImage ? (
-                    <div className="restoration-swiper-container">
-                      {service.previews && service.previews.slice(0, 3).map((item, idx) => (
-                        <div
-                          key={idx}
-                          className={`restoration-slide ${idx === activeSlide ? "active" : ""}`}
-                        >
-                          <BeforeAfterSlider
-                            before={item.before}
-                            after={item.after}
-                            labelBefore="Before"
-                            labelAfter="After"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              aspectRatio: "auto",
-                              border: "none",
-                              borderRadius: "0",
-                              boxShadow: "none"
-                            }}
-                          />
-                        </div>
-                      ))}
-                      
-                      {/* Swipe controls */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const count = Math.min(3, service.previews?.length || 0);
-                          setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
-                        }}
-                        className="swiper-arrow swiper-arrow-prev"
-                        aria-label="Previous image"
-                      >
-                        ‹
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const count = Math.min(3, service.previews?.length || 0);
-                          setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
-                        }}
-                        className="swiper-arrow swiper-arrow-next"
-                        aria-label="Next image"
-                      >
-                        ›
-                      </button>
-
-                      {/* Pagination indicators */}
-                      <div className="swiper-pagination">
-                        {service.previews && service.previews.slice(0, 3).map((_, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveSlide(idx);
-                            }}
-                            className={`swiper-dot ${idx === activeSlide ? "active" : ""}`}
-                            aria-label={`Go to slide ${idx + 1}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
+              {/* Landscape Picture Frame (shell lets swiper arrows sit outside the frame) */}
+              <div className="restoration-frame-shell">
+                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${slug === "photo-restoration" ? "restoration-frame" : ""}`}>
+                  {slug === "photo-restoration" ? (
+                    <img
+                      src={selectedCustomFrame?.imageUrl || "/frames/landscape/frame-04-correct-size.webp"}
+                      alt={selectedCustomFrame?.name || "Landscape Oak Frame"}
+                      className="wood-frame-overlay"
+                    />
+                  ) : selectedCustomFrame?.imageUrl ? (
+                    <img
+                      src={selectedCustomFrame.imageUrl}
+                      alt={selectedCustomFrame.name}
+                      className="wood-frame-overlay"
+                    />
                   ) : (
-                    <img src={currentPhoto} alt={`${service.title} preview`} />
+                    <div className="default-frame-border" />
                   )}
-                  <div className="glass-reflection" />
+
+                  {/* Photo opening */}
+                  <div className="exquisite-inner-photo">
+                    {slug === "photo-restoration" && !userUploadedImage ? (
+                      <div className="restoration-swiper-container">
+                        {service.colorPreviews && service.colorPreviews.slice(0, 3).map((item, idx) => (
+                          <div
+                            key={idx}
+                            className={`restoration-slide ${idx === activeSlide ? "active" : ""}`}
+                          >
+                            <BeforeAfterSlider
+                              before={item.bw}
+                              after={item.color}
+                              labelBefore="B&W"
+                              labelAfter="Color"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                aspectRatio: "auto",
+                                border: "none",
+                                borderRadius: "0",
+                                boxShadow: "none"
+                              }}
+                            />
+                          </div>
+                        ))}
+
+                        {/* Pagination indicators */}
+                        <div className="swiper-pagination">
+                          {service.colorPreviews && service.colorPreviews.slice(0, 3).map((_, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveSlide(idx);
+                              }}
+                              className={`swiper-dot ${idx === activeSlide ? "active" : ""}`}
+                              aria-label={`Go to slide ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={currentPhoto} alt={`${service.title} preview`} />
+                    )}
+                    <div className="glass-reflection" />
+                  </div>
                 </div>
+
+                {/* Swipe controls — outside the frame on either side */}
+                {slug === "photo-restoration" && !userUploadedImage && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const count = Math.min(3, service.colorPreviews?.length || 0);
+                        setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
+                      }}
+                      className="swiper-arrow swiper-arrow-prev"
+                      aria-label="Previous image"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const count = Math.min(3, service.colorPreviews?.length || 0);
+                        setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
+                      }}
+                      className="swiper-arrow swiper-arrow-next"
+                      aria-label="Next image"
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -3648,21 +3714,21 @@ export default function ServiceDetailPage({ params }) {
         </div>
       </section>
 
-      {/* INTERACTIVE BEFORE & AFTER PREVIEWS (unchanged) */}
-      {service.previews && (
+      {/* INTERACTIVE BLACK & WHITE / COLOR PREVIEWS */}
+      {service.colorPreviews && (
         <section className="services-section">
           <div className="services-container">
             <div className="service-gallery-section">
-              <h3 className="gallery-title">Interactive Before & After Previews</h3>
+              <h3 className="gallery-title">Interactive Black & White to Color Previews</h3>
               <p style={{ color: "var(--text2)", marginBottom: "32px", fontSize: "14px", fontFamily: "var(--font-serif)", lineHeight: "1.6" }}>
-                Drag the slider handle on each image to compare the original damaged photo (Left) with our fully restored version (Right).
+                Drag the slider handle to the right to reveal the colorized version (Left) compared with the original black & white photo (Right).
               </p>
               <div className="previews-grid" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 gap: "32px"
               }}>
-                {service.previews.map((item, idx) => (
+                {service.colorPreviews.map((item, idx) => (
                   <div key={idx} className="preview-card" style={{
                     background: "var(--surface2)",
                     borderRadius: "var(--radius)",
@@ -3673,7 +3739,7 @@ export default function ServiceDetailPage({ params }) {
                     gap: "16px",
                     boxShadow: "0 8px 20px rgba(0,0,0,0.4)"
                   }}>
-                    <BeforeAfterSlider before={item.before} after={item.after} />
+                    <BeforeAfterSlider before={item.bw} after={item.color} labelBefore="B&W" labelAfter="Color" />
                     <div className="preview-info" style={{ textAlign: "left" }}>
                       <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "16px", marginBottom: "4px", fontWeight: "600" }}>{item.title}</h4>
                       <p className="preview-desc" style={{ fontSize: "13px", color: "var(--text2)", lineHeight: "1.4", fontFamily: "var(--font-serif)" }}>{item.desc}</p>

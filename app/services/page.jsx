@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BeforeAfterSlider from "../components/BeforeAfterSlider";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -24,6 +25,17 @@ export default function ServicesPage() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [lightOn, setLightOn] = useState(true);
+
+  // Lock background page scroll while the cart drawer is open.
+  // The page scrolls via <html>, not <body>, so both must be locked.
+  useEffect(() => {
+    document.documentElement.style.overflow = cartOpen ? "hidden" : "";
+    document.body.style.overflow = cartOpen ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [cartOpen]);
 
   // Cart synchronization
   const loadCart = useCallback(() => {
@@ -1470,7 +1482,11 @@ export default function ServicesPage() {
           {/* Service 5 */}
           <div className="service-card">
             <div className="service-visual">
-              <img src="/images/photo_restoration.png" alt="Photo Restoration" />
+              <BeforeAfterSlider
+                before="/images/restoration/couple_before.png"
+                after="/images/restoration/couple_after.png"
+                style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
+              />
             </div>
             <div className="service-info">
               <h2 className="service-name">Old Photo Restoration</h2>

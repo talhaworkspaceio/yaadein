@@ -62,10 +62,10 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         ...style
       }}
     >
-      {/* After Image (Background) */}
+      {/* Before Image (Background) */}
       <img
-        src={after}
-        alt={labelAfter}
+        src={before}
+        alt={labelBefore}
         style={{
           width: "100%",
           height: "100%",
@@ -75,7 +75,7 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         }}
       />
 
-      {/* Before Image (Overlay clipped) */}
+      {/* After Image (Overlay clipped — grows from the left as the handle is dragged right) */}
       <div
         style={{
           position: "absolute",
@@ -91,8 +91,8 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         }}
       >
         <img
-          src={before}
-          alt={labelBefore}
+          src={after}
+          alt={labelAfter}
           style={{
             width: "100%",
             height: "100%",
@@ -143,32 +143,12 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         </div>
       </div>
 
-      {/* Badges / Labels */}
+      {/* Badges / Labels — After sits on the left (grows on right-drag), Before on the right */}
       <span
         style={{
           position: "absolute",
           bottom: "12px",
           left: "12px",
-          backgroundColor: "rgba(12, 10, 8, 0.75)",
-          color: "#F4EFE6",
-          padding: "4px 8px",
-          fontSize: "10px",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          fontFamily: "var(--font-typewriter, monospace)",
-          borderRadius: "4px",
-          zIndex: 12,
-          border: "1px solid rgba(181, 139, 92, 0.3)",
-          backdropFilter: "blur(4px)"
-        }}
-      >
-        {labelBefore}
-      </span>
-      <span
-        style={{
-          position: "absolute",
-          bottom: "12px",
-          right: "12px",
           backgroundColor: "rgba(12, 10, 8, 0.75)",
           color: "#dfc38a",
           padding: "4px 8px",
@@ -183,6 +163,26 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         }}
       >
         {labelAfter}
+      </span>
+      <span
+        style={{
+          position: "absolute",
+          bottom: "12px",
+          right: "12px",
+          backgroundColor: "rgba(12, 10, 8, 0.75)",
+          color: "#F4EFE6",
+          padding: "4px 8px",
+          fontSize: "10px",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          fontFamily: "var(--font-typewriter, monospace)",
+          borderRadius: "4px",
+          zIndex: 12,
+          border: "1px solid rgba(181, 139, 92, 0.3)",
+          backdropFilter: "blur(4px)"
+        }}
+      >
+        {labelBefore}
       </span>
     </div>
   );
