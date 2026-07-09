@@ -136,7 +136,11 @@ export default function FramesPage() {
     e.preventDefault();
     if (!formData.imageUrl) { alert("Please upload an image first!"); return; }
     try {
-      const data = { ...formData, stock: parseInt(formData.stock) || 0 };
+      const data = { 
+        ...formData, 
+        stock: parseInt(formData.stock) || 0,
+        createdAt: formData.createdAt || Date.now()
+      };
       if (isEditing) await set(ref(db, `frames/${editId}`), data);
       else await set(ref(db, `frames/${formData.id}`), data);
       resetForm();
@@ -227,6 +231,7 @@ export default function FramesPage() {
           if (!fd.id || !fd.name || !fd.price) { skip++; continue; }
           if (!fd.sizes) fd.sizes = DEFAULT_SIZES;
           if (fd.stock === undefined) fd.stock = 0;
+          if (!fd.createdAt) fd.createdAt = Date.now();
           await set(ref(db, `frames/${fd.id}`), fd);
           ok++;
         }

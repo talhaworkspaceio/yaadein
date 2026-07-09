@@ -1172,7 +1172,7 @@ export default function NewArrivalsPage() {
                         }}
                       >
                         <img 
-                          src="/images/dummyImg.jpg" 
+                          src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"} 
                           alt="Frame Art Preview" 
                           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
                         />

@@ -1559,7 +1559,7 @@ function FrameCustomizer() {
                       onClick={() => fileRef.current?.click()}
                     >
                       <img 
-                        src="/images/dummyImg.jpg" 
+                        src={orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"} 
                         alt="Default Frame Art" 
                         style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6, pointerEvents: "none" }} 
                       />

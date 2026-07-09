@@ -3,7 +3,8 @@
 export default function Footer() {
   return (
     <footer className="global-footer">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .global-footer {
           background: #080605;
           border-top: 2px solid #1C0F07;
@@ -35,7 +36,7 @@ export default function Footer() {
           transform: scale(1.03);
         }
         .footer-logo-img {
-          height: 38px;
+          height: 75px;
           width: auto;
           display: block;
         }
@@ -107,7 +108,6 @@ export default function Footer() {
           <div className="footer-links">
             <a href="/" className="footer-link">Home</a>
             <a href="/catalog" className="footer-link">Catalog</a>
-            <a href="/new-arrivals" className="footer-link">New Arrivals</a>
             <a href="/services" className="footer-link">Services</a>
             <a href="/contact" className="footer-link">Contact</a>
           </div>

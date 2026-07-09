@@ -29,6 +29,7 @@ export default function CatalogPage() {
   const [lightOn, setLightOn] = useState(true);
 
   // Carousel slider indices
+  const [newArrivalsIndex, setNewArrivalsIndex] = useState(0);
   const [portraitIndex, setPortraitIndex] = useState(0);
   const [landscapeIndex, setLandscapeIndex] = useState(0);
   const [boardGamesIndex, setBoardGamesIndex] = useState(0);
@@ -97,7 +98,14 @@ export default function CatalogPage() {
     }, 0);
   };
 
-  const isNewArrival = (id) => {
+  const isNewArrival = (p) => {
+    if (!p) return false;
+    const createdAt = typeof p === "object" ? p.createdAt : null;
+    if (createdAt) {
+      const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+      return (Date.now() - createdAt) < sevenDaysInMs;
+    }
+    const id = typeof p === "string" ? p : p.id;
     return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
   };
 
@@ -106,6 +114,7 @@ export default function CatalogPage() {
   };
 
   // Categorize products
+  const newArrivalsProducts = products.filter(p => isNewArrival(p));
   const portraitProducts = products.filter(p => p.category !== "Board Games" && p.orientation !== "landscape");
   const landscapeProducts = products.filter(p => p.category !== "Board Games" && p.orientation === "landscape");
   const boardGamesProducts = products.filter(p => p.category === "Board Games");
@@ -113,48 +122,87 @@ export default function CatalogPage() {
   const itemsPerPage = isMobile ? 1 : 3;
 
   // Translation values
-  const portraitTranslation = isMobile 
-    ? `calc(-${portraitIndex} * (100% + 24px))` 
+  const newArrivalsTranslation = isMobile
+    ? `calc(-${newArrivalsIndex} * (100% + 24px))`
+    : `calc(-${newArrivalsIndex} * (100% / 3 + 8px))`;
+
+  const portraitTranslation = isMobile
+    ? `calc(-${portraitIndex} * (100% + 24px))`
     : `calc(-${portraitIndex} * (100% / 3 + 8px))`;
 
-  const landscapeTranslation = isMobile 
-    ? `calc(-${landscapeIndex} * (100% + 24px))` 
+  const landscapeTranslation = isMobile
+    ? `calc(-${landscapeIndex} * (100% + 24px))`
     : `calc(-${landscapeIndex} * (100% / 3 + 8px))`;
 
-  const boardGamesTranslation = isMobile 
-    ? `calc(-${boardGamesIndex} * (100% + 24px))` 
+  const boardGamesTranslation = isMobile
+    ? `calc(-${boardGamesIndex} * (100% + 24px))`
     : `calc(-${boardGamesIndex} * (100% / 3 + 8px))`;
 
   const renderProductCard = (p) => {
+    const isLandscape = p.orientation === "landscape";
+
     return (
-      <div className="arrival-card" style={{ width: "100%", margin: 0 }}>
-        {isNewArrival(p.id) ? (
+      <div className={`arrival-card ${isLandscape ? "landscape-card" : ""}`}>
+        {isNewArrival(p) ? (
           <div className="ribbon">New Arrival</div>
         ) : isFeatured(p.id) ? (
           <div className="ribbon">Featured</div>
         ) : null}
-        
-        <div className="card-thumb-wrap">
+
+        <div
+          className="card-thumb-wrap"
+          style={{
+            aspectRatio: isLandscape ? "3 / 2" : "4 / 5",
+            padding: isLandscape ? "8px" : "20px"
+          }}
+        >
           <div
-             className="card-frame"
-             style={{
-               position: "relative",
-               aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-               width: p.orientation === "landscape" ? "100%" : "auto",
-               height: p.orientation === "landscape" ? "auto" : "100%",
-               boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-               display: "flex",
-               alignItems: "center",
-               justifyContent: "center",
-               overflow: "hidden",
-               margin: "0 auto"
-             }}
+            className="card-frame"
+            style={isLandscape ? {
+              /* Portrait frame image rotated -90deg to display as landscape.
+                 The pre-rotation height (= visual width after rotation) is
+                 derived from the wrap width; the frame's own width follows
+                 the image's natural aspect ratio, so no stretching. */
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-90deg)",
+              transformOrigin: "center center",
+              height: "calc(100% * 1.5 - 16px)",
+              width: "auto",
+              boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden"
+            } : {
+              position: "relative",
+              aspectRatio: p.aspectRatio || "2 / 3",
+              width: "auto",
+              height: "100%",
+              maxWidth: "100%",
+              boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              margin: "0 auto"
+            }}
           >
             {p.imageUrl && (
               <img
                 src={p.imageUrl}
                 alt={p.name}
-                style={{
+                style={isLandscape ? {
+                  /* Natural ratio: height is pinned to the (rotated) frame box,
+                     width follows the image's real proportions. */
+                  width: "auto",
+                  height: "100%",
+                  display: "block",
+                  position: "relative",
+                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                  pointerEvents: "none"
+                } : {
                   width: "100%",
                   height: "100%",
                   objectFit: "fill",
@@ -179,10 +227,20 @@ export default function CatalogPage() {
                 overflow: "hidden"
               }}
             >
-              <img 
-                src="/images/dummyImg.jpg" 
-                alt="Frame Art Preview" 
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+              <img
+                src={isLandscape ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
+                alt="Frame Art Preview"
+                style={{
+                  width: isLandscape ? "152%" : "100%",
+                  height: isLandscape ? "152%" : "100%",
+                  objectFit: "cover",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  /* Counter-rotate the photo so it reads upright inside the rotated frame */
+                  transform: isLandscape ? "translate(-50%, -50%) rotate(90deg)" : "translate(-50%, -50%)",
+                  objectPosition: "center center"
+                }}
               />
             </div>
           </div>
@@ -193,7 +251,6 @@ export default function CatalogPage() {
             <h3 className="product-name">{p.name}</h3>
             <span className="product-price">{p.price}</span>
           </div>
-          <span className="product-tag">{p.tag}</span>
           <p className="product-desc">{p.desc}</p>
         </div>
 
@@ -206,7 +263,8 @@ export default function CatalogPage() {
 
   return (
     <div className="catalog-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
           position: relative;
@@ -381,7 +439,7 @@ export default function CatalogPage() {
           left: calc(50% - 5px);
           width: 10px;
           height: 10px;
-          animation: rotate 20s linear 0s infinite alternate;
+          animation: rotate 80s linear 0s infinite alternate;
         }
 
         .angle {
@@ -406,7 +464,7 @@ export default function CatalogPage() {
           position: absolute;
           top: 0;
           left: 0;
-          animation: pulse 1.5s linear 0s infinite alternate;
+          animation: pulse 4s linear 0s infinite alternate;
         }
 
         .particle {
@@ -428,14 +486,14 @@ export default function CatalogPage() {
         .particle::before {
           top: -30px;
           left: 25px;
-          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
+          animation: float-firefly-1 15s ease-in-out infinite alternate;
         }
         .particle::after {
           width: 3px;
           height: 3px;
           top: 35px;
           left: -30px;
-          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
+          animation: float-firefly-2 18s ease-in-out infinite alternate;
         }
 
         @keyframes glow-warm {
@@ -513,42 +571,42 @@ export default function CatalogPage() {
         }
 
         .rotate .angle:nth-child(1) {
-          animation: angle 10s steps(5) 0s infinite;
+          animation: angle 40s steps(5) 0s infinite;
         }
         .rotate .angle:nth-child(1) .size {
-          animation: size 10s steps(5) 0s infinite;
+          animation: size 40s steps(5) 0s infinite;
         }
         .rotate .angle:nth-child(1) .particle {
           animation: particle-warm 6s linear infinite alternate;
         }
         .rotate .angle:nth-child(1) .position {
-          animation: position 2s linear 0s infinite;
+          animation: position 12s linear 0s infinite;
         }
 
         .rotate .angle:nth-child(2) {
-          animation: angle 4.95s steps(3) -1.65s infinite;
+          animation: angle 20s steps(3) -10s infinite;
         }
         .rotate .angle:nth-child(2) .size {
-          animation: size 4.95s steps(3) -1.65s infinite alternate;
+          animation: size 20s steps(3) -10s infinite alternate;
         }
         .rotate .angle:nth-child(2) .particle {
           animation: particle-warm 4.95s linear -3.3s infinite alternate;
         }
         .rotate .angle:nth-child(2) .position {
-          animation: position 1.65s linear 0s infinite;
+          animation: position 10s linear 0s infinite;
         }
 
         .rotate .angle:nth-child(3) {
-          animation: angle 13.76s steps(8) -6.88s infinite;
+          animation: angle 55s steps(8) -27.5s infinite;
         }
         .rotate .angle:nth-child(3) .size {
-          animation: size 6.88s steps(4) -5.16s infinite alternate;
+          animation: size 27.5s steps(4) -20.6s infinite alternate;
         }
         .rotate .angle:nth-child(3) .particle {
           animation: particle-warm 5.16s linear -1.72s infinite alternate;
         }
         .rotate .angle:nth-child(3) .position {
-          animation: position 1.72s linear 0s infinite;
+          animation: position 11s linear 0s infinite;
         }
 
         .catalog-root {
@@ -652,6 +710,7 @@ export default function CatalogPage() {
           position: relative;
           display: flex;
           align-items: center;
+          min-width: 0;
         }
 
         .carousel-viewport {
@@ -664,17 +723,26 @@ export default function CatalogPage() {
           display: flex;
           gap: 24px;
           transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+          width: 100%;
         }
 
         .carousel-slide {
           flex: 0 0 calc((100% - 48px) / 3);
           box-sizing: border-box;
+          min-width: 0;
+          display: flex;
+          justify-content: center;
         }
 
+        /* Match the home page slider cards: capped width, centered in the slide */
         .carousel-slide .arrival-card {
-          width: 100% !important;
-          max-width: none !important;
+          width: 100%;
+          max-width: 360px;
           height: 100%;
+        }
+
+        .carousel-slide .arrival-card.landscape-card {
+          max-width: 390px;
         }
 
         /* Chevrons */
@@ -797,6 +865,7 @@ export default function CatalogPage() {
           border-color: #2D1A0F;
           box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 15px rgba(212,175,55,0.2);
         }
+
         
         .ribbon {
           position: absolute;
@@ -882,6 +951,10 @@ export default function CatalogPage() {
           font-size: 14px;
           line-height: 1.6;
           color: var(--text2);
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         
         .btn-card {
@@ -1384,13 +1457,13 @@ export default function CatalogPage() {
         <p className="hero-desc">
           Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder.
         </p>
-        
+
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
-          <button 
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-            onClick={() => setLightOn(!lightOn)} 
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
             aria-label="Toggle Studio Light"
           >
             <span className="light-switch-knob" />
@@ -1416,6 +1489,41 @@ export default function CatalogPage() {
             </div>
           ) : (
             <div className="carousels-container">
+              {/* NEW ARRIVALS SECTION */}
+              {newArrivalsProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">New Arrivals</h2>
+                    </div>
+                    <p className="carousel-section-desc">Handcrafted items fresh from our workshops, added within the last 7 days.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {newArrivalsIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setNewArrivalsIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${newArrivalsTranslation})` }}>
+                          {newArrivalsProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {newArrivalsIndex < newArrivalsProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setNewArrivalsIndex(p => Math.min(newArrivalsProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* PORTRAIT SECTION */}
               {portraitProducts.length > 0 && (
                 <div className="carousel-section">

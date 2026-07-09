@@ -83,32 +83,33 @@ const matchFrame = (f, targetId) => {
 };
 
 const ProductPageLoader = () => (
-  <div style={{ 
-    minHeight: "100vh", 
-    background: "#0C0A08", 
-    color: "var(--accent)", 
-    display: "flex", 
+  <div style={{
+    minHeight: "100vh",
+    background: "#0C0A08",
+    color: "var(--accent)",
+    display: "flex",
     flexDirection: "column",
     gap: "16px",
-    alignItems: "center", 
-    justifyContent: "center", 
-    fontFamily: "var(--font-serif)" 
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "var(--font-serif)"
   }}>
-    <style dangerouslySetInnerHTML={{__html: `
+    <style dangerouslySetInnerHTML={{
+      __html: `
       @keyframes loaderSpin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
     `}} />
-    <svg 
-      width="40" 
-      height="40" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       style={{ animation: "loaderSpin 1.2s linear infinite" }}
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
@@ -134,11 +135,73 @@ function ProductDetailContent({ params }) {
   const [sizeError, setSizeError] = useState(false);
   const [userUploadedImage, setUserUploadedImage] = useState(null);
   const [lightOn, setLightOn] = useState(true);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const fileInputRef = useRef(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Wall gallery slider items
+  const [sliderItems, setSliderItems] = useState([
+    {
+      id: 1,
+      title: "Rustic Living",
+      description: "Our premium textured oak frame transforms simple spaces into organic sanctuaries of memory.",
+      imageUrl: "/images/wall_frame_1.png"
+    },
+    {
+      id: 2,
+      title: "Artist's Atelier",
+      description: "Vintage studio paneled walls decorated with museum-grade walnut and gilt frames.",
+      imageUrl: "/images/wall_frame_2.png"
+    },
+    {
+      id: 3,
+      title: "Exhibition Hall",
+      description: "Sleek gallery black borders casting elegant shadows under minimalist spotlight beams.",
+      imageUrl: "/images/wall_frame_3.png"
+    },
+    {
+      id: 4,
+      title: "Bohemian Console",
+      description: "Intricately carved wood consoles supporting timeless gold leaf detailing.",
+      imageUrl: "/images/wall_frame_4.png"
+    },
+    {
+      id: 5,
+      title: "Collector's Library",
+      description: "Deep mahogany casework paired with classical portraiture borders.",
+      imageUrl: "/images/wall_frame_5.png"
+    },
+    {
+      id: 6,
+      title: "Serene Plaster",
+      description: "Panoramic horizon perspectives nested above serene master bedroom suites.",
+      imageUrl: "/images/wall_frame_6.png"
+    },
+    {
+      id: 7,
+      title: "Wall Gallery",
+      description: "Bright gallery walls with a dynamic collection of custom sized frames.",
+      imageUrl: "/images/wall_frame_7.png"
+    }
+  ]);
+
+  const handleNextWallSlide = () => {
+    setSliderItems(prev => {
+      const [first, ...rest] = prev;
+      return [...rest, first];
+    });
+  };
+
+  const handlePrevWallSlide = () => {
+    setSliderItems(prev => {
+      const last = prev[prev.length - 1];
+      const rest = prev.slice(0, prev.length - 1);
+      return [last, ...rest];
+    });
+  };
 
   // Sync carousel index to show selected frame in center
   useEffect(() => {
@@ -291,6 +354,9 @@ function ProductDetailContent({ params }) {
 
   // Dynamic dummy photo loader
   const getDummyPhoto = () => {
+    if (orientation === "landscape") {
+      return "/images/nature.jpg";
+    }
     return "/images/dummyImg.jpg";
   };
 
@@ -673,7 +739,7 @@ function ProductDetailContent({ params }) {
           transform-origin: center center;
         }
         .exquisite-inner-photo img.rotated-landscape-img {
-          transform: rotate(-90deg) scale(1.5) translateX(-12%);
+          transform: rotate(-90deg) scale(1.5);
         }
 
         .exquisite-inner-photo img.light-active {
@@ -832,6 +898,13 @@ function ProductDetailContent({ params }) {
           font-size: 13px;
           line-height: 1.6;
           color: #2c1e11;
+        }
+        .product-desc-text.clamped {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .config-section {
@@ -1234,13 +1307,13 @@ function ProductDetailContent({ params }) {
         .exquisite-glow-container.on .particles {
           opacity: 1;
         }
-        .rotate {
+         .rotate {
           position: absolute;
           top: calc(50% - 5px);
           left: calc(50% - 5px);
           width: 10px;
           height: 10px;
-          animation: rotate 20s linear 0s infinite alternate;
+          animation: rotate 80s linear 0s infinite alternate;
         }
         .angle {
           position: absolute;
@@ -1261,7 +1334,7 @@ function ProductDetailContent({ params }) {
           position: absolute;
           top: 0;
           left: 0;
-          animation: pulse 1.5s linear 0s infinite alternate;
+          animation: pulse 4s linear 0s infinite alternate;
         }
         .particle {
           position: absolute;
@@ -1282,14 +1355,14 @@ function ProductDetailContent({ params }) {
         .particle::before {
           top: -30px;
           left: 25px;
-          animation: float-firefly-1 3.5s ease-in-out infinite alternate;
+          animation: float-firefly-1 15s ease-in-out infinite alternate;
         }
         .particle::after {
           width: 3px;
           height: 3px;
           top: 35px;
           left: -30px;
-          animation: float-firefly-2 4.5s ease-in-out infinite alternate;
+          animation: float-firefly-2 18s ease-in-out infinite alternate;
         }
         @keyframes rotate {
           0% { transform: rotate(0deg); }
@@ -1320,40 +1393,40 @@ function ProductDetailContent({ params }) {
           }
         }
         .rotate .angle:nth-child(1) {
-          animation: angle 10s steps(5) 0s infinite;
+          animation: angle 40s steps(5) 0s infinite;
         }
         .rotate .angle:nth-child(1) .size {
-          animation: size 10s steps(5) 0s infinite;
+          animation: size 40s steps(5) 0s infinite;
         }
         .rotate .angle:nth-child(1) .particle {
           animation: particle-warm 6s linear infinite alternate;
         }
         .rotate .angle:nth-child(1) .position {
-          animation: position 2s linear 0s infinite;
+          animation: position 12s linear 0s infinite;
         }
         .rotate .angle:nth-child(2) {
-          animation: angle 4.95s steps(3) -1.65s infinite;
+          animation: angle 20s steps(3) -10s infinite;
         }
         .rotate .angle:nth-child(2) .size {
-          animation: size 4.95s steps(3) -1.65s infinite alternate;
+          animation: size 20s steps(3) -10s infinite alternate;
         }
         .rotate .angle:nth-child(2) .particle {
           animation: particle-warm 4.95s linear -3.3s infinite alternate;
         }
         .rotate .angle:nth-child(2) .position {
-          animation: position 1.65s linear 0s infinite;
+          animation: position 10s linear 0s infinite;
         }
         .rotate .angle:nth-child(3) {
-          animation: angle 13.76s steps(8) -6.88s infinite;
+          animation: angle 55s steps(8) -27.5s infinite;
         }
         .rotate .angle:nth-child(3) .size {
-          animation: size 6.88s steps(4) -5.16s infinite alternate;
+          animation: size 27.5s steps(4) -20.6s infinite alternate;
         }
         .rotate .angle:nth-child(3) .particle {
           animation: particle-warm 5.16s linear -1.72s infinite alternate;
         }
         .rotate .angle:nth-child(3) .position {
-          animation: position 1.72s linear 0s infinite;
+          animation: position 11s linear 0s infinite;
         }
         @keyframes float-firefly-1 {
           0% { transform: translate3d(0, 0, 0); }
@@ -1805,6 +1878,259 @@ function ProductDetailContent({ params }) {
           text-align: center;
           padding: 14px;
         }
+
+        /* WALL GALLERY SLIDER SECTION */
+        .wall-gallery-slider-section {
+          position: relative;
+          width: 100%;
+          height: 650px;
+          background: #090706;
+          border-top: 2px solid #1C0F07;
+          border-bottom: 2px solid #1C0F07;
+          overflow: hidden;
+          margin-top: 60px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .wall-slider-title-header {
+          position: absolute;
+          top: 30px;
+          left: 40px;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .wall-slider-heading {
+          font-family: var(--font-display);
+          font-size: 28px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: -0.01em;
+          text-shadow: 0 4px 10px rgba(0,0,0,0.9);
+          margin-bottom: 4px;
+        }
+
+        .wall-slider-subheading {
+          font-family: var(--font-serif);
+          font-size: 14px;
+          color: var(--text2);
+          text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+        }
+
+        .wall-slider-track {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .wall-slider-item {
+          width: 200px;
+          height: 300px;
+          position: absolute;
+          top: 55%;
+          transform: translateY(-50%);
+          z-index: 1;
+          background-position: center;
+          background-size: cover;
+          border-radius: 12px;
+          border: 3px solid #1C0F07;
+          outline: 1.5px solid rgba(212, 175, 55, 0.45);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.8);
+          transition: transform 0.2s, left 0.75s, top 0.75s, width 0.75s, height 0.75s, opacity 0.75s;
+        }
+
+        .wall-slider-item:nth-child(1), .wall-slider-item:nth-child(2) {
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          transform: none;
+          border-radius: 0;
+          border: none;
+          outline: none;
+          box-shadow: none;
+          opacity: 1;
+        }
+
+        .wall-slider-item:nth-child(3) { left: 50%; }
+        .wall-slider-item:nth-child(4) { left: calc(50% + 220px); }
+        .wall-slider-item:nth-child(5) { left: calc(50% + 440px); }
+        .wall-slider-item:nth-child(6) { left: calc(50% + 660px); opacity: 0; }
+        .wall-slider-item:nth-child(n+7) { left: calc(50% + 880px); opacity: 0; }
+
+        /* Dark overlay on background items */
+        .wall-slider-item::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to right, rgba(9, 7, 6, 0.75) 0%, rgba(9, 7, 6, 0.3) 40%, transparent 100%);
+          z-index: 2;
+          opacity: 0;
+          transition: opacity 0.75s ease;
+        }
+        .wall-slider-item:nth-child(1)::before, .wall-slider-item:nth-child(2)::before {
+          opacity: 1;
+        }
+
+        .wall-slider-content {
+          width: min(85vw, 420px);
+          position: absolute;
+          top: 50%;
+          left: 5%;
+          transform: translateY(-50%);
+          color: white;
+          z-index: 5;
+          opacity: 0;
+          display: none;
+        }
+
+        .wall-slider-item:nth-of-type(2) .wall-slider-content {
+          display: block;
+          animation: showWallContent 0.75s ease-in-out 0.3s forwards;
+        }
+
+        @keyframes showWallContent {
+          0% {
+            filter: blur(8px);
+            transform: translateY(calc(-50% + 75px));
+            opacity: 0;
+          }
+          100% {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(-50%);
+          }
+        }
+
+        .wall-slider-content-title {
+          font-family: var(--font-display);
+          font-size: 36px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: -0.01em;
+          color: #dfc38a;
+          margin-bottom: 12px;
+          text-shadow: 0 4px 8px rgba(0,0,0,0.8);
+        }
+
+        .wall-slider-content-description {
+          font-family: var(--font-serif);
+          font-size: 14.5px;
+          line-height: 1.6;
+          color: var(--text);
+          text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+          margin-bottom: 20px;
+        }
+
+        .wall-slider-content-btn {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          background: rgba(212, 175, 55, 0.1);
+          color: var(--accent);
+          border: 1.5px solid var(--accent);
+          border-radius: 4px;
+          padding: 10px 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .wall-slider-content-btn:hover {
+          background: var(--accent);
+          color: #1A1100;
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .wall-slider-nav {
+          position: absolute;
+          bottom: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+          user-select: none;
+          display: flex;
+          gap: 12px;
+        }
+
+        .wall-slider-nav-btn {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: rgba(12, 10, 8, 0.9);
+          border: 1.5px solid rgba(212, 175, 55, 0.35);
+          color: var(--accent);
+          font-size: 20px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .wall-slider-nav-btn:hover {
+          background: var(--accent);
+          color: #0C0A08;
+          border-color: var(--accent);
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Responsive Media Queries */
+        @media (max-width: 900px) {
+          .wall-gallery-slider-section {
+            height: 550px;
+          }
+          .wall-slider-item {
+            width: 150px;
+            height: 220px;
+            top: 60%;
+          }
+          .wall-slider-item:nth-child(3) { left: 50%; }
+          .wall-slider-item:nth-child(4) { left: calc(50% + 170px); }
+          .wall-slider-item:nth-child(5) { left: calc(50% + 340px); }
+          .wall-slider-item:nth-child(6) { left: calc(50% + 510px); opacity: 0; }
+          .wall-slider-item:nth-child(n+7) { left: calc(50% + 680px); opacity: 0; }
+
+          .wall-slider-content-title {
+            font-size: 28px;
+          }
+          .wall-slider-content-description {
+            font-size: 13px;
+          }
+        }
+
+        @media (max-width: 650px) {
+          .wall-gallery-slider-section {
+            height: 480px;
+          }
+          .wall-slider-item {
+            width: 100px;
+            height: 150px;
+            top: 65%;
+          }
+          .wall-slider-item:nth-child(3) { left: 45%; }
+          .wall-slider-item:nth-child(4) { left: calc(45% + 120px); }
+          .wall-slider-item:nth-child(5) { left: calc(45% + 240px); }
+          .wall-slider-item:nth-child(6) { left: calc(45% + 360px); opacity: 0; }
+          .wall-slider-item:nth-child(n+7) { left: calc(45% + 480px); opacity: 0; }
+
+          .wall-slider-title-header {
+            top: 20px;
+            left: 20px;
+          }
+          .wall-slider-heading {
+            font-size: 22px;
+          }
+          .wall-slider-content {
+            left: 20px;
+          }
+          .wall-slider-content-title {
+            font-size: 24px;
+          }
+        }
       ` }} />
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
@@ -1876,210 +2202,261 @@ function ProductDetailContent({ params }) {
                 </div>
               </div>
 
-            {/* Picture Frame */}
-            <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${orientation === "landscape" ? "rotated-landscape" : ""} ${orientation === "square" ? "square-frame" : ""}`}>
-              {selectedFrame.imageUrl && (
-                <img
-                  src={selectedFrame.imageUrl}
-                  alt={selectedFrame.name}
-                  className="wood-frame-overlay"
-                />
-              )}
-
-              {/* Photo opening */}
-              {orientation !== "square" && (
-                <div className="exquisite-inner-photo">
+              {/* Picture Frame */}
+              <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${orientation === "landscape" ? "rotated-landscape" : ""} ${orientation === "square" ? "square-frame" : ""}`}>
+                {selectedFrame.imageUrl && (
                   <img
-                    src={currentPhoto}
-                    alt="Customized preview print"
-                    className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
+                    src={selectedFrame.imageUrl}
+                    alt={selectedFrame.name}
+                    className="wood-frame-overlay"
                   />
-                  <div className="glass-reflection" />
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
-            {onlyFrames.length > 0 && (
-              <>
-                <div className="frame-thumbnails-carousel">
-                  <button className="carousel-arrow left" onClick={handlePrevFrame} aria-label="Previous frames">
-                    ‹
-                  </button>
-                  <div className="carousel-thumbnails-wrapper">
-                    {visibleFrames.map((f) => (
-                      <div
-                        key={f.id}
-                        className={`carousel-thumb-card ${f.id === selectedFrame.id ? "active" : ""}`}
-                        onClick={() => handleFrameChange(f.id)}
-                      >
-                        <div className="thumb-image-wrapper">
-                          {f.imageUrl ? (
-                            <img src={f.imageUrl} alt={f.name} />
-                          ) : (
-                            <div className="cart-item-thumb-placeholder">Y</div>
-                          )}
+                {/* Photo opening */}
+                {orientation !== "square" && (
+                  <div className="exquisite-inner-photo">
+                    <img
+                      src={currentPhoto}
+                      alt="Customized preview print"
+                      className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
+                    />
+                    <div className="glass-reflection" />
+                  </div>
+                )}
+              </div>
+
+              {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
+              {onlyFrames.length > 0 && (
+                <>
+                  <div className="frame-thumbnails-carousel">
+                    <button className="carousel-arrow left" onClick={handlePrevFrame} aria-label="Previous frames">
+                      ‹
+                    </button>
+                    <div className="carousel-thumbnails-wrapper">
+                      {visibleFrames.map((f) => (
+                        <div
+                          key={f.id}
+                          className={`carousel-thumb-card ${f.id === selectedFrame.id ? "active" : ""}`}
+                          onClick={() => handleFrameChange(f.id)}
+                        >
+                          <div className="thumb-image-wrapper">
+                            {f.imageUrl ? (
+                              <img src={f.imageUrl} alt={f.name} />
+                            ) : (
+                              <div className="cart-item-thumb-placeholder">Y</div>
+                            )}
+                          </div>
+                          <span className="thumb-label">{f.name}</span>
                         </div>
-                        <span className="thumb-label">{f.name}</span>
-                      </div>
+                      ))}
+                    </div>
+                    <button className="carousel-arrow right" onClick={handleNextFrame} aria-label="Next frames">
+                      ›
+                    </button>
+                  </div>
+                  {/* Dot Indicators */}
+                  <div className="carousel-dots">
+                    {onlyFrames.map((f) => (
+                      <span
+                        key={f.id}
+                        className={`carousel-dot ${f.id === selectedFrame.id ? "active" : ""}`}
+                        onClick={() => handleFrameChange(f.id)}
+                        title={f.name}
+                      />
                     ))}
                   </div>
-                  <button className="carousel-arrow right" onClick={handleNextFrame} aria-label="Next frames">
-                    ›
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: CONFIGURATION PANEL */}
+          <div className="product-config-column">
+            {/* Light Switch panel (Placed above the paper card) */}
+            <div className="light-control-panel" style={{ alignSelf: "center", marginTop: 0, marginBottom: 0 }}>
+              <span className="light-control-label">Light Switch</span>
+              <button
+                className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+                onClick={() => setLightOn(!lightOn)}
+                aria-label="Toggle Light Switch"
+              >
+                <span className="light-switch-knob" />
+              </button>
+            </div>
+
+            <div className="product-config-pane">
+
+              <div className="product-meta-header">
+                {/* Title moved to top position, removing tag header */}
+                <h1 className="product-title">{selectedFrame.name}</h1>
+
+                {/* Stock status badge moved to the place of the main heading */}
+                {selectedFrame.stock !== undefined && (
+                  <div style={{ marginTop: "4px" }}>
+                    <span className={`stock-badge ${parseInt(selectedFrame.stock) > 0 ? "in-stock" : "out-of-stock"}`}>
+                      {parseInt(selectedFrame.stock) > 0 ? `${selectedFrame.stock} in stock` : "Out of stock"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Price below stock badge */}
+                <div className="product-price-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
+                  <span className="product-price-val">{calculatedPriceStr}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="config-section">
+                <span className="config-label">Molding Description</span>
+                <p className={`product-desc-text ${isDescExpanded ? "" : "clamped"}`}>
+                  {selectedFrame.desc || "Exquisitely designed wooden moulding frame, handcrafted to highlight contrast, depth, and the natural grain details of original timber prints."}
+                </p>
+                {(selectedFrame.desc || "Exquisitely designed wooden moulding frame, handcrafted to highlight contrast, depth, and the natural grain details of original timber prints.").length > 120 && (
+                  <button 
+                    onClick={() => setIsDescExpanded(!isDescExpanded)} 
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--accent)",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      padding: "4px 0",
+                      alignSelf: "flex-start",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      fontFamily: "var(--font-typewriter)",
+                      marginTop: "-6px"
+                    }}
+                  >
+                    {isDescExpanded ? "Read Less" : "Read More"}
                   </button>
+                )}
+              </div>
+
+              {/* Size selection */}
+              <div className="config-section">
+                <span className="config-label">Choose Size</span>
+                <div className="select-wrapper">
+                  <select
+                    className={`premium-select ${sizeError ? "error" : ""}`}
+                    value={selectedSize}
+                    onChange={(e) => {
+                      setSelectedSize(e.target.value);
+                      setSizeError(false);
+                    }}
+                  >
+                    <option value="">Choose Size</option>
+                    {frameSizes.map((size) => {
+                      const delta = parseInt(size.priceDelta) || 0;
+                      const deltaText = delta === 0 ? " (Base Price)" : delta > 0 ? ` (+ Rs. ${delta.toLocaleString()})` : ` (- Rs. ${Math.abs(delta).toLocaleString()})`;
+                      return (
+                        <option key={size.label} value={size.label}>
+                          {size.displayLabel}{deltaText}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="select-arrow">
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                 </div>
-                {/* Dot Indicators */}
-                <div className="carousel-dots">
-                  {onlyFrames.map((f) => (
-                    <span
-                      key={f.id}
-                      className={`carousel-dot ${f.id === selectedFrame.id ? "active" : ""}`}
-                      onClick={() => handleFrameChange(f.id)}
-                      title={f.name}
-                    />
-                  ))}
+                {sizeError && <span className="size-error-msg">Please select a size</span>}
+              </div>
+
+              {/* Orientation selection */}
+              {selectedFrame.orientation !== "square" && (
+                <div className="config-section" style={{ marginTop: "6px" }}>
+                  <span className="config-label">Select Orientation</span>
+                  <div className="orientation-btns">
+                    <button
+                      className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
+                      onClick={() => handleOrientationChange("portrait")}
+                    >
+                      <div className="orientation-btn-icon" />
+                      <span className="orientation-btn-label">Portrait</span>
+                    </button>
+                    <button
+                      className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
+                      onClick={() => handleOrientationChange("landscape")}
+                    >
+                      <div className="orientation-btn-icon" />
+                      <span className="orientation-btn-label">Landscape</span>
+                    </button>
+                  </div>
                 </div>
-              </>
-            )}
+              )}
+
+              {/* CTA Actions */}
+              <div className="action-row">
+                {!(selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0) && (
+                  <button
+                    className="btn-premium"
+                    onClick={handleAddToCart}
+                  >
+                    Add to Cart
+                  </button>
+                )}
+                {selectedFrame.orientation !== "square" && (
+                  <button className="btn-premium-ghost" onClick={triggerFileUpload}>
+                    Upload Photo
+                  </button>
+                )}
+                {userUploadedImage && (
+                  <button
+                    className="remove-photo-link"
+                    onClick={removeCustomImage}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#8b1e1e",
+                      fontFamily: "var(--font-typewriter)",
+                      fontSize: "10px",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                      marginTop: "4px",
+                      alignSelf: "center"
+                    }}
+                  >
+                    Remove Custom Photo
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* RIGHT COLUMN: CONFIGURATION PANEL */}
-        <div className="product-config-column">
-          {/* Light Switch panel (Placed above the paper card) */}
-          <div className="light-control-panel" style={{ alignSelf: "center", marginTop: 0, marginBottom: 0 }}>
-            <span className="light-control-label">Light Switch</span>
-            <button 
-              className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-              onClick={() => setLightOn(!lightOn)} 
-              aria-label="Toggle Light Switch"
+      {/* Wall Gallery Slider Section */}
+      <section className="wall-gallery-slider-section">
+
+        <ul className="wall-slider-track">
+          {sliderItems.map((item) => (
+            <li
+              key={item.id}
+              className="wall-slider-item"
+              style={{ backgroundImage: `url('${item.imageUrl}')` }}
             >
-              <span className="light-switch-knob" />
-            </button>
-          </div>
-
-          <div className="product-config-pane">
-
-          <div className="product-meta-header">
-            {/* Title moved to top position, removing tag header */}
-            <h1 className="product-title">{selectedFrame.name}</h1>
-            
-            {/* Stock status badge moved to the place of the main heading */}
-            {selectedFrame.stock !== undefined && (
-              <div style={{ marginTop: "4px" }}>
-                <span className={`stock-badge ${parseInt(selectedFrame.stock) > 0 ? "in-stock" : "out-of-stock"}`}>
-                  {parseInt(selectedFrame.stock) > 0 ? `${selectedFrame.stock} in stock` : "Out of stock"}
-                </span>
-              </div>
-            )}
-            
-            {/* Price below stock badge */}
-            <div className="product-price-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
-              <span className="product-price-val">{calculatedPriceStr}</span>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="config-section">
-            <span className="config-label">Molding Description</span>
-            <p className="product-desc-text">
-              {selectedFrame.desc || "Exquisitely designed wooden moulding frame, handcrafted to highlight contrast, depth, and the natural grain details of original timber prints."}
-            </p>
-          </div>
-
-          {/* Size selection */}
-          <div className="config-section">
-            <span className="config-label">Choose Size</span>
-            <div className="select-wrapper">
-              <select
-                className={`premium-select ${sizeError ? "error" : ""}`}
-                value={selectedSize}
-                onChange={(e) => {
-                  setSelectedSize(e.target.value);
-                  setSizeError(false);
-                }}
-              >
-                <option value="">Choose Size</option>
-                {frameSizes.map((size) => {
-                  const delta = parseInt(size.priceDelta) || 0;
-                  const deltaText = delta === 0 ? " (Base Price)" : delta > 0 ? ` (+ Rs. ${delta.toLocaleString()})` : ` (- Rs. ${Math.abs(delta).toLocaleString()})`;
-                  return (
-                    <option key={size.label} value={size.label}>
-                      {size.displayLabel}{deltaText}
-                    </option>
-                  );
-                })}
-              </select>
-              <span className="select-arrow">
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </span>
-            </div>
-            {sizeError && <span className="size-error-msg">Please select a size</span>}
-          </div>
-
-          {/* Orientation selection */}
-          {selectedFrame.orientation !== "square" && (
-            <div className="config-section" style={{ marginTop: "6px" }}>
-              <span className="config-label">Select Orientation</span>
-              <div className="orientation-btns">
-                <button
-                  className={`orientation-btn portrait-btn ${orientation === "portrait" ? "active" : ""}`}
-                  onClick={() => handleOrientationChange("portrait")}
-                >
-                  <div className="orientation-btn-icon" />
-                  <span className="orientation-btn-label">Portrait</span>
-                </button>
-                <button
-                  className={`orientation-btn landscape-btn ${orientation === "landscape" ? "active" : ""}`}
-                  onClick={() => handleOrientationChange("landscape")}
-                >
-                  <div className="orientation-btn-icon" />
-                  <span className="orientation-btn-label">Landscape</span>
+              <div className="wall-slider-content">
+                <h2 className="wall-slider-content-title">"{item.title}"</h2>
+                <p className="wall-slider-content-description">{item.description}</p>
+                <button className="wall-slider-content-btn" onClick={triggerFileUpload}>
+                  Customise Yours
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* CTA Actions */}
-          <div className="action-row">
-            {!(selectedFrame.stock !== undefined && parseInt(selectedFrame.stock) === 0) && (
-              <button 
-                className="btn-premium" 
-                onClick={handleAddToCart}
-              >
-                Add to Cart
-              </button>
-            )}
-            {selectedFrame.orientation !== "square" && (
-              <button className="btn-premium-ghost" onClick={triggerFileUpload}>
-                Upload Photo
-              </button>
-            )}
-            {userUploadedImage && (
-              <button 
-                className="remove-photo-link" 
-                onClick={removeCustomImage}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#8b1e1e",
-                  fontFamily: "var(--font-typewriter)",
-                  fontSize: "10px",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  marginTop: "4px",
-                  alignSelf: "center"
-                }}
-              >
-                Remove Custom Photo
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-      </div>
+            </li>
+          ))}
+        </ul>
+        <nav className="wall-slider-nav">
+          <button className="wall-slider-nav-btn prev" onClick={handlePrevWallSlide}>
+            &larr;
+          </button>
+          <button className="wall-slider-nav-btn next" onClick={handleNextWallSlide}>
+            &rarr;
+          </button>
+        </nav>
       </section>
 
       <Footer />
