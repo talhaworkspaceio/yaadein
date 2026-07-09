@@ -651,7 +651,6 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
         /* MOBILE MENU DRAWER */
         .mobile-menu-drawer {
           position: fixed;
-          top: 80px;
           left: 0;
           right: 0;
           background: #000000;
