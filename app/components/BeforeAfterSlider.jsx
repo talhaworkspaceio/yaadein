@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 
-export default function BeforeAfterSlider({ before, after, labelBefore = "Before", labelAfter = "After" }) {
+export default function BeforeAfterSlider({ before, after, labelBefore = "Before", labelAfter = "After", style = {} }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
@@ -58,7 +58,8 @@ export default function BeforeAfterSlider({ before, after, labelBefore = "Before
         boxShadow: "inset 0 0 15px rgba(0,0,0,0.8)",
         cursor: "ew-resize",
         userSelect: "none",
-        backgroundColor: "#080605"
+        backgroundColor: "#080605",
+        ...style
       }}
     >
       {/* After Image (Background) */}

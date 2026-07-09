@@ -1392,7 +1392,7 @@ export default function ServicesPage() {
 
         <div className="services-container">
           {/* Service 1 */}
-          <div className="service-card">
+          {/* <div className="service-card">
             <div className="service-visual">
               <img src="/images/bespoke_framing.png" alt="Bespoke Picture Framing" />
             </div>
@@ -1408,10 +1408,10 @@ export default function ServicesPage() {
               </ul>
               <a href="/services/bespoke-framing" className="btn-premium">Explore Details</a>
             </div>
-          </div>
+          </div> */}
 
           {/* Service 2 */}
-          <div className="service-card">
+          {/* <div className="service-card">
             <div className="service-visual">
               <img src="/images/fine_art_printing.png" alt="Giclée Fine Art Printing" />
             </div>
@@ -1427,10 +1427,10 @@ export default function ServicesPage() {
               </ul>
               <a href="/services/fine-art-printing" className="btn-premium">Explore Details</a>
             </div>
-          </div>
+          </div> */}
 
           {/* Service 3 */}
-          <div className="service-card">
+          {/* <div className="service-card">
             <div className="service-visual">
               <img src="/images/gallery_walls.png" alt="Gallery Wall Layouts" />
             </div>
@@ -1446,7 +1446,7 @@ export default function ServicesPage() {
               </ul>
               <a href="/services/gallery-walls" className="btn-premium">Explore Details</a>
             </div>
-          </div>
+          </div> */}
 
           {/* Service 4 */}
           {/* <div className="service-card">

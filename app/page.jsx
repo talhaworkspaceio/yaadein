@@ -3127,7 +3127,7 @@
 //                       <div className="social-post-author">
 //                         <div className="social-post-author-avatar">Y</div>
 //                         <div>
-//                           <div className="social-post-author-name">yaadein.studio</div>
+//                           <div className="social-post-author-name">yaadein.pk</div>
 //                           <div className="social-post-platform">Instagram</div>
 //                         </div>
 //                       </div>
@@ -3177,7 +3177,7 @@
 //                       <div className="social-post-author">
 //                         <div className="social-post-author-avatar">Y</div>
 //                         <div>
-//                           <div className="social-post-author-name">yaadein.studio</div>
+//                           <div className="social-post-author-name">yaadein.pk</div>
 //                           <div className="social-post-platform">Instagram</div>
 //                         </div>
 //                       </div>
@@ -3292,15 +3292,15 @@
 //           </div>
 
 //           <div className="social-feed-footer">
-//             <span className="social-handle">@yaadein.studio</span>
+//             <span className="social-handle">@yaadein.pk</span>
 //             <div className="social-links">
-//               <a href="https://instagram.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+//               <a href="https://instagram.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
 //                 📸 Follow on Instagram
 //               </a>
-//               <a href="https://facebook.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+//               <a href="https://facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
 //                 👤 Follow on Facebook
 //               </a>
-//               <a href="https://tiktok.com/@yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+//               <a href="https://tiktok.com/@yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
 //                 🎵 Follow on TikTok
 //               </a>
 //             </div>
@@ -5454,8 +5454,8 @@ export default function HomePage() {
           }
           .exquisite-actions .exquisite-btn,
           .exquisite-actions .light-control-panel {
-            width: 100%;
-            max-width: 280px;
+            width: 100% !important;
+            max-width: 280px !important;
             justify-content: center;
           }
           .exquisite-title { font-size: 32px; }
@@ -5513,13 +5513,13 @@ export default function HomePage() {
           gap: 12px;
           background: rgba(20, 17, 14, 0.6);
           border: 1.5px solid rgba(212, 175, 55, 0.3);
-          padding: 12px 24px !important;
+          padding: 0 24px !important;
           border-radius: 9999px !important;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
           outline: none;
-          height: 43px;
+          height: 56px !important;
           box-sizing: border-box;
           user-select: none;
         }
@@ -5539,6 +5539,8 @@ export default function HomePage() {
           text-transform: uppercase;
           color: #dfc38a;
           user-select: none;
+          text-align: center;
+          line-height: 1.2 !important;
         }
         .light-switch-btn {
           width: 46px;
@@ -6049,13 +6051,13 @@ export default function HomePage() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 280px;
-  height: 48px;              /* pick one height for both */
-  padding: 0 24px;           /* vertical centering comes from flex, not padding */
+  text-align: center;
+  width: 250px !important;              /* Set equal fixed width for both buttons */
+  height: 56px !important;              /* Same height for both */
+  padding: 0 24px !important;           /* vertical centering comes from flex, not padding */
   box-sizing: border-box;
   font: inherit;             /* buttons don't inherit font by default */
-  line-height: 1;
+  line-height: 1.2 !important;
 }
 
         @media (max-width: 768px) {
@@ -6288,8 +6290,8 @@ export default function HomePage() {
               Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments.
             </p>
             <div className="exquisite-actions">
-              <a href="/catalog" className="btn-premium exquisite-btn">
-                Browse Catalog
+              <a href="/catalog" className="btn-premium exquisite-btn ">
+                Browse <br /> Catalouge
               </a>
 
               {/* Toggle switch button styled identical to Browse Catalog */}
@@ -6298,7 +6300,7 @@ export default function HomePage() {
                 onClick={() => setLightOn(!lightOn)}
                 aria-label="Toggle Light Switch"
               >
-                <span className="light-control-label">Light Switch</span>
+                <span className="light-control-label">Light <br /> Switch</span>
                 <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
                   <span className="light-switch-knob" />
                 </div>
@@ -6889,7 +6891,7 @@ export default function HomePage() {
                       <div className="social-post-author">
                         <div className="social-post-author-avatar">Y</div>
                         <div>
-                          <div className="social-post-author-name">yaadein.studio</div>
+                          <div className="social-post-author-name">yaadein.pk</div>
                           <div className="social-post-platform">Instagram</div>
                         </div>
                       </div>
@@ -6939,7 +6941,7 @@ export default function HomePage() {
                       <div className="social-post-author">
                         <div className="social-post-author-avatar">Y</div>
                         <div>
-                          <div className="social-post-author-name">yaadein.studio</div>
+                          <div className="social-post-author-name">yaadein.pk</div>
                           <div className="social-post-platform">Instagram</div>
                         </div>
                       </div>
@@ -7054,15 +7056,15 @@ export default function HomePage() {
           </div>
 
           <div className="social-feed-footer">
-            <span className="social-handle">@yaadein.studio</span>
+            <span className="social-handle">@yaadein.pk</span>
             <div className="social-links">
-              <a href="https://instagram.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+              <a href="https://instagram.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
                 📸 Follow on Instagram
               </a>
-              <a href="https://facebook.com/yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+              <a href="https://facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
                 👤 Follow on Facebook
               </a>
-              <a href="https://tiktok.com/@yaadein.studio" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+              <a href="https://tiktok.com/@yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
                 🎵 Follow on TikTok
               </a>
             </div>
