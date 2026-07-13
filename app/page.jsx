@@ -5761,26 +5761,6 @@ export default function HomePage() {
           line-height: 1.2;
           color: var(--accent);
           margin: 0;
-          padding-right: 30px; /* Leave space for the writing pen */
-        }
-
-        /* The pen writing the heading */
-        .vintage-heading-pen {
-          position: absolute;
-          top: -20px;
-          right: -10px;
-          width: 120px;
-          height: auto;
-          transform: rotate(-15deg);
-          pointer-events: none;
-          filter: drop-shadow(2px 5px 8px rgba(0, 0, 0, 0.6));
-          animation: subtle-write 6s ease-in-out infinite alternate;
-        }
-
-        @keyframes subtle-write {
-          0% { transform: rotate(-15deg) translate(0, 0); }
-          50% { transform: rotate(-12deg) translate(4px, -2px); }
-          100% { transform: rotate(-17deg) translate(-2px, 3px); }
         }
 
         .vintage-written-desc {
@@ -5808,33 +5788,16 @@ export default function HomePage() {
           position: relative;
         }
 
-        .vintage-paper-display {
-          position: relative;
+        .vintage-new-pen-image {
           width: 100%;
-          max-width: 400px;
-          aspect-ratio: 1 / 1;
-          border-radius: var(--radius);
-          overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-          border: 1px solid rgba(181, 139, 92, 0.25);
+          max-width: 420px;
+          height: auto;
+          filter: drop-shadow(5px 15px 20px rgba(0, 0, 0, 0.65));
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        .vintage-pen-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        .vintage-paper-display:hover .vintage-pen-image {
-          transform: scale(1.05);
-        }
-
-        .vintage-paper-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-          pointer-events: none;
+        .vintage-new-pen-image:hover {
+          transform: scale(1.03) translateY(-5px) rotate(1deg);
         }
 
         /* ── DESKTOP & MOBILE CAROUSEL VISIBILITY ── */
@@ -6052,15 +6015,12 @@ export default function HomePage() {
             font-size: 44px;
             padding-right: 0;
           }
-          .vintage-heading-pen {
-            display: none;
-          }
           .vintage-written-desc {
             font-size: 17px;
             margin: 0 auto;
           }
-          .vintage-paper-display {
-            max-width: 320px;
+          .vintage-new-pen-image {
+            max-width: 280px;
           }
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -7361,11 +7321,6 @@ export default function HomePage() {
             <span className="vintage-written-tagline">Preserving Memories</span>
             <div className="vintage-heading-wrapper">
               <h2 className="vintage-written-title">Written in Time</h2>
-              <img
-                src="/images/vintage_fountain_pen.png"
-                alt="Vintage Fountain Pen"
-                className="vintage-heading-pen"
-              />
             </div>
             <p className="vintage-written-desc">
               Every frame we build, every photo we restore, is a testament to the moments that define us.
@@ -7379,14 +7334,11 @@ export default function HomePage() {
 
           {/* Right Column: Vintage Fountain Pen Visual */}
           <div className="vintage-written-visual">
-            <div className="vintage-paper-display">
-              <img
-                src="/images/vintage_fountain_pen.png"
-                alt="Heritage Pen Visual"
-                className="vintage-pen-image"
-              />
-              <div className="vintage-paper-overlay" />
-            </div>
+            <img
+              src="/images/pens/pen1.png"
+              alt="Vintage Fountain Pen"
+              className="vintage-new-pen-image"
+            />
           </div>
         </div>
       </section>

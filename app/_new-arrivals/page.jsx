@@ -5,6 +5,7 @@ import { db } from "../../lib/firebase";
 import { ref, onValue } from "firebase/database";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import CardDescription from "../components/CardDescription";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -1494,7 +1495,7 @@ export default function NewArrivalsPage() {
                       <span className="product-price">{p.price}</span>
                     </div>
                     <span className="product-tag">{p.tag}</span>
-                    <p className="product-desc">{p.desc}</p>
+                    <CardDescription desc={p.desc} />
                   </div>
 
                   <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">

@@ -5,129 +5,130 @@ import { db } from "../../../lib/firebase";
 import { ref, onValue } from "firebase/database";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import CardDescription from "../../components/CardDescription";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
-    if (typeof window === "undefined") return [];
-    try {
-        return JSON.parse(localStorage.getItem("fs_cart") || "[]");
-    } catch (e) {
-        return [];
-    }
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("fs_cart") || "[]");
+  } catch (e) {
+    return [];
+  }
 };
 
 const saveCart = (cart) => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("fs_cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("fs-cart-updated"));
+  if (typeof window === "undefined") return;
+  localStorage.setItem("fs_cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("fs-cart-updated"));
 };
 
 export default function CategoryPage({ params }) {
-    const { category } = params; // "portrait", "landscape", or "board-games"
-    const [cartItems, setCartItems] = useState([]);
-    const [cartOpen, setCartOpen] = useState(false);
-    const [products, setProducts] = useState([]);
-    const [lightOn, setLightOn] = useState(true);
+  const { category } = params; // "portrait", "landscape", or "board-games"
+  const [cartItems, setCartItems] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [lightOn, setLightOn] = useState(true);
 
-    // Fetch products from Firebase
-    useEffect(() => {
-        const framesRef = ref(db, "frames");
-        const unsub = onValue(framesRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const framesList = Object.entries(data).map(([key, val]) => ({
-                    id: key,
-                    ...val
-                }));
-                setProducts(framesList);
-            } else {
-                setProducts([]);
-            }
-        });
-        return () => unsub();
-    }, []);
-
-    // Cart synchronization
-    const loadCart = useCallback(() => {
-        const rawCart = getCart();
-        const normalizedCart = rawCart.map(item => {
-            if (item.price && item.price.includes("$")) {
-                const numeric = parseInt(item.price.replace(/[^0-9]/g, "")) || 0;
-                return { ...item, price: `Rs. ${(numeric * 100).toLocaleString()}` };
-            }
-            return item;
-        });
-        setCartItems(normalizedCart);
-    }, []);
-
-    useEffect(() => {
-        loadCart();
-        window.addEventListener("fs-cart-updated", loadCart);
-        return () => window.removeEventListener("fs-cart-updated", loadCart);
-    }, [loadCart]);
-
-    const updateQuantity = (index, delta) => {
-        const cart = getCart();
-        cart[index].quantity = Math.max(1, cart[index].quantity + delta);
-        saveCart(cart);
-    };
-
-    const removeCartItem = (index) => {
-        const cart = getCart();
-        cart.splice(index, 1);
-        saveCart(cart);
-    };
-
-    const getCartSubtotal = () => {
-        return cartItems.reduce((acc, item) => {
-            const priceVal = parseInt((item.price || "0").replace(/[^0-9]/g, "")) || 0;
-            return acc + (priceVal * item.quantity);
-        }, 0);
-    };
-
-    const isNewArrival = (p) => {
-        if (!p) return false;
-        const createdAt = typeof p === "object" ? p.createdAt : null;
-        if (createdAt) {
-            const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-            return (Date.now() - createdAt) < sevenDaysInMs;
-        }
-        const id = typeof p === "string" ? p : p.id;
-        return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
-    };
-
-    const isFeatured = (id) => {
-        return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
-    };
-
-    const isBoardGame = (p) => {
-        const cat = p?.category || "";
-        return cat.toLowerCase().includes("board game");
-    };
-
-    // Filter products by category
-    const filteredProducts = products.filter(p => {
-        if (category === "portrait") return !isBoardGame(p) && p.orientation !== "landscape";
-        if (category === "landscape") return !isBoardGame(p) && p.orientation === "landscape";
-        if (category === "board-games") return isBoardGame(p);
-        return false;
+  // Fetch products from Firebase
+  useEffect(() => {
+    const framesRef = ref(db, "frames");
+    const unsub = onValue(framesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const framesList = Object.entries(data).map(([key, val]) => ({
+          id: key,
+          ...val
+        }));
+        setProducts(framesList);
+      } else {
+        setProducts([]);
+      }
     });
+    return () => unsub();
+  }, []);
 
-    const categoryTitle =
-        category === "portrait" ? "Portrait Collection" :
-            category === "landscape" ? "Landscape Collection" :
-                category === "board-games" ? "Board Games" : "Collection";
+  // Cart synchronization
+  const loadCart = useCallback(() => {
+    const rawCart = getCart();
+    const normalizedCart = rawCart.map(item => {
+      if (item.price && item.price.includes("$")) {
+        const numeric = parseInt(item.price.replace(/[^0-9]/g, "")) || 0;
+        return { ...item, price: `Rs. ${(numeric * 100).toLocaleString()}` };
+      }
+      return item;
+    });
+    setCartItems(normalizedCart);
+  }, []);
 
-    const categoryDesc =
-        category === "portrait" ? "Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments." :
-            category === "landscape" ? "Timeless horizontal borders crafted for panoramas, landscapes, and wide memories." :
-                category === "board-games" ? "Luxury wooden board games crafted for family fun and timeless aesthetic value." :
-                    "Choose from our catalog of premium frames.";
+  useEffect(() => {
+    loadCart();
+    window.addEventListener("fs-cart-updated", loadCart);
+    return () => window.removeEventListener("fs-cart-updated", loadCart);
+  }, [loadCart]);
 
-    return (
-        <div className="catalog-root">
-            <style dangerouslySetInnerHTML={{
-                __html: `
+  const updateQuantity = (index, delta) => {
+    const cart = getCart();
+    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
+    saveCart(cart);
+  };
+
+  const removeCartItem = (index) => {
+    const cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+  };
+
+  const getCartSubtotal = () => {
+    return cartItems.reduce((acc, item) => {
+      const priceVal = parseInt((item.price || "0").replace(/[^0-9]/g, "")) || 0;
+      return acc + (priceVal * item.quantity);
+    }, 0);
+  };
+
+  const isNewArrival = (p) => {
+    if (!p) return false;
+    const createdAt = typeof p === "object" ? p.createdAt : null;
+    if (createdAt) {
+      const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+      return (Date.now() - createdAt) < sevenDaysInMs;
+    }
+    const id = typeof p === "string" ? p : p.id;
+    return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
+  };
+
+  const isFeatured = (id) => {
+    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
+  };
+
+  const isBoardGame = (p) => {
+    const cat = p?.category || "";
+    return cat.toLowerCase().includes("board game");
+  };
+
+  // Filter products by category
+  const filteredProducts = products.filter(p => {
+    if (category === "portrait") return !isBoardGame(p) && p.orientation !== "landscape";
+    if (category === "landscape") return !isBoardGame(p) && p.orientation === "landscape";
+    if (category === "board-games") return isBoardGame(p);
+    return false;
+  });
+
+  const categoryTitle =
+    category === "portrait" ? "Portrait Collection" :
+      category === "landscape" ? "Landscape Collection" :
+        category === "board-games" ? "Board Games" : "Collection";
+
+  const categoryDesc =
+    category === "portrait" ? "Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments." :
+      category === "landscape" ? "Timeless horizontal borders crafted for panoramas, landscapes, and wide memories." :
+        category === "board-games" ? "Luxury wooden board games crafted for family fun and timeless aesthetic value." :
+          "Choose from our catalog of premium frames.";
+
+  return (
+    <div className="catalog-root">
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
           position: relative;
@@ -532,16 +533,14 @@ export default function CategoryPage({ params }) {
 
         .hero-title {
           font-family: var(--font-display);
-          font-size: 56px;
-          font-weight: 800;
-          margin-bottom: 16px;
-          letter-spacing: -0.02em;
+          font-size: 52px;
           color: var(--text);
+          letter-spacing: 0.05em;
+          margin-bottom: 16px;
         }
 
         .hero-title span {
           color: var(--accent);
-          position: relative;
         }
 
         .hero-desc {
@@ -1010,22 +1009,22 @@ export default function CategoryPage({ params }) {
         }
       ` }} />
 
-            <Navbar onCartOpen={() => setCartOpen(true)} />
+      <Navbar onCartOpen={() => setCartOpen(true)} />
 
-            <div className="hero-banner">
-                {/* Suspended Brass Lamp on top of Our Catalog heading */}
-                <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
-                    <div className="lamp-rod" />
-                    <div className="lamp-mount" />
-                    <div className="lamp-arm" />
-                    <div className="lamp-head">
-                        <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
-                    </div>
+      <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of Our Catalog heading */}
+        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
 
-                    {/* Light beam */}
-                    <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
 
-                    {/* Lamp glow & particle system */}
+          {/* Lamp glow & particle system */}
           <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
             <div className="glow"></div>
             <div className="particles">
@@ -1340,221 +1339,223 @@ export default function CategoryPage({ params }) {
           </div>
 
 
-                </div>
-
-                <h1 className="hero-title">{categoryTitle}</h1>
-                <p className="hero-desc">{categoryDesc}</p>
-
-                {/* Back breadcrumb */}
-                <a href="/catalog" className="btn-nav-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: "1.5px solid var(--accent)", padding: "10px 20px", borderRadius: "999px", textDecoration: "none", fontSize: "13px", fontWeight: "700" }}>
-                    &larr; Back to Catalog
-                </a>
-
-                {/* Toggle switch panel */}
-                <div className="light-control-panel" style={{ marginTop: "24px" }}>
-                    <span className="light-control-label">Studio Light</span>
-                    <button
-                        className={`light-switch-btn ${lightOn ? 'on' : ''}`}
-                        onClick={() => setLightOn(!lightOn)}
-                        aria-label="Toggle Studio Light"
-                    >
-                        <span className="light-switch-knob" />
-                    </button>
-                </div>
-            </div>
-
-            <section className="exhibition-section">
-                {/* Dynamic liquid backdrop elements */}
-                <div className="catalog-glass-bg">
-                    <div className="liquid-blob-1" />
-                    <div className="liquid-blob-2" />
-                    <div className="catalog-glow" />
-                </div>
-
-                {/* Frosted Glass overlay sheet */}
-                <div className="catalog-glass-pane" />
-
-                <div className="exhibition-container">
-                    {products.length === 0 ? (
-                        <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-                            Loading frame catalog...
-                        </div>
-                    ) : (
-                        <div className="gallery-grid">
-                            {filteredProducts.map((p) => (
-                                <div key={p.id} className={`arrival-card ${p.orientation === "landscape" ? "landscape-card" : isBoardGame(p) ? "square-card" : ""}`}>
-                                    {isNewArrival(p) ? (
-                                        <div className="ribbon">New Arrival</div>
-                                    ) : isFeatured(p.id) ? (
-                                        <div className="ribbon">Featured</div>
-                                    ) : null}
-
-                                    {(() => {
-                                        const isGame = isBoardGame(p);
-                                        const getProductPreviewImage = (prod) => {
-                                            const name = (prod.name || "").toLowerCase();
-                                            if (name.includes("ludo")) return "/images/ludo.png";
-                                            if (name.includes("chess")) return "/images/chess.png";
-                                            if (name.includes("monopoly")) return "/images/monopoly.png";
-                                            return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
-                                        };
-
-                                        return (
-                                            <>
-                                                <div
-                                                    className="card-thumb-wrap"
-                                                    style={{
-                                                        aspectRatio: p.orientation === "landscape" ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
-                                                        padding: p.orientation === "landscape" ? "8px" : isGame ? "20px" : "20px"
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="card-frame"
-                                                        style={{
-                                                            position: "relative",
-                                                            aspectRatio: isGame ? "1 / 1" : p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                                                            width: p.orientation === "landscape" ? "100%" : "auto",
-                                                            height: p.orientation === "landscape" ? "auto" : "100%",
-                                                            boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            overflow: "hidden"
-                                                        }}
-                                                    >
-                                                        {p.imageUrl && (
-                                                            <img
-                                                                src={p.imageUrl}
-                                                                alt={p.name}
-                                                                style={{
-                                                                    width: "100%",
-                                                                    height: "100%",
-                                                                    objectFit: "fill",
-                                                                    position: "absolute",
-                                                                    inset: 0,
-                                                                    zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                                                                    pointerEvents: "none"
-                                                                }}
-                                                            />
-                                                        )}
-                                                        <div
-                                                            className="card-frame-inner"
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: `${p.paddingTop || 0}%`,
-                                                                left: `${p.paddingLeft || 0}%`,
-                                                                bottom: `${p.paddingBottom || 0}%`,
-                                                                right: `${p.paddingRight || 0}%`,
-                                                                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
-                                                                background: "#2D2822",
-                                                                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
-                                                                overflow: "hidden"
-                                                            }}
-                                                        >
-                                                            <img
-                                                                src={getProductPreviewImage(p)}
-                                                                alt="Frame Art Preview"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    height: "100%",
-                                                                    objectFit: "cover",
-                                                                    position: "absolute",
-                                                                    top: "50%",
-                                                                    left: "50%",
-                                                                    transform: "translate(-50%, -50%)",
-                                                                    objectPosition: p.orientation === "landscape" ? "center 15%" : "center center"
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="product-info">
-                                                    <div className="product-header-row">
-                                                        <h3 className="product-name">{p.name}</h3>
-                                                        <span className="product-price">{p.price}</span>
-                                                    </div>
-                                                    <span className="product-tag">{p.tag}</span>
-                                                    <p className="product-desc">{p.desc}</p>
-                                                </div>
-
-                                                <a href={`/product/${p.id}?orientation=${isGame ? 'square' : (p.orientation || 'portrait')}`} className="btn-card">
-                                                    {isGame ? "View Game" : "View Frame"}
-                                                </a>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            <Footer />
-
-            {/* CART DRAWER SLIDE-OVER */}
-            <div className={`cart-drawer-overlay ${cartOpen ? "open" : ""}`} onClick={() => setCartOpen(false)} />
-            <div className={`cart-drawer ${cartOpen ? "open" : ""}`}>
-                <div className="cart-drawer-header">
-                    <h3>Shopping Cart</h3>
-                    <button className="cart-close-btn" onClick={() => setCartOpen(false)}>×</button>
-                </div>
-                <div className="cart-drawer-body">
-                    {cartItems.length === 0 ? (
-                        <div className="cart-empty">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
-                                <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
-                            </svg>
-                            <p>Your shopping cart is empty.</p>
-                            <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
-                                Explore Collections
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="cart-items-list">
-                            {cartItems.map((item, idx) => (
-                                <div key={idx} className="cart-item">
-                                    <div className="cart-item-thumb" style={{ background: item.frameColor }}>
-                                        {item.image ? (
-                                            <img src={item.image} alt={item.frameName} />
-                                        ) : (
-                                            <div className="cart-item-thumb-placeholder">Y</div>
-                                        )}
-                                    </div>
-                                    <div className="cart-item-details">
-                                        <div className="cart-item-name">{item.frameName}</div>
-                                        <div className="cart-item-meta">
-                                            {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
-                                        </div>
-                                        <div className="cart-item-price">{item.price}</div>
-                                        <div className="cart-item-qty-row">
-                                            <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
-                                            <span className="qty-val">{item.quantity}</span>
-                                            <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
-                                        </div>
-                                    </div>
-                                    <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {cartItems.length > 0 && (
-                    <div className="cart-drawer-footer">
-                        <div className="cart-summary-row">
-                            <span>Subtotal</span>
-                            <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
-                        </div>
-                        <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
-                        <a href="/checkout" className="btn-checkout-primary">
-                            Proceed to Checkout
-                        </a>
-                    </div>
-                )}
-            </div>
         </div>
-    );
+
+        <h1 className="hero-title">
+          {category === "portrait" ? <>Portrait <span>Collection</span></> :
+            category === "landscape" ? <>Landscape <span>Collection</span></> :
+              category === "board-games" ? <>Board <span>Games</span></> :
+                <>Our <span>Collection</span></>}
+        </h1>
+        <p className="hero-desc">{categoryDesc}</p>
+
+
+
+        {/* Toggle switch panel */}
+        <div className="light-control-panel" style={{ marginTop: "24px" }}>
+          <span className="light-control-label">Studio Light</span>
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
+      </div>
+
+      <section className="exhibition-section">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="exhibition-container">
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
+              Loading frame catalog...
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {filteredProducts.map((p) => (
+                <div key={p.id} className={`arrival-card ${p.orientation === "landscape" ? "landscape-card" : isBoardGame(p) ? "square-card" : ""}`}>
+                  {isNewArrival(p) ? (
+                    <div className="ribbon">New Arrival</div>
+                  ) : isFeatured(p.id) ? (
+                    <div className="ribbon">Featured</div>
+                  ) : null}
+
+                  {(() => {
+                    const isGame = isBoardGame(p);
+                    const getProductPreviewImage = (prod) => {
+                      const name = (prod.name || "").toLowerCase();
+                      if (name.includes("ludo")) return "/images/ludo.png";
+                      if (name.includes("chess")) return "/images/chess.png";
+                      if (name.includes("monopoly")) return "/images/monopoly.png";
+                      return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
+                    };
+
+                    return (
+                      <>
+                        <div
+                          className="card-thumb-wrap"
+                          style={{
+                            aspectRatio: p.orientation === "landscape" ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+                            padding: p.orientation === "landscape" ? "8px" : isGame ? "20px" : "20px"
+                          }}
+                        >
+                          <div
+                            className="card-frame"
+                            style={{
+                              position: "relative",
+                              aspectRatio: isGame ? "1 / 1" : p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+                              width: p.orientation === "landscape" ? "100%" : "auto",
+                              height: p.orientation === "landscape" ? "auto" : "100%",
+                              boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden"
+                            }}
+                          >
+                            {p.imageUrl && (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "fill",
+                                  position: "absolute",
+                                  inset: 0,
+                                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                                  pointerEvents: "none"
+                                }}
+                              />
+                            )}
+                            <div
+                              className="card-frame-inner"
+                              style={{
+                                position: "absolute",
+                                top: `${p.paddingTop || 0}%`,
+                                left: `${p.paddingLeft || 0}%`,
+                                bottom: `${p.paddingBottom || 0}%`,
+                                right: `${p.paddingRight || 0}%`,
+                                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                                background: "#2D2822",
+                                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                                overflow: "hidden"
+                              }}
+                            >
+                              <img
+                                src={getProductPreviewImage(p)}
+                                alt="Frame Art Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  objectPosition: p.orientation === "landscape" ? "center 15%" : "center center"
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="product-info">
+                          <div className="product-header-row">
+                            <h3 className="product-name">{p.name}</h3>
+                            <span className="product-price">{p.price}</span>
+                          </div>
+                          <span className="product-tag">{p.tag}</span>
+                          <CardDescription desc={p.desc} />
+                        </div>
+
+                        <a href={`/product/${p.id}?orientation=${isGame ? 'square' : (p.orientation || 'portrait')}`} className="btn-card">
+                          {isGame ? "View Game" : "View Frame"}
+                        </a>
+                      </>
+                    );
+                  })()}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <Footer />
+
+      {/* CART DRAWER SLIDE-OVER */}
+      <div className={`cart-drawer-overlay ${cartOpen ? "open" : ""}`} onClick={() => setCartOpen(false)} />
+      <div className={`cart-drawer ${cartOpen ? "open" : ""}`}>
+        <div className="cart-drawer-header">
+          <h3>Shopping Cart</h3>
+          <button className="cart-close-btn" onClick={() => setCartOpen(false)}>×</button>
+        </div>
+        <div className="cart-drawer-body">
+          {cartItems.length === 0 ? (
+            <div className="cart-empty">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
+                <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+              </svg>
+              <p>Your shopping cart is empty.</p>
+              <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
+                Explore Collections
+              </button>
+            </div>
+          ) : (
+            <div className="cart-items-list">
+              {cartItems.map((item, idx) => (
+                <div key={idx} className="cart-item">
+                  <div className="cart-item-thumb" style={{ background: item.frameColor }}>
+                    {item.image ? (
+                      <img src={item.image} alt={item.frameName} />
+                    ) : (
+                      <div className="cart-item-thumb-placeholder">Y</div>
+                    )}
+                  </div>
+                  <div className="cart-item-details">
+                    <div className="cart-item-name">{item.frameName}</div>
+                    <div className="cart-item-meta">
+                      {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+                    </div>
+                    <div className="cart-item-price">{item.price}</div>
+                    <div className="cart-item-qty-row">
+                      <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
+                      <span className="qty-val">{item.quantity}</span>
+                      <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
+                    </div>
+                  </div>
+                  <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {cartItems.length > 0 && (
+          <div className="cart-drawer-footer">
+            <div className="cart-summary-row">
+              <span>Subtotal</span>
+              <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
+            </div>
+            <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
+            <a href="/checkout" className="btn-checkout-primary">
+              Proceed to Checkout
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
