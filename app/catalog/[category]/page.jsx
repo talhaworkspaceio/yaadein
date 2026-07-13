@@ -100,11 +100,16 @@ export default function CategoryPage({ params }) {
         return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
     };
 
+    const isBoardGame = (p) => {
+        const cat = p?.category || "";
+        return cat.toLowerCase().includes("board game");
+    };
+
     // Filter products by category
     const filteredProducts = products.filter(p => {
-        if (category === "portrait") return p.category !== "Board Games" && p.orientation !== "landscape";
-        if (category === "landscape") return p.category !== "Board Games" && p.orientation === "landscape";
-        if (category === "board-games") return p.category === "Board Games";
+        if (category === "portrait") return !isBoardGame(p) && p.orientation !== "landscape";
+        if (category === "landscape") return !isBoardGame(p) && p.orientation === "landscape";
+        if (category === "board-games") return isBoardGame(p);
         return false;
     });
 
@@ -1377,78 +1382,108 @@ export default function CategoryPage({ params }) {
                     ) : (
                         <div className="gallery-grid">
                             {filteredProducts.map((p) => (
-                                <div key={p.id} className="arrival-card">
+                                <div key={p.id} className={`arrival-card ${p.orientation === "landscape" ? "landscape-card" : isBoardGame(p) ? "square-card" : ""}`}>
                                     {isNewArrival(p) ? (
                                         <div className="ribbon">New Arrival</div>
                                     ) : isFeatured(p.id) ? (
                                         <div className="ribbon">Featured</div>
                                     ) : null}
 
-                                    <div className="card-thumb-wrap">
-                                        <div
-                                            className="card-frame"
-                                            style={{
-                                                position: "relative",
-                                                aspectRatio: p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
-                                                width: p.orientation === "landscape" ? "100%" : "auto",
-                                                height: p.orientation === "landscape" ? "auto" : "100%",
-                                                boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                overflow: "hidden"
-                                            }}
-                                        >
-                                            {p.imageUrl && (
-                                                <img
-                                                    src={p.imageUrl}
-                                                    alt={p.name}
+                                    {(() => {
+                                        const isGame = isBoardGame(p);
+                                        const getProductPreviewImage = (prod) => {
+                                            const name = (prod.name || "").toLowerCase();
+                                            if (name.includes("ludo")) return "/images/ludo.png";
+                                            if (name.includes("chess")) return "/images/chess.png";
+                                            if (name.includes("monopoly")) return "/images/monopoly.png";
+                                            return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
+                                        };
+
+                                        return (
+                                            <>
+                                                <div
+                                                    className="card-thumb-wrap"
                                                     style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "fill",
-                                                        position: "absolute",
-                                                        inset: 0,
-                                                        zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                                                        pointerEvents: "none"
+                                                        aspectRatio: p.orientation === "landscape" ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+                                                        padding: p.orientation === "landscape" ? "8px" : isGame ? "20px" : "20px"
                                                     }}
-                                                />
-                                            )}
-                                            <div
-                                                className="card-frame-inner"
-                                                style={{
-                                                    position: "absolute",
-                                                    top: `${p.paddingTop || 0}%`,
-                                                    left: `${p.paddingLeft || 0}%`,
-                                                    bottom: `${p.paddingBottom || 0}%`,
-                                                    right: `${p.paddingRight || 0}%`,
-                                                    zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
-                                                    background: "#2D2822",
-                                                    boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
-                                                    overflow: "hidden"
-                                                }}
-                                            >
-                                                <img
-                                                    src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
-                                                    alt="Frame Art Preview"
-                                                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                                >
+                                                    <div
+                                                        className="card-frame"
+                                                        style={{
+                                                            position: "relative",
+                                                            aspectRatio: isGame ? "1 / 1" : p.aspectRatio || (p.orientation === "landscape" ? 3 / 2 : 2 / 3),
+                                                            width: p.orientation === "landscape" ? "100%" : "auto",
+                                                            height: p.orientation === "landscape" ? "auto" : "100%",
+                                                            boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            overflow: "hidden"
+                                                        }}
+                                                    >
+                                                        {p.imageUrl && (
+                                                            <img
+                                                                src={p.imageUrl}
+                                                                alt={p.name}
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "fill",
+                                                                    position: "absolute",
+                                                                    inset: 0,
+                                                                    zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                                                                    pointerEvents: "none"
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <div
+                                                            className="card-frame-inner"
+                                                            style={{
+                                                                position: "absolute",
+                                                                top: `${p.paddingTop || 0}%`,
+                                                                left: `${p.paddingLeft || 0}%`,
+                                                                bottom: `${p.paddingBottom || 0}%`,
+                                                                right: `${p.paddingRight || 0}%`,
+                                                                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                                                                background: "#2D2822",
+                                                                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                                                                overflow: "hidden"
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={getProductPreviewImage(p)}
+                                                                alt="Frame Art Preview"
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "cover",
+                                                                    position: "absolute",
+                                                                    top: "50%",
+                                                                    left: "50%",
+                                                                    transform: "translate(-50%, -50%)",
+                                                                    objectPosition: p.orientation === "landscape" ? "center 15%" : "center center"
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                                    <div className="product-info">
-                                        <div className="product-header-row">
-                                            <h3 className="product-name">{p.name}</h3>
-                                            <span className="product-price">{p.price}</span>
-                                        </div>
-                                        <span className="product-tag">{p.tag}</span>
-                                        <p className="product-desc">{p.desc}</p>
-                                    </div>
+                                                <div className="product-info">
+                                                    <div className="product-header-row">
+                                                        <h3 className="product-name">{p.name}</h3>
+                                                        <span className="product-price">{p.price}</span>
+                                                    </div>
+                                                    <span className="product-tag">{p.tag}</span>
+                                                    <p className="product-desc">{p.desc}</p>
+                                                </div>
 
-                                    <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-                                        View Frame
-                                    </a>
+                                                <a href={`/product/${p.id}?orientation=${isGame ? 'square' : (p.orientation || 'portrait')}`} className="btn-card">
+                                                    {isGame ? "View Game" : "View Frame"}
+                                                </a>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             ))}
                         </div>

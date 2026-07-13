@@ -1922,6 +1922,70 @@ const SERVICES_DATA = {
         desc: "Rebalanced natural color compared with a true black & white rendition."
       }
     ]
+  },
+  "nikkahnama-framing": {
+    title: "Nikkah Nama Framing",
+    tagline: "Preserve Your Sacred Bond",
+    desc: "Preserve the most sacred contract of your life in a premium handcrafted frame. We specialize in archival-grade Nikkah Nama framing, utilizing acid-free mounts and museum glass to ensure your signature bond stays protected and visually stunning for generations.",
+    image: "/images/nikkahnama_images/sample1.jpeg",
+    priceInfo: "Framing starts from Rs. 4,000 depending on dimensions and wood selection.",
+    features: [
+      "Custom-fit double mounting with elegant gold borders",
+      "99% UV-protection museum glass options",
+      "Selection of premium local and imported wood trims",
+      "Dust and humidity-controlled rear framing seal",
+      "Includes premium hanging hardware and mounting wire"
+    ],
+    detailedText: "Your Nikkah Nama is more than just a document — it is the celebration of a sacred vow. Our specialized Nikkah Nama framing service ensures this precious heirloom is protected from aging, moisture, and sunlight. We use 100% acid-free mats to prevent discoloration, and offer museum-grade conservation glass that blocks 99% of harmful UV rays. Each frame is custom-built by hand to perfectly match the size and aesthetic of your contract, completed with elegant gold accents and double matting for a truly royal look.",
+    ctaText: "Upload & Frame Nikkah Nama",
+    ctaLink: "/contact",
+    gallery: [
+      { img: "/images/paper.png", caption: "Archival Mounting & Matting" },
+      { img: "/images/dummyImg.jpg", caption: "Premium Portrait Frame" },
+      { img: "/images/wood-bg.png", caption: "Solid Cured Wood Backing" }
+    ]
+  },
+  "photo-editing": {
+    title: "Photo Editing Service",
+    tagline: "Professional Digital Retouching",
+    desc: "Enhance, retouch, and transform your digital photos before printing and framing. Whether you need background removal, beauty retouching, object removal, or professional color grading, our digital artists prepare your images to look their absolute best.",
+    image: "/images/restoration/child_after.png",
+    priceInfo: "Edits start from Rs. 1,000 per photo depending on level of retouching.",
+    features: [
+      "Professional beauty retouching and skin correction",
+      "Background replacement and unwanted object removal",
+      "Cinematic color grading and lighting adjustments",
+      "High-resolution sharpening and upscaling",
+      "Object manipulation and custom creative edits"
+    ],
+    detailedText: "Make every photo a masterpiece before it goes on your wall. Our professional digital editing service covers everything from subtle enhancements to major manipulations. Our skilled artists carefully adjust colors, exposure, and composition to give your photos a cinematic quality. We can remove distracting elements in the background, blend multiple photos, perform high-end skin and portrait retouching, and upscale lower resolution files so they print beautifully at larger sizes.",
+    ctaText: "Upload Image for Editing",
+    ctaLink: "/contact",
+    gallery: [
+      { img: "/images/restoration/child_after.png", caption: "Beauty Retouching & Enhancement" },
+      { img: "/images/restoration/landscape_after.png", caption: "Color Correction & Grading" },
+      { img: "/images/restoration/couple_color.png", caption: "Creative Image Adjustments" }
+    ],
+    previews: [
+      {
+        before: "/images/restoration/child_before.png",
+        after: "/images/restoration/child_after.png",
+        title: "Portrait Beauty Retouching",
+        desc: "Smoothened skin textures, enhanced lighting, and removed background distractions."
+      },
+      {
+        before: "/images/restoration/landscape_before.png",
+        after: "/images/restoration/landscape_after.png",
+        title: "Landscape Color Grading",
+        desc: "Corrected exposure, enhanced colors, and brought out hidden cloud details."
+      },
+      {
+        before: "/images/restoration/soldier_before.png",
+        after: "/images/restoration/soldier_after.png",
+        title: "Vintage Portrait Enhancement",
+        desc: "Fixed contrast issues, sharpened facial details, and enhanced overall clarity."
+      }
+    ]
   }
 };
 
@@ -2147,7 +2211,7 @@ export default function ServiceDetailPage({ params }) {
   const descText = service.detailedText || service.desc;
 
   return (
-    <div className={`service-page-root ${slug === "photo-restoration" ? "photo-restoration-page" : ""}`}>
+    <div className={`service-page-root ${(slug === "photo-restoration" || slug === "photo-editing") ? "photo-restoration-page" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-page" : ""}`}>
       <style dangerouslySetInnerHTML={{
         __html: `
         .service-page-root {
@@ -3350,6 +3414,45 @@ export default function ServiceDetailPage({ params }) {
           height: 100% !important;
         }
 
+        /* Nikkah Nama frame — keep it upright (portrait), no 90deg rotation */
+        .exquisite-wood-frame.nikkahnama-frame {
+          transform: none !important;
+          aspect-ratio: 2 / 3 !important;
+          max-width: 300px;
+          /* Top margin drops the frame below the lamp for breathing room;
+             the larger bottom margin keeps the frame centred on the config panel */
+          margin: 40px 0 130px 0;
+        }
+        .exquisite-wood-frame.nikkahnama-frame .exquisite-inner-photo img {
+          transform: none !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        /* Tighten the lamp head-room so the upright frame sits under the lamp and
+           aligns with the config panel instead of hanging low */
+        .nikkahnama-page .product-visual-pane {
+          padding-top: 40px;
+        }
+        .nikkahnama-page .exquisite-frame-component {
+          padding-top: 150px;
+        }
+
+        /* Frameless mode for Photo Editing service */
+        .exquisite-wood-frame.no-frame-border {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .exquisite-wood-frame.no-frame-border::after {
+          display: none !important;
+        }
+        .exquisite-wood-frame.no-frame-border .exquisite-inner-photo {
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+        }
+
         /* Neutralize Warm Studio Lights (Remove Yellowish Effect) */
         .photo-restoration-page .exquisite-wall-glow {
           background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 80%) !important;
@@ -3515,11 +3618,17 @@ export default function ServiceDetailPage({ params }) {
 
               {/* Landscape Picture Frame (shell lets swiper arrows sit outside the frame) */}
               <div className="restoration-frame-shell">
-                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${slug === "photo-restoration" ? "restoration-frame" : ""}`}>
-                  {slug === "photo-restoration" ? (
+                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${(slug === "photo-restoration" || slug === "photo-editing") ? "restoration-frame" : ""} ${slug === "photo-editing" ? "no-frame-border" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-frame" : ""}`}>
+                  {slug === "photo-editing" ? null : slug === "photo-restoration" ? (
                     <img
                       src={selectedCustomFrame?.imageUrl || "/frames/landscape/frame-04-correct-size.webp"}
                       alt={selectedCustomFrame?.name || "Landscape Oak Frame"}
+                      className="wood-frame-overlay"
+                    />
+                  ) : slug === "nikkahnama-framing" ? (
+                    <img
+                      src={selectedCustomFrame?.imageUrl || "/frames/portrait/frame-01-correct-size.webp"}
+                      alt={selectedCustomFrame?.name || "Portrait Oak Frame"}
                       className="wood-frame-overlay"
                     />
                   ) : selectedCustomFrame?.imageUrl ? (
@@ -3534,44 +3643,54 @@ export default function ServiceDetailPage({ params }) {
 
                   {/* Photo opening */}
                   <div className="exquisite-inner-photo">
-                    {slug === "photo-restoration" && !userUploadedImage ? (
+                    {(slug === "photo-restoration" || slug === "photo-editing") && !userUploadedImage ? (
                       <div className="restoration-swiper-container">
-                        {service.colorPreviews && service.colorPreviews.slice(0, 3).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className={`restoration-slide ${idx === activeSlide ? "active" : ""}`}
-                          >
-                            <BeforeAfterSlider
-                              before={item.bw}
-                              after={item.color}
-                              labelBefore="B&W"
-                              labelAfter="Color"
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                aspectRatio: "auto",
-                                border: "none",
-                                borderRadius: "0",
-                                boxShadow: "none"
-                              }}
-                            />
-                          </div>
-                        ))}
+                        {(() => {
+                          const items = slug === "photo-restoration"
+                            ? (service.colorPreviews || []).slice(0, 3)
+                            : (service.previews || []).slice(0, 3);
+                          return items.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className={`restoration-slide ${idx === activeSlide ? "active" : ""}`}
+                            >
+                              <BeforeAfterSlider
+                                before={slug === "photo-restoration" ? item.bw : item.before}
+                                after={slug === "photo-restoration" ? item.color : item.after}
+                                labelBefore={slug === "photo-restoration" ? "B&W" : "Before"}
+                                labelAfter={slug === "photo-restoration" ? "Color" : "After"}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  aspectRatio: "auto",
+                                  border: "none",
+                                  borderRadius: "0",
+                                  boxShadow: "none"
+                                }}
+                              />
+                            </div>
+                          ));
+                        })()}
 
                         {/* Pagination indicators */}
                         <div className="swiper-pagination">
-                          {service.colorPreviews && service.colorPreviews.slice(0, 3).map((_, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveSlide(idx);
-                              }}
-                              className={`swiper-dot ${idx === activeSlide ? "active" : ""}`}
-                              aria-label={`Go to slide ${idx + 1}`}
-                            />
-                          ))}
+                          {(() => {
+                            const items = slug === "photo-restoration"
+                              ? (service.colorPreviews || []).slice(0, 3)
+                              : (service.previews || []).slice(0, 3);
+                            return items.map((_, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveSlide(idx);
+                                }}
+                                className={`swiper-dot ${idx === activeSlide ? "active" : ""}`}
+                                aria-label={`Go to slide ${idx + 1}`}
+                              />
+                            ));
+                          })()}
                         </div>
                       </div>
                     ) : (
@@ -3582,13 +3701,16 @@ export default function ServiceDetailPage({ params }) {
                 </div>
 
                 {/* Swipe controls — outside the frame on either side */}
-                {slug === "photo-restoration" && !userUploadedImage && (
+                {(slug === "photo-restoration" || slug === "photo-editing") && !userUploadedImage && (
                   <>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const count = Math.min(3, service.colorPreviews?.length || 0);
+                        const items = slug === "photo-restoration"
+                          ? (service.colorPreviews || []).slice(0, 3)
+                          : (service.previews || []).slice(0, 3);
+                        const count = items.length;
                         setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
                       }}
                       className="swiper-arrow swiper-arrow-prev"
@@ -3600,7 +3722,10 @@ export default function ServiceDetailPage({ params }) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const count = Math.min(3, service.colorPreviews?.length || 0);
+                        const items = slug === "photo-restoration"
+                          ? (service.colorPreviews || []).slice(0, 3)
+                          : (service.previews || []).slice(0, 3);
+                        const count = items.length;
                         setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
                       }}
                       className="swiper-arrow swiper-arrow-next"
@@ -3740,6 +3865,44 @@ export default function ServiceDetailPage({ params }) {
                     boxShadow: "0 8px 20px rgba(0,0,0,0.4)"
                   }}>
                     <BeforeAfterSlider before={item.bw} after={item.color} labelBefore="B&W" labelAfter="Color" />
+                    <div className="preview-info" style={{ textAlign: "left" }}>
+                      <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "16px", marginBottom: "4px", fontWeight: "600" }}>{item.title}</h4>
+                      <p className="preview-desc" style={{ fontSize: "13px", color: "var(--text2)", lineHeight: "1.4", fontFamily: "var(--font-serif)" }}>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* INTERACTIVE BEFORE & AFTER PREVIEWS (Photo Editing) */}
+      {service.previews && slug === "photo-editing" && (
+        <section className="services-section">
+          <div className="services-container">
+            <div className="service-gallery-section">
+              <h3 className="gallery-title">Interactive Before & After Previews</h3>
+              <p style={{ color: "var(--text2)", marginBottom: "32px", fontSize: "14px", fontFamily: "var(--font-serif)", lineHeight: "1.6" }}>
+                Drag the slider handle to compare the original photo (Before) with the professionally edited version (After).
+              </p>
+              <div className="previews-grid" style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "32px"
+              }}>
+                {service.previews.map((item, idx) => (
+                  <div key={idx} className="preview-card" style={{
+                    background: "var(--surface2)",
+                    borderRadius: "var(--radius)",
+                    border: "1.5px solid var(--border)",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    boxShadow: "0 8px 20px rgba(0,0,0,0.4)"
+                  }}>
+                    <BeforeAfterSlider before={item.before} after={item.after} labelBefore="Before" labelAfter="After" />
                     <div className="preview-info" style={{ textAlign: "left" }}>
                       <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "16px", marginBottom: "4px", fontWeight: "600" }}>{item.title}</h4>
                       <p className="preview-desc" style={{ fontSize: "13px", color: "var(--text2)", lineHeight: "1.4", fontFamily: "var(--font-serif)" }}>{item.desc}</p>

@@ -68,10 +68,22 @@ const resizeImage = (base64Str, maxW = 200, maxH = 200) => {
 };
 
 const DEFAULT_SIZES = [
-  { label: "8x10", displayLabel: '8" x 10"', priceDelta: -1500 },
-  { label: "12x16", displayLabel: '12" x 16"', priceDelta: 0 },
-  { label: "16x20", displayLabel: '16" x 20"', priceDelta: 2500 },
-  { label: "24x36", displayLabel: '24" x 36"', priceDelta: 6500 },
+  { label: "4x6", displayLabel: '4" x 6"', priceDelta: 0 },
+  { label: "5x7", displayLabel: '5" x 7"', priceDelta: 500 },
+  { label: "6x8", displayLabel: '6" x 8"', priceDelta: 1000 },
+  { label: "8x10", displayLabel: '8" x 10"', priceDelta: 2000 },
+  { label: "8x12", displayLabel: '8" x 12"', priceDelta: 2000 },
+  { label: "10x12", displayLabel: '10" x 12"', priceDelta: 3000 },
+  { label: "12x12", displayLabel: '12" x 12"', priceDelta: 3000 },
+  { label: "12x14", displayLabel: '12" x 14"', priceDelta: 4000 },
+  { label: "12x16", displayLabel: '12" x 16"', priceDelta: 6000 },
+  { label: "12x18", displayLabel: '12" x 18"', priceDelta: 6000 },
+  { label: "16x20", displayLabel: '16" x 20"', priceDelta: 8000 },
+  { label: "18x18", displayLabel: '18" x 18"', priceDelta: 8000 },
+  { label: "18x24", displayLabel: '18" x 24"', priceDelta: 10000 },
+  { label: "16x24", displayLabel: '16" x 24"', priceDelta: 13000 },
+  { label: "20x30", displayLabel: '20" x 30"', priceDelta: 16000 },
+  { label: "24x36", displayLabel: '24" x 36"', priceDelta: 18000 },
 ];
 
 const matchFrame = (f, targetId) => {
@@ -126,8 +138,16 @@ function ProductDetailContent({ params }) {
   const [frames, setFrames] = useState([]);
   const [selectedFrame, setSelectedFrame] = useState(null);
 
-  // Filter only frames, excluding board games
-  const onlyFrames = frames.filter((f) => f.category !== "Board Games");
+  const isBoardGame = (f) => {
+    const cat = f?.category || "";
+    return cat.toLowerCase().includes("board game");
+  };
+
+  // Switcher shows board games if selected is a game, otherwise normal frames
+  const onlyFrames = frames.filter((f) => {
+    const selectedIsGame = selectedFrame && isBoardGame(selectedFrame);
+    return selectedIsGame ? isBoardGame(f) : !isBoardGame(f);
+  });
 
   // Set orientation initially based on query parameters if present, defaulting to portrait
   const [orientation, setOrientation] = useState(searchParams?.get("orientation") || "portrait");
@@ -252,7 +272,14 @@ function ProductDetailContent({ params }) {
       if (matched) {
         setSelectedFrame(matched);
         const queryOrientation = searchParams?.get("orientation");
-        setOrientation(queryOrientation || matched.orientation || "portrait");
+        const isGame = matched.category?.toLowerCase() === "board game" || matched.category?.toLowerCase() === "board games";
+        setOrientation(isGame ? "square" : (queryOrientation || matched.orientation || "portrait"));
+
+        // Auto-select initial (first/smallest) size
+        const sizes = matched.sizes && matched.sizes.length > 0 ? matched.sizes : DEFAULT_SIZES;
+        if (sizes.length > 0) {
+          setSelectedSize(sizes[0].label);
+        }
       }
     }
   }, [frames, id, searchParams]);
@@ -354,6 +381,10 @@ function ProductDetailContent({ params }) {
 
   // Dynamic dummy photo loader
   const getDummyPhoto = () => {
+    const name = (selectedFrame?.name || "").toLowerCase();
+    if (name.includes("ludo")) return "/images/ludo.png";
+    if (name.includes("chess")) return "/images/chess.png";
+    if (name.includes("monopoly")) return "/images/monopoly.png";
     if (orientation === "landscape") {
       return "/images/nature.jpg";
     }
@@ -415,7 +446,8 @@ function ProductDetailContent({ params }) {
       alert("This frame is currently out of stock!");
       return;
     }
-    if (!selectedSize) {
+    const isGame = selectedFrame && isBoardGame(selectedFrame);
+    if (!isGame && !selectedSize) {
       setSizeError(true);
       alert("Please select a size before adding to cart.");
       return;
@@ -435,7 +467,7 @@ function ProductDetailContent({ params }) {
       frameName: selectedFrame.name,
       frameColor: selectedFrame.color || "",
       price: calculatedPriceStr,
-      size: getSizeLabel(selectedSize),
+      size: isGame ? (selectedSize ? getSizeLabel(selectedSize) : "Standard") : getSizeLabel(selectedSize),
       orientation: orientation,
       rotation: 0,
       image: finalImage
@@ -2567,16 +2599,15 @@ function ProductDetailContent({ params }) {
                 )}
 
                 {/* Photo opening */}
-                {orientation !== "square" && (
-                  <div className="exquisite-inner-photo">
-                    <img
-                      src={currentPhoto}
-                      alt="Customized preview print"
-                      className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
-                    />
-                    <div className="glass-reflection" />
-                  </div>
-                )}
+                {/* Photo opening */}
+                <div className="exquisite-inner-photo">
+                  <img
+                    src={currentPhoto}
+                    alt="Customized preview print"
+                    className={`${lightOn ? "light-active" : "light-inactive"} ${orientation === "landscape" ? "rotated-landscape-img" : ""}`}
+                  />
+                  <div className="glass-reflection" />
+                </div>
               </div>
 
               {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
@@ -2721,7 +2752,7 @@ function ProductDetailContent({ params }) {
               </div>
 
               {/* Orientation selection */}
-              {selectedFrame.orientation !== "square" && (
+              {!isBoardGame(selectedFrame) && (
                 <div className="config-section" style={{ marginTop: "6px" }}>
                   <span className="config-label">Select Orientation</span>
                   <div className="orientation-btns">
@@ -2753,7 +2784,7 @@ function ProductDetailContent({ params }) {
                     Add to Cart
                   </button>
                 )}
-                {selectedFrame.orientation !== "square" && (
+                {!isBoardGame(selectedFrame) && (
                   <button className="btn-premium-ghost" onClick={triggerFileUpload}>
                     Upload Photo
                   </button>

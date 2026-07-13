@@ -3806,12 +3806,23 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentReviewSlide, setCurrentReviewSlide] = useState(0);
   const [currentSocialSlide, setCurrentSocialSlide] = useState(0);
+  const [mobileCuratedIndex, setMobileCuratedIndex] = useState(0);
+  const [mobileReviewIndex, setMobileReviewIndex] = useState(0);
+  const [mobileSocialIndex, setMobileSocialIndex] = useState(0);
 
   // Auto-play: reviews carousel now moves left -> right (decrementing index
   // instead of incrementing) so new cards slide in from the left.
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentReviewSlide((prev) => (prev - 1 + 2) % 2);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-play: mobile reviews carousel (moves forward 0 -> 5)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMobileReviewIndex((prev) => (prev + 1) % 6);
     }, 7000);
     return () => clearInterval(timer);
   }, []);
@@ -3970,9 +3981,14 @@ export default function HomePage() {
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  const portraitProducts = products.filter(p => p.orientation === 'portrait').slice(0, 3);
-  const landscapeProducts = products.filter(p => p.orientation === 'landscape').slice(0, 3);
-  const boardGames = products.filter(p => p.orientation === 'square').slice(0, 3);
+  const isBoardGame = (p) => {
+    const cat = p?.category || "";
+    return cat.toLowerCase().includes("board game");
+  };
+
+  const portraitProducts = products.filter(p => !isBoardGame(p) && p.orientation === 'portrait').slice(0, 3);
+  const landscapeProducts = products.filter(p => !isBoardGame(p) && p.orientation === 'landscape').slice(0, 3);
+  const boardGames = products.filter(p => isBoardGame(p)).slice(0, 3);
 
   const isNewArrival = (p) => {
     if (!p) return false;
@@ -3991,9 +4007,18 @@ export default function HomePage() {
 
   const renderProductCard = (p) => {
     const isLandscape = p.orientation === "landscape";
+    const isGame = isBoardGame(p);
+
+    const getProductPreviewImage = (prod) => {
+      const name = (prod.name || "").toLowerCase();
+      if (name.includes("ludo")) return "/images/ludo.png";
+      if (name.includes("chess")) return "/images/chess.png";
+      if (name.includes("monopoly")) return "/images/monopoly.png";
+      return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
+    };
 
     return (
-      <div key={p.id} className={`arrival-card ${isLandscape ? "landscape-card" : ""}`}>
+      <div key={p.id} className={`arrival-card ${isLandscape ? "landscape-card" : isGame ? "square-card" : ""}`}>
         {isNewArrival(p) ? (
           <div className="ribbon">New Arrival</div>
         ) : isFeatured(p.id) ? (
@@ -4003,8 +4028,8 @@ export default function HomePage() {
         <div
           className="card-thumb-wrap"
           style={{
-            aspectRatio: isLandscape ? "3 / 2" : "4 / 5",
-            padding: isLandscape ? "8px" : "20px"
+            aspectRatio: isLandscape ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+            padding: isLandscape ? "8px" : isGame ? "20px" : "20px"
           }}
         >
           <div
@@ -4028,9 +4053,10 @@ export default function HomePage() {
               overflow: "hidden"
             } : {
               position: "relative",
-              aspectRatio: p.aspectRatio || "2 / 3",
+              aspectRatio: isGame ? "1 / 1" : (p.aspectRatio || "2 / 3"),
               width: "auto",
               height: "100%",
+              maxWidth: "100%",
               boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
               display: "flex",
               alignItems: "center",
@@ -4078,7 +4104,7 @@ export default function HomePage() {
               }}
             >
               <img
-                src={isLandscape ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
+                src={getProductPreviewImage(p)}
                 alt="Frame Art Preview"
                 style={{
                   width: isLandscape ? "152%" : "100%",
@@ -4104,8 +4130,8 @@ export default function HomePage() {
           <CardDescription desc={p.desc} />
         </div>
 
-        <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-          {p.orientation === 'square' ? "View Game" : "View Frame"}
+        <a href={`/product/${p.id}?orientation=${isGame ? 'square' : (p.orientation || 'portrait')}`} className="btn-card">
+          {isGame ? "View Game" : "View Frame"}
         </a>
       </div>
     );
@@ -5325,6 +5351,50 @@ export default function HomePage() {
           margin: 0;
         }
 
+        /* Services bullet list */
+        .services-bullet-list {
+          list-style: none;
+          padding: 0;
+          margin: 10px 0;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .services-bullet-list li {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding-left: 20px;
+          position: relative;
+        }
+
+        .services-bullet-list li::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 6px;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--accent);
+          box-shadow: 0 0 6px rgba(181, 139, 92, 0.4);
+        }
+
+        .services-bullet-list li strong {
+          font-family: var(--font-display);
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .services-bullet-list li span {
+          font-family: var(--font-serif);
+          font-size: 13px;
+          color: var(--text2);
+          line-height: 1.5;
+        }
+
         .exquisite-visual {
           flex: 1;
           display: flex;
@@ -5620,9 +5690,317 @@ export default function HomePage() {
           text-align: left;
         }
 
+        /* ── VINTAGE WRITTEN HERITAGE SECTION ── */
+        .vintage-written-section {
+          position: relative;
+          background: url('/images/wrinkled_paper_bg.png') center center repeat;
+          background-size: cover;
+          padding: 80px 40px;
+          border-top: 2px solid #1c1510;
+          border-bottom: 2px solid #1c1510;
+          overflow: hidden;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .vintage-written-section::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: rgba(12, 10, 8, 0.45); /* Subtle dark overlay for text readability */
+          z-index: 1;
+        }
+
+        /* Deep vignette shadow to frame the wrinkled paper look */
+        .vintage-written-section::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle, transparent 40%, rgba(12, 10, 8, 0.85) 100%);
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .vintage-written-container {
+          max-width: 1200px;
+          width: 100%;
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 60px;
+          align-items: center;
+          position: relative;
+          z-index: 3;
+        }
+
+        .vintage-written-content {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          color: #e5d5c5;
+          text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+          text-align: left;
+        }
+
+        .vintage-written-tagline {
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: var(--accent);
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+        }
+
+        .vintage-heading-wrapper {
+          position: relative;
+          display: inline-block;
+        }
+
+        .vintage-written-title {
+          font-family: 'Shelly', cursive, serif;
+          font-size: 64px;
+          line-height: 1.2;
+          color: var(--accent);
+          margin: 0;
+          padding-right: 30px; /* Leave space for the writing pen */
+        }
+
+        /* The pen writing the heading */
+        .vintage-heading-pen {
+          position: absolute;
+          top: -20px;
+          right: -10px;
+          width: 120px;
+          height: auto;
+          transform: rotate(-15deg);
+          pointer-events: none;
+          filter: drop-shadow(2px 5px 8px rgba(0, 0, 0, 0.6));
+          animation: subtle-write 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes subtle-write {
+          0% { transform: rotate(-15deg) translate(0, 0); }
+          50% { transform: rotate(-12deg) translate(4px, -2px); }
+          100% { transform: rotate(-17deg) translate(-2px, 3px); }
+        }
+
+        .vintage-written-desc {
+          font-family: 'EB Garamond', serif;
+          font-size: 19px;
+          line-height: 1.8;
+          color: #dfd0c0;
+          max-width: 650px;
+        }
+
+        .vintage-written-signature {
+          margin-top: 10px;
+        }
+
+        .signature-text {
+          font-family: 'Shelly', cursive, serif;
+          font-size: 32px;
+          color: #b58b5c;
+        }
+
+        .vintage-written-visual {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          position: relative;
+        }
+
+        .vintage-paper-display {
+          position: relative;
+          width: 100%;
+          max-width: 400px;
+          aspect-ratio: 1 / 1;
+          border-radius: var(--radius);
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+          border: 1px solid rgba(181, 139, 92, 0.25);
+        }
+
+        .vintage-pen-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .vintage-paper-display:hover .vintage-pen-image {
+          transform: scale(1.05);
+        }
+
+        .vintage-paper-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+          pointer-events: none;
+        }
+
+        /* ── DESKTOP & MOBILE CAROUSEL VISIBILITY ── */
+        .mobile-only-carousel {
+          display: none !important;
+        }
+
         /* MOBILE STYLES */
         @media (max-width: 1024px) {
           .catalog-grid { justify-content: center; }
+          .desktop-only-carousel {
+            display: none !important;
+          }
+          .mobile-only-carousel {
+            display: block !important;
+          }
+          .catalog-mobile-carousel {
+            display: flex !important;
+          }
+
+          /* Mobile Catalog Carousel */
+          .catalog-mobile-carousel {
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+          }
+          .carousel-viewport-mobile {
+            overflow: hidden;
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+            padding: 10px 0;
+          }
+          .carousel-track-mobile {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 900%; /* 9 products */
+          }
+          .carousel-slide-mobile {
+            width: 11.111%; /* 1/9 of track */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            padding: 0 10px;
+          }
+          .carousel-slide-mobile .arrival-card {
+            width: 100% !important;
+            max-width: 340px !important;
+            margin: 0 auto;
+          }
+          .mobile-carousel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+            z-index: 10;
+          }
+          .carousel-arrow-mobile {
+            background: rgba(20, 17, 14, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 24px;
+            line-height: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          }
+          .carousel-arrow-mobile:hover, .carousel-arrow-mobile:active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+          }
+          .carousel-indicators-mobile {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+          }
+          .carousel-dot-mobile {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+          }
+          .carousel-dot-mobile.active {
+            background: var(--accent);
+            transform: scale(1.2);
+            box-shadow: 0 0 6px var(--accent);
+          }
+
+          /* Mobile Reviews Carousel */
+          .reviews-carousel-viewport.mobile-only-carousel {
+            display: block !important;
+            overflow: hidden;
+            width: 100%;
+          }
+          .reviews-carousel-track-mobile {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 600%; /* 6 reviews */
+          }
+          .review-slide-mobile-wrapper {
+            width: 16.666%; /* 1/6 of track */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            padding: 0 16px;
+            box-sizing: border-box;
+          }
+          .review-slide-mobile-wrapper .review-card {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+          }
+
+          /* Mobile Social Carousel */
+          .social-mobile-carousel {
+            display: block !important;
+            overflow: hidden;
+            width: 100%;
+          }
+          .social-carousel-track-mobile {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 600%; /* 6 posts */
+          }
+          .social-slide-mobile-wrapper {
+            width: 16.666%; /* 1/6 of track */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            padding: 0 16px;
+            box-sizing: border-box;
+          }
+          .social-slide-mobile-wrapper .social-post-card {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+          }
+
+          /* Center all mobile indicators */
+          .mobile-indicators-centered {
+            display: flex !important;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+          }
+          .reviews-carousel-indicators.mobile-only-carousel {
+            display: flex !important;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+          }
         }
 
         @media (max-width: 768px) {
@@ -5657,6 +6035,32 @@ export default function HomePage() {
           .services-section .exquisite-content {
             align-items: center;
             text-align: center;
+          }
+          .vintage-written-section {
+            padding: 60px 20px;
+          }
+          .vintage-written-container {
+            grid-template-columns: 1fr;
+            text-align: center;
+            gap: 40px;
+          }
+          .vintage-written-content {
+            align-items: center;
+            text-align: center;
+          }
+          .vintage-written-title {
+            font-size: 44px;
+            padding-right: 0;
+          }
+          .vintage-heading-pen {
+            display: none;
+          }
+          .vintage-written-desc {
+            font-size: 17px;
+            margin: 0 auto;
+          }
+          .vintage-paper-display {
+            max-width: 320px;
           }
           .footer { padding: 60px 20px 20px; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -6415,7 +6819,7 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="carousel-wrapper">
+              <div className="carousel-wrapper desktop-only-carousel">
                 <button
                   className="carousel-arrow prev"
                   onClick={() => setCurrentSlide((prev) => (prev - 1 + 3) % 3)}
@@ -6451,7 +6855,7 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <div className="carousel-indicators">
+              <div className="carousel-indicators desktop-only-carousel">
                 {[0, 1, 2].map((idx) => (
                   <button
                     key={idx}
@@ -6460,6 +6864,50 @@ export default function HomePage() {
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
+              </div>
+
+              {/* MOBILE ONLY CAROUSEL (1 card at a time, flat list of 9 products) */}
+              <div className="mobile-only-carousel catalog-mobile-carousel">
+                <div className="carousel-viewport-mobile">
+                  <div 
+                    className="carousel-track-mobile" 
+                    style={{ transform: `translateX(-${mobileCuratedIndex * (100/9)}%)` }}
+                  >
+                    {[...portraitProducts, ...landscapeProducts, ...boardGames].map((p) => (
+                      <div key={`mob-${p.id}`} className="carousel-slide-mobile">
+                        {renderProductCard(p)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile controls centered below the card */}
+                <div className="mobile-carousel-controls">
+                  <button
+                    className="carousel-arrow-mobile prev"
+                    onClick={() => setMobileCuratedIndex((prev) => (prev - 1 + 9) % 9)}
+                    aria-label="Previous Slide"
+                  >
+                    ‹
+                  </button>
+                  <div className="carousel-indicators-mobile">
+                    {[...Array(9)].map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`carousel-dot-mobile ${mobileCuratedIndex === idx ? 'active' : ''}`}
+                        onClick={() => setMobileCuratedIndex(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    className="carousel-arrow-mobile next"
+                    onClick={() => setMobileCuratedIndex((prev) => (prev + 1) % 9)}
+                    aria-label="Next Slide"
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -6633,7 +7081,7 @@ export default function HomePage() {
 
           <div className="reviews-carousel-wrapper">
             <button
-              className="carousel-arrow prev"
+              className="carousel-arrow prev desktop-only-carousel"
               onClick={() => setCurrentReviewSlide((prev) => (prev - 1 + 2) % 2)}
               aria-label="Previous Reviews"
             >
@@ -6642,7 +7090,7 @@ export default function HomePage() {
               </svg>
             </button>
 
-            <div className="reviews-carousel-viewport">
+            <div className="reviews-carousel-viewport desktop-only-carousel">
               <div className="reviews-carousel-track" style={{ transform: `translateX(-${currentReviewSlide * 50}%)` }}>
                 {/* Slide 1 */}
                 <div className="reviews-carousel-slide">
@@ -6743,7 +7191,7 @@ export default function HomePage() {
             </div>
 
             <button
-              className="carousel-arrow next"
+              className="carousel-arrow next desktop-only-carousel"
               onClick={() => setCurrentReviewSlide((prev) => (prev + 1) % 2)}
               aria-label="Next Reviews"
             >
@@ -6751,14 +7199,142 @@ export default function HomePage() {
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
+
+            {/* MOBILE ONLY REVIEWS CAROUSEL */}
+            <div className="reviews-carousel-viewport mobile-only-carousel">
+              <div 
+                className="reviews-carousel-track-mobile" 
+                style={{ transform: `translateX(-${mobileReviewIndex * (100/6)}%)` }}
+              >
+                {/* Slide 1 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">AK</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Ayesha Khan</span>
+                        <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 2 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">HA</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Hassan Ali</span>
+                        <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 3 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">SM</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Sara Malik</span>
+                        <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 4 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">OA</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Omar Ahmed</span>
+                        <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★☆</div>
+                    <p className="review-text">
+                      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 5 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">FZ</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Fatima Zahra</span>
+                        <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+
+                {/* Slide 6 */}
+                <div className="review-slide-mobile-wrapper">
+                  <div className="review-card">
+                    <div className="review-card-header">
+                      <div className="review-avatar">BI</div>
+                      <div className="review-author-info">
+                        <span className="review-author-name">Bilal Iqbal</span>
+                        <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                      </div>
+                    </div>
+                    <div className="review-stars-row">★★★★★</div>
+                    <p className="review-text">
+                      Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
+                    </p>
+                    <div className="review-google-badge">🇬 Posted on Google</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="reviews-carousel-indicators">
+          <div className="reviews-carousel-indicators desktop-only-carousel">
             {[0, 1].map((idx) => (
               <button
                 key={idx}
                 className={`carousel-dot ${currentReviewSlide === idx ? 'active' : ''}`}
                 onClick={() => setCurrentReviewSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Mobile indicators for reviews */}
+          <div className="reviews-carousel-indicators mobile-only-carousel">
+            {[0, 1, 2, 3, 4, 5].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${mobileReviewIndex === idx ? 'active' : ''}`}
+                onClick={() => setMobileReviewIndex(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
               />
             ))}
@@ -6773,6 +7349,44 @@ export default function HomePage() {
             >
               ⭐ Leave Us a Review on Google
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── VINTAGE WRITTEN HERITAGE SECTION ── */}
+      <section className="vintage-written-section" id="heritage">
+        <div className="vintage-written-container">
+          {/* Left Column: Content */}
+          <div className="vintage-written-content">
+            <span className="vintage-written-tagline">Preserving Memories</span>
+            <div className="vintage-heading-wrapper">
+              <h2 className="vintage-written-title">Written in Time</h2>
+              <img
+                src="/images/vintage_fountain_pen.png"
+                alt="Vintage Fountain Pen"
+                className="vintage-heading-pen"
+              />
+            </div>
+            <p className="vintage-written-desc">
+              Every frame we build, every photo we restore, is a testament to the moments that define us.
+              Using traditional techniques and premium materials, we craft heirlooms that bridge generations.
+              Let us help you write your story in wood and glass.
+            </p>
+            <div className="vintage-written-signature">
+              <span className="signature-text">Yaadein Art Studio</span>
+            </div>
+          </div>
+
+          {/* Right Column: Vintage Fountain Pen Visual */}
+          <div className="vintage-written-visual">
+            <div className="vintage-paper-display">
+              <img
+                src="/images/vintage_fountain_pen.png"
+                alt="Heritage Pen Visual"
+                className="vintage-pen-image"
+              />
+              <div className="vintage-paper-overlay" />
+            </div>
           </div>
         </div>
       </section>
@@ -6895,39 +7509,20 @@ export default function HomePage() {
               museum-grade craftsmanship to your doorstep.
             </p>
 
-            <div className="exquisite-features">
-              <div className="feature-item">
-                <span className="feature-icon">🖼️</span>
-                <div>
-                  <h4>Bespoke Custom Framing</h4>
-                  <p>Handcrafted frames in premium woods, cut and finished to your exact photo dimensions and style.</p>
-                </div>
-              </div>
-
-              <div className="feature-item">
-                <span className="feature-icon">🖨️</span>
-                <div>
-                  <h4>Fine-Art Photo Printing</h4>
-                  <p>Archival-quality prints on museum-grade paper that preserve every shadow and highlight for decades.</p>
-                </div>
-              </div>
-
-              <div className="feature-item">
-                <span className="feature-icon">🛠️</span>
-                <div>
-                  <h4>Frame Restoration</h4>
-                  <p>Breathe new life into heirloom and antique frames with careful repair, re-gilding, and polishing.</p>
-                </div>
-              </div>
-
-              <div className="feature-item">
-                <span className="feature-icon">🚚</span>
-                <div>
-                  <h4>Delivery & Installation</h4>
-                  <p>Safe nationwide delivery with optional professional wall mounting, so your piece hangs perfectly.</p>
-                </div>
-              </div>
-            </div>
+            <ul className="services-bullet-list">
+              <li>
+                <strong>Old Photo Restoration</strong>
+                <span>Bring damaged, faded, or torn family photographs back to life with professional digital repair and colorization.</span>
+              </li>
+              <li>
+                <strong>Nikkahnama Frame</strong>
+                <span>Elegant custom-built frames designed specifically to preserve and display your Nikkahnama with timeless grace.</span>
+              </li>
+              <li>
+                <strong>Board Games</strong>
+                <span>Handcrafted luxury wooden board games — from Ludo to Chess — built for family fun and aesthetic value.</span>
+              </li>
+            </ul>
 
             <div className="exquisite-actions">
               <a href="/services" className="btn-premium exquisite-btn">
@@ -6973,7 +7568,7 @@ export default function HomePage() {
 
           <div className="social-carousel-wrapper">
             <button
-              className="carousel-arrow prev"
+              className="carousel-arrow prev desktop-only-carousel"
               onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + 2) % 2)}
               aria-label="Previous Posts"
             >
@@ -6982,7 +7577,7 @@ export default function HomePage() {
               </svg>
             </button>
 
-            <div className="social-carousel-viewport">
+            <div className="social-carousel-viewport desktop-only-carousel">
               <div className="social-carousel-track" style={{ transform: `translateX(-${currentSocialSlide * 50}%)` }}>
                 {/* Slide 1 */}
                 <div className="social-carousel-slide">
@@ -7143,7 +7738,7 @@ export default function HomePage() {
             </div>
 
             <button
-              className="carousel-arrow next"
+              className="carousel-arrow next desktop-only-carousel"
               onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % 2)}
               aria-label="Next Posts"
             >
@@ -7151,14 +7746,95 @@ export default function HomePage() {
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
+
+            {/* MOBILE ONLY SOCIAL CAROUSEL */}
+            <div className="social-carousel-viewport mobile-only-carousel social-mobile-carousel">
+              <div 
+                className="social-carousel-track-mobile" 
+                style={{ transform: `translateX(-${mobileSocialIndex * (100/6)}%)` }}
+              >
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Customer frame setup" /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">Y</div><div><div className="social-post-author-name">yaadein.pk</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">Lorem ipsum dolor sit amet, consectetur adipiscing elit. 🖼️✨ #YaadeinFrames #HomeDecor</p>
+                      <span className="social-post-date">2 days ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">A</div><div><div className="social-post-author-name">ayesha.interiors</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">My living room transformation! 🏡 #InteriorDesign</p>
+                      <span className="social-post-date">5 days ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">Y</div><div><div className="social-post-author-name">yaadein.pk</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">New collection drop! 🎨 #ArtFraming #BespokeFrames</p>
+                      <span className="social-post-date">1 week ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">H</div><div><div className="social-post-author-name">hassan.captures</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">Gallery wall completed! 📸 #WallArt #Photography</p>
+                      <span className="social-post-date">2 weeks ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Oak frames bedroom decor" /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">Z</div><div><div className="social-post-author-name">zainab.frames</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">Classic oak frame! 🌿✨ #AestheticHome #Decor</p>
+                      <span className="social-post-date">3 weeks ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="social-slide-mobile-wrapper">
+                  <div className="social-post-card">
+                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Art studio gallery" style={{ objectPosition: "center 40%" }} /></div>
+                    <div className="social-post-body">
+                      <div className="social-post-author"><div className="social-post-author-avatar">M</div><div><div className="social-post-author-name">maryam.spaces</div><div className="social-post-platform">Instagram</div></div></div>
+                      <p className="social-post-caption">Handcrafted perfection! 💛 #ArtStudio #LuxuryHome</p>
+                      <span className="social-post-date">1 month ago</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="social-carousel-indicators">
+          <div className="social-carousel-indicators desktop-only-carousel">
             {[0, 1].map((idx) => (
               <button
                 key={idx}
                 className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
                 onClick={() => setCurrentSocialSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Mobile social indicators */}
+          <div className="social-carousel-indicators mobile-only-carousel mobile-indicators-centered">
+            {[0, 1, 2, 3, 4, 5].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${mobileSocialIndex === idx ? 'active' : ''}`}
+                onClick={() => setMobileSocialIndex(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
               />
             ))}

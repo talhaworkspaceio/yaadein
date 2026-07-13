@@ -1501,6 +1501,52 @@ export default function ServicesPage() {
               <a href="/services/photo-restoration" className="btn-premium">Explore Details</a>
             </div>
           </div>
+
+          {/* Service 6 */}
+          <div className="service-card">
+            <div className="service-visual">
+              <img
+                src="/images/nikkahnama_images/sample1.jpeg"
+                alt="Nikkah Nama Framing"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+            <div className="service-info">
+              <h2 className="service-name">Nikkah Nama Framing</h2>
+              <p className="service-desc">
+                Preserve the most sacred contract of your life in a premium handcrafted frame. We specialize in archival-grade Nikkah Nama framing, utilizing acid-free mounts and museum glass to ensure your signature bond stays protected and visually stunning for generations.
+              </p>
+              <ul className="service-features">
+                <li>Custom-fit double mounting with elegant gold borders</li>
+                <li>99% UV-protection museum glass options</li>
+                <li>Selection of premium local and imported wood trims</li>
+              </ul>
+              <a href="/services/nikkahnama-framing" className="btn-premium">Explore Details</a>
+            </div>
+          </div>
+
+          {/* Service 7 */}
+          <div className="service-card">
+            <div className="service-visual">
+              <BeforeAfterSlider
+                before="/images/restoration/child_before.png"
+                after="/images/restoration/child_after.png"
+                style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
+              />
+            </div>
+            <div className="service-info">
+              <h2 className="service-name">Photo Editing Service</h2>
+              <p className="service-desc">
+                Enhance, retouch, and transform your digital photos before printing and framing. Whether you need background removal, beauty retouching, object removal, or professional color grading, our digital artists prepare your images to look their absolute best.
+              </p>
+              <ul className="service-features">
+                <li>Professional beauty retouching and skin correction</li>
+                <li>Background replacement and unwanted object removal</li>
+                <li>Cinematic color grading and lighting adjustments</li>
+              </ul>
+              <a href="/services/photo-editing" className="btn-premium">Explore Details</a>
+            </div>
+          </div>
         </div>
       </section>
 

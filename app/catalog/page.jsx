@@ -115,10 +115,15 @@ export default function CatalogPage() {
   };
 
   // Categorize products
+  const isBoardGame = (p) => {
+    const cat = p?.category || "";
+    return cat.toLowerCase().includes("board game");
+  };
+
   const newArrivalsProducts = products.filter(p => isNewArrival(p));
-  const portraitProducts = products.filter(p => p.category !== "Board Games" && p.orientation !== "landscape");
-  const landscapeProducts = products.filter(p => p.category !== "Board Games" && p.orientation === "landscape");
-  const boardGamesProducts = products.filter(p => p.category === "Board Games");
+  const portraitProducts = products.filter(p => !isBoardGame(p) && p.orientation !== "landscape");
+  const landscapeProducts = products.filter(p => !isBoardGame(p) && p.orientation === "landscape");
+  const boardGamesProducts = products.filter(p => isBoardGame(p));
 
   const itemsPerPage = isMobile ? 1 : 3;
 
@@ -141,9 +146,18 @@ export default function CatalogPage() {
 
   const renderProductCard = (p) => {
     const isLandscape = p.orientation === "landscape";
+    const isGame = isBoardGame(p);
+
+    const getProductPreviewImage = (prod) => {
+      const name = (prod.name || "").toLowerCase();
+      if (name.includes("ludo")) return "/images/ludo.png";
+      if (name.includes("chess")) return "/images/chess.png";
+      if (name.includes("monopoly")) return "/images/monopoly.png";
+      return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
+    };
 
     return (
-      <div className={`arrival-card ${isLandscape ? "landscape-card" : ""}`}>
+      <div className={`arrival-card ${isLandscape ? "landscape-card" : isGame ? "square-card" : ""}`}>
         {isNewArrival(p) ? (
           <div className="ribbon">New Arrival</div>
         ) : isFeatured(p.id) ? (
@@ -153,17 +167,13 @@ export default function CatalogPage() {
         <div
           className="card-thumb-wrap"
           style={{
-            aspectRatio: isLandscape ? "3 / 2" : "4 / 5",
-            padding: isLandscape ? "8px" : "20px"
+            aspectRatio: isLandscape ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+            padding: isLandscape ? "8px" : isGame ? "20px" : "20px"
           }}
         >
           <div
             className="card-frame"
             style={isLandscape ? {
-              /* Portrait frame image rotated -90deg to display as landscape.
-                 The pre-rotation height (= visual width after rotation) is
-                 derived from the wrap width; the frame's own width follows
-                 the image's natural aspect ratio, so no stretching. */
               position: "absolute",
               top: "50%",
               left: "50%",
@@ -178,7 +188,7 @@ export default function CatalogPage() {
               overflow: "hidden"
             } : {
               position: "relative",
-              aspectRatio: p.aspectRatio || "2 / 3",
+              aspectRatio: isGame ? "1 / 1" : (p.aspectRatio || "2 / 3"),
               width: "auto",
               height: "100%",
               maxWidth: "100%",
@@ -195,8 +205,6 @@ export default function CatalogPage() {
                 src={p.imageUrl}
                 alt={p.name}
                 style={isLandscape ? {
-                  /* Natural ratio: height is pinned to the (rotated) frame box,
-                     width follows the image's real proportions. */
                   width: "auto",
                   height: "100%",
                   display: "block",
@@ -229,7 +237,7 @@ export default function CatalogPage() {
               }}
             >
               <img
-                src={isLandscape ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
+                src={getProductPreviewImage(p)}
                 alt="Frame Art Preview"
                 style={{
                   width: isLandscape ? "152%" : "100%",
@@ -238,7 +246,6 @@ export default function CatalogPage() {
                   position: "absolute",
                   top: "50%",
                   left: "50%",
-                  /* Counter-rotate the photo so it reads upright inside the rotated frame */
                   transform: isLandscape ? "translate(-50%, -50%) rotate(90deg)" : "translate(-50%, -50%)",
                   objectPosition: "center center"
                 }}
@@ -255,8 +262,8 @@ export default function CatalogPage() {
           <CardDescription desc={p.desc} />
         </div>
 
-        <a href={`/product/${p.id}?orientation=${p.orientation || 'portrait'}`} className="btn-card">
-          View Frame
+        <a href={`/product/${p.id}?orientation=${isGame ? 'square' : (p.orientation || 'portrait')}`} className="btn-card">
+          {isGame ? "View Game" : "View Frame"}
         </a>
       </div>
     );

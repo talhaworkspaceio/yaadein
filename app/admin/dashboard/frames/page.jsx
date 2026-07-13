@@ -15,10 +15,10 @@ const AVAILABLE_FRAME_IMAGES = [
 
 
 const DEFAULT_SIZES = [
-  { label: "8x10", displayLabel: '8" x 10"', priceDelta: -1500 },
-  { label: "12x16", displayLabel: '12" x 16"', priceDelta: 0 },
-  { label: "16x20", displayLabel: '16" x 20"', priceDelta: 2500 },
-  { label: "24x36", displayLabel: '24" x 36"', priceDelta: 6500 },
+  { label: "8x10", displayLabel: '8" x 10"', priceDelta: 0 },
+  { label: "12x16", displayLabel: '12" x 16"', priceDelta: 1500 },
+  { label: "16x20", displayLabel: '16" x 20"', priceDelta: 4000 },
+  { label: "24x36", displayLabel: '24" x 36"', priceDelta: 8000 },
 ];
 
 const INITIAL_FORM = {
@@ -136,8 +136,8 @@ export default function FramesPage() {
     e.preventDefault();
     if (!formData.imageUrl) { alert("Please upload an image first!"); return; }
     try {
-      const data = { 
-        ...formData, 
+      const data = {
+        ...formData,
         stock: parseInt(formData.stock) || 0,
         createdAt: formData.createdAt || Date.now()
       };
