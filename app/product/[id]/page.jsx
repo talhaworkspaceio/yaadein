@@ -378,6 +378,7 @@ function ProductDetailContent({ params }) {
   const sizePremium = getSizePremium(selectedSize);
   const calculatedPriceNum = basePriceNum + sizePremium;
   const calculatedPriceStr = formatPrice(calculatedPriceNum);
+  const isGame = selectedFrame && isBoardGame(selectedFrame);
 
   // Dynamic dummy photo loader
   const getDummyPhoto = () => {
@@ -2611,7 +2612,7 @@ function ProductDetailContent({ params }) {
               </div>
 
               {/* Frame Switcher Carousel (Placed at the bottom of the frame) */}
-              {onlyFrames.length > 0 && (
+              {!isGame && onlyFrames.length > 0 && (
                 <>
                   <div className="frame-thumbnails-carousel">
                     <button className="carousel-arrow left" onClick={handlePrevFrame} aria-label="Previous frames">
