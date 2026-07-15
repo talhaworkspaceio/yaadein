@@ -223,6 +223,16 @@ function ProductDetailContent({ params }) {
     });
   };
 
+  const handleItemClick = (index) => {
+    if (index <= 1) return;
+    const shiftCount = index - 1;
+    setSliderItems(prev => {
+      const firstPart = prev.slice(0, shiftCount);
+      const secondPart = prev.slice(shiftCount);
+      return [...secondPart, ...firstPart];
+    });
+  };
+
   // Sync carousel index to show selected frame in center
   useEffect(() => {
     if (onlyFrames.length > 0 && selectedFrame) {
@@ -2047,6 +2057,7 @@ function ProductDetailContent({ params }) {
           outline: 1.5px solid rgba(212, 175, 55, 0.45);
           box-shadow: 0 12px 24px rgba(0,0,0,0.8);
           transition: transform 0.2s, left 0.75s, top 0.75s, width 0.75s, height 0.75s, opacity 0.75s;
+          cursor: pointer;
         }
 
         .wall-slider-item:nth-child(1), .wall-slider-item:nth-child(2) {
@@ -2060,6 +2071,7 @@ function ProductDetailContent({ params }) {
           outline: none;
           box-shadow: none;
           opacity: 1;
+          cursor: default;
         }
 
         .wall-slider-item:nth-child(3) { left: 50%; }
@@ -2819,18 +2831,16 @@ function ProductDetailContent({ params }) {
       <section className="wall-gallery-slider-section">
 
         <ul className="wall-slider-track">
-          {sliderItems.map((item) => (
+          {sliderItems.map((item, index) => (
             <li
               key={item.id}
               className="wall-slider-item"
               style={{ backgroundImage: `url('${item.imageUrl}')` }}
+              onClick={() => handleItemClick(index)}
             >
               <div className="wall-slider-content">
                 <h2 className="wall-slider-content-title">"{item.title}"</h2>
                 <p className="wall-slider-content-description">{item.description}</p>
-                <button className="wall-slider-content-btn" onClick={triggerFileUpload}>
-                  Customise Yours
-                </button>
               </div>
             </li>
           ))}
