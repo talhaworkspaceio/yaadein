@@ -625,7 +625,6 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           top: -2px;
           right: -4px;
           background: #FFFFFF;
-          border: 1px solid #000000;
           color: #000000;
           font-family: var(--font-typewriter);
           font-size: 10px;
