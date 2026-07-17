@@ -890,13 +890,16 @@ export default function ServiceDetailPage({ params }) {
         .exquisite-wood-frame.light-on .exquisite-inner-photo::after { opacity: 1; }
 
         .exquisite-inner-photo img {
-          width: 100% !important;
-          height: 100% !important;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 152% !important;
+          height: 152% !important;
           object-fit: cover !important;
           display: block;
           transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
           transform-origin: center center;
-          transform: rotate(-90deg) scale(1.5); /* Counter-rotate photo inside landscape frame */
+          transform: translate(-50%, -50%) rotate(-90deg); /* Counter-rotate photo inside landscape frame */
         }
 
         .glass-reflection {
@@ -1710,6 +1713,9 @@ export default function ServiceDetailPage({ params }) {
         }
 
         .photo-restoration-page .exquisite-wood-frame.restoration-frame .exquisite-inner-photo img {
+          position: relative !important;
+          top: auto !important;
+          left: auto !important;
           transform: none !important;
           width: 100% !important;
           height: 100% !important;
@@ -1725,6 +1731,9 @@ export default function ServiceDetailPage({ params }) {
           margin: 40px 0 130px 0;
         }
         .exquisite-wood-frame.nikkahnama-frame .exquisite-inner-photo img {
+          position: relative !important;
+          top: auto !important;
+          left: auto !important;
           transform: none !important;
           width: 100% !important;
           height: 100% !important;
@@ -2085,9 +2094,9 @@ export default function ServiceDetailPage({ params }) {
                 )}
               </div>
 
-              {/* Choose Frame (optional) */}
+              {/* Choose Frame */}
               <div className="config-section">
-                <span className="config-label">Choose Frame (Optional)</span>
+                <span className="config-label">Choose Frame</span>
                 <button
                   className={`choose-frame-btn ${selectedCustomFrame ? "has-frame" : ""}`}
                   onClick={() => setFrameModalOpen(true)}

@@ -151,7 +151,7 @@ export default function CatalogPage() {
     const getProductPreviewImage = (prod) => {
       const name = (prod.name || "").toLowerCase();
       if (name.includes("ludo")) return "/images/ludo.png";
-      if (name.includes("chess")) return "/images/chess.png";
+      if (name.includes("chess")) return "/images/Chess.jpeg";
       if (name.includes("monopoly")) return "/images/monopoly.png";
       return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
     };
@@ -242,7 +242,7 @@ export default function CatalogPage() {
                 style={{
                   width: isLandscape ? "152%" : "100%",
                   height: isLandscape ? "152%" : "100%",
-                  objectFit: "cover",
+                  objectFit: isGame ? "fill" : "cover",
                   position: "absolute",
                   top: "50%",
                   left: "50%",

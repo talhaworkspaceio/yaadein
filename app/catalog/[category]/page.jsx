@@ -1395,7 +1395,7 @@ export default function CategoryPage({ params }) {
                     const getProductPreviewImage = (prod) => {
                       const name = (prod.name || "").toLowerCase();
                       if (name.includes("ludo")) return "/images/ludo.png";
-                      if (name.includes("chess")) return "/images/chess.png";
+                      if (name.includes("chess")) return "/images/Chess.jpeg";
                       if (name.includes("monopoly")) return "/images/monopoly.png";
                       return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
                     };
@@ -1458,7 +1458,7 @@ export default function CategoryPage({ params }) {
                                 style={{
                                   width: "100%",
                                   height: "100%",
-                                  objectFit: "cover",
+                                  objectFit: isGame ? "fill" : "cover",
                                   position: "absolute",
                                   top: "50%",
                                   left: "50%",

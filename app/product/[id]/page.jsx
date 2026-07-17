@@ -394,7 +394,7 @@ function ProductDetailContent({ params }) {
   const getDummyPhoto = () => {
     const name = (selectedFrame?.name || "").toLowerCase();
     if (name.includes("ludo")) return "/images/ludo.png";
-    if (name.includes("chess")) return "/images/chess.png";
+    if (name.includes("chess")) return "/images/Chess.jpeg";
     if (name.includes("monopoly")) return "/images/monopoly.png";
     if (orientation === "landscape") {
       return "/images/nature.jpg";
@@ -776,13 +776,18 @@ function ProductDetailContent({ params }) {
         .exquisite-inner-photo img {
           width: 100% !important;
           height: 100% !important;
-          object-fit: cover !important;
+          object-fit: ${isGame ? 'fill' : 'cover'} !important;
           display: block;
           transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s ease;
           transform-origin: center center;
         }
         .exquisite-inner-photo img.rotated-landscape-img {
-          transform: rotate(-90deg) scale(1.5);
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 152% !important;
+          height: 152% !important;
+          transform: translate(-50%, -50%) rotate(-90deg) !important;
         }
 
         .exquisite-inner-photo img.light-active {

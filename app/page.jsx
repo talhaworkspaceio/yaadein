@@ -4012,7 +4012,7 @@ export default function HomePage() {
     const getProductPreviewImage = (prod) => {
       const name = (prod.name || "").toLowerCase();
       if (name.includes("ludo")) return "/images/ludo.png";
-      if (name.includes("chess")) return "/images/chess.png";
+      if (name.includes("chess")) return "/images/Chess.jpeg";
       if (name.includes("monopoly")) return "/images/monopoly.png";
       return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
     };
@@ -4109,7 +4109,7 @@ export default function HomePage() {
                 style={{
                   width: isLandscape ? "152%" : "100%",
                   height: isLandscape ? "152%" : "100%",
-                  objectFit: "cover",
+                  objectFit: isGame ? "fill" : "cover",
                   position: "absolute",
                   top: "50%",
                   left: "50%",
@@ -4285,19 +4285,19 @@ export default function HomePage() {
 
         @keyframes catalog-glow-auto {
           0% {
-            transform: translate(-20%, -20%) scale(1);
+            transform: translate(0%, -10%) scale(1);
           }
           25% {
-            transform: translate(100%, 10%) scale(1.2);
+            transform: translate(20%, 5%) scale(1.1);
           }
           50% {
-            transform: translate(40%, 40%) scale(0.9);
+            transform: translate(10%, 25%) scale(0.95);
           }
           75% {
-            transform: translate(-10%, 30%) scale(1.1);
+            transform: translate(-5%, 10%) scale(1.05);
           }
           100% {
-            transform: translate(-20%, -20%) scale(1);
+            transform: translate(0%, -10%) scale(1);
           }
         }
 
