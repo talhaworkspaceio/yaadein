@@ -4442,7 +4442,7 @@ export default function HomePage() {
           width: 33.333%;
           display: flex;
           justify-content: center;
-          align-items: flex-start;
+          align-items: stretch;
           gap: 30px;
           flex-shrink: 0;
           padding: 12px 0;
@@ -5653,7 +5653,7 @@ export default function HomePage() {
         }
 
         .exquisite-inner-photo img {
-          width: 100% !important;
+          width: 97% !important;
           height: 100% !important;
           object-fit: cover !important;
           display: block;
@@ -6829,9 +6829,9 @@ export default function HomePage() {
               {/* MOBILE ONLY CAROUSEL (1 card at a time, flat list of 9 products) */}
               <div className="mobile-only-carousel catalog-mobile-carousel">
                 <div className="carousel-viewport-mobile">
-                  <div 
-                    className="carousel-track-mobile" 
-                    style={{ transform: `translateX(-${mobileCuratedIndex * (100/9)}%)` }}
+                  <div
+                    className="carousel-track-mobile"
+                    style={{ transform: `translateX(-${mobileCuratedIndex * (100 / 9)}%)` }}
                   >
                     {[...portraitProducts, ...landscapeProducts, ...boardGames].map((p) => (
                       <div key={`mob-${p.id}`} className="carousel-slide-mobile">
@@ -7162,9 +7162,9 @@ export default function HomePage() {
 
             {/* MOBILE ONLY REVIEWS CAROUSEL */}
             <div className="reviews-carousel-viewport mobile-only-carousel">
-              <div 
-                className="reviews-carousel-track-mobile" 
-                style={{ transform: `translateX(-${mobileReviewIndex * (100/6)}%)` }}
+              <div
+                className="reviews-carousel-track-mobile"
+                style={{ transform: `translateX(-${mobileReviewIndex * (100 / 6)}%)` }}
               >
                 {/* Slide 1 */}
                 <div className="review-slide-mobile-wrapper">
@@ -7701,9 +7701,9 @@ export default function HomePage() {
 
             {/* MOBILE ONLY SOCIAL CAROUSEL */}
             <div className="social-carousel-viewport mobile-only-carousel social-mobile-carousel">
-              <div 
-                className="social-carousel-track-mobile" 
-                style={{ transform: `translateX(-${mobileSocialIndex * (100/6)}%)` }}
+              <div
+                className="social-carousel-track-mobile"
+                style={{ transform: `translateX(-${mobileSocialIndex * (100 / 6)}%)` }}
               >
                 <div className="social-slide-mobile-wrapper">
                   <div className="social-post-card">
