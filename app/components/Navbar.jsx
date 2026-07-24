@@ -485,7 +485,12 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           top: 0;
           left: 0;
           right: 0;
-          height: 80px;
+          width: 100%;
+          margin: 0;
+          padding-top: 0;
+          border: none !important;
+          outline: none !important;
+          height: 70px;
           background: rgba(0, 0, 0, 0.95);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -493,19 +498,22 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          padding: 0 40px;
+          padding-left: 40px;
+          padding-right: 40px;
           z-index: 1000;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5);
           transition: background 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
         }
         .global-navbar.transparent {
           background: transparent !important;
-          box-shadow: none;
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          outline: none !important;
         }
         .nav-spacer {
-          height: 80px;
+          height: 70px;
         }
         .nav-brand {
           display: flex;
@@ -650,6 +658,7 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
         /* MOBILE MENU DRAWER */
         .mobile-menu-drawer {
           position: fixed;
+          top: 70px;
           left: 0;
           right: 0;
           background: #000000;
@@ -681,10 +690,27 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           color: var(--accent) !important;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px), (max-height: 700px) {
           .global-navbar {
             padding: 0 24px;
+            height: 60px;
           }
+          .nav-spacer {
+            height: 60px;
+          }
+          .mobile-menu-drawer {
+            top: 60px;
+            padding: 20px 24px;
+          }
+          .nav-logo-img {
+            height: 32px;
+          }
+          .nav-links-center {
+            gap: 18px;
+          }
+        }
+
+        @media (max-width: 900px) {
           .nav-links-center {
             display: none;
           }
@@ -702,14 +728,17 @@ export default function Navbar({ onCartOpen, onSearchChange, initialSearchValue 
           }
           .global-navbar {
             padding: 0 16px;
-            height: 70px;
+            height: 54px;
           }
           .nav-spacer {
-            height: 70px;
+            height: 54px;
           }
           .mobile-menu-drawer {
-            top: 70px;
-            padding: 20px 24px;
+            top: 54px;
+            padding: 16px 20px;
+          }
+          .nav-logo-img {
+            height: 28px;
           }
         }
       ` }} />

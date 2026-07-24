@@ -4576,22 +4576,19 @@ export default function CheckoutPage() {
                     <p style={{ fontSize: "12px", lineHeight: "1.6", color: "var(--text2)", marginBottom: "12px" }}>
                       💡 <strong>Verification Receipt:</strong> Upload your transfer screenshot below. Alternatively, if you are ordering from a PC, you can transfer from your phone and send the receipt screenshot to our WhatsApp at <strong>+92 311 8372465</strong> along with your name.
                     </p>
-
                     {!paymentReceipt ? (
-                      <div className="receipt-uploader-zone">
+                      <>
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleReceiptChange}
-                          className="upload-receipt-input"
                           id="receipt-file-input"
+                          style={{ display: "none" }}
                         />
-                        <div className="uploader-prompt-content">
-                          <span className="uploader-prompt-icon">📸</span>
-                          <span className="uploader-prompt-title">Upload Payment Receipt Screenshot</span>
-                          <span className="uploader-prompt-desc">Tap or drag image here (Optional)</span>
-                        </div>
-                      </div>
+                        <label htmlFor="receipt-file-input" className="btn-order" style={{ margin: "6px auto 0", cursor: "pointer" }}>
+                          Upload Receipt
+                        </label>
+                      </>
                     ) : (
                       <div className="receipt-preview-container">
                         <div

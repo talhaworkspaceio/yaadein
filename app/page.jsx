@@ -5994,10 +5994,16 @@ export default function HomePage() {
           .exquisite-title { font-size: 32px; }
           .feature-item { flex-direction: column; align-items: center; gap: 8px; }
           .exquisite-frame-component { width: 300px; flex-shrink: 0; }
+          .lamp-rod { height: 60px; }
           .exquisite-wood-frame { width: 300px; height: 394px; flex-shrink: 0; }
           .services-section .exquisite-content {
             align-items: center;
             text-align: center;
+          }
+          .services-section .services-bullet-list {
+            text-align: left;
+            max-width: 450px;
+            width: 100%;
           }
           .vintage-written-section {
             padding: 60px 20px;

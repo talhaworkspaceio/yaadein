@@ -736,9 +736,6 @@ export default function CategoryPage({ params }) {
           align-items: center;
           justify-content: center;
           position: relative;
-          background: rgba(12, 10, 8, 0.5);
-          border: 1px solid rgba(212, 175, 55, 0.1);
-          border-radius: var(--radius);
           padding: 20px;
         }
 

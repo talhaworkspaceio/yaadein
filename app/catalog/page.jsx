@@ -104,10 +104,12 @@ export default function CatalogPage() {
     const createdAt = typeof p === "object" ? p.createdAt : null;
     if (createdAt) {
       const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-      return (Date.now() - createdAt) < sevenDaysInMs;
+      if ((Date.now() - createdAt) < sevenDaysInMs) {
+        return true;
+      }
     }
     const id = typeof p === "string" ? p : p.id;
-    return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
+    return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak" || id === "1" || id === "17" || id === "18";
   };
 
   const isFeatured = (id) => {
@@ -1392,7 +1394,28 @@ export default function CatalogPage() {
         }
 
         @media (max-width: 768px) {
-          .hero-title { font-size: 38px; }
+          .hero-banner {
+            padding: 80px 20px 40px !important;
+          }
+          .hero-title {
+            font-size: 36px;
+          }
+          .hero-desc {
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+          }
+          
+          /* Scale down the brass lamp in hero section */
+          .catalog-lamp {
+            transform: scale(0.6) !important;
+            transform-origin: top center !important;
+            margin-top: -10px !important;
+            margin-bottom: -70px !important;
+          }
+          .catalog-lamp .lamp-rod {
+            height: 120px !important;
+          }
+
           .exhibition-section { padding: 40px 20px; }
           .gallery-grid { gap: 20px; }
           .arrival-card { width: 100%; max-width: 320px; }
@@ -1401,6 +1424,10 @@ export default function CatalogPage() {
             flex-direction: column;
             gap: 16px;
             align-items: center;
+            width: 100%;
+          }
+          .carousel-viewport-wrapper {
+            width: 100%;
           }
           .carousel-slide {
             flex: 0 0 100%;
@@ -1412,12 +1439,14 @@ export default function CatalogPage() {
             width: 36px;
             height: 36px;
             font-size: 14px;
+            z-index: 50;
+            display: flex !important;
           }
           .carousel-arrow-prev {
-            left: -10px;
+            left: 10px;
           }
           .carousel-arrow-next {
-            right: -10px;
+            right: 10px;
           }
           .view-all-card {
             flex: 0 0 auto;

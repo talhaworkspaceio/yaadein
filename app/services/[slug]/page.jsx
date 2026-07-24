@@ -226,7 +226,7 @@ const SERVICES_DATA = {
   },
   "nikkahnama-framing": {
     title: "Nikkah Nama Framing",
-    tagline: "Preserve Your Sacred Bond",
+    // tagline: "Preserve Your Sacred Bond",
     desc: "Preserve the most sacred contract of your life in a premium handcrafted frame. We specialize in archival-grade Nikkah Nama framing, utilizing acid-free mounts and museum glass to ensure your signature bond stays protected and visually stunning for generations.",
     image: "/images/nikkahnama_images/sample1.jpeg",
     priceInfo: "Framing starts from Rs. 4,000 depending on dimensions and wood selection.",
@@ -343,9 +343,14 @@ export default function ServiceDetailPage({ params }) {
     const shouldLock = frameModalOpen || cartOpen;
     document.documentElement.style.overflow = shouldLock ? "hidden" : "";
     document.body.style.overflow = shouldLock ? "hidden" : "";
+    // Pause the always-on lamp glow/particle CSS animations while a modal covers
+    // them — they're invisible but still repaint every frame, which forces the
+    // modal's backdrop-filter to keep recompositing and jank/hang the scroll.
+    document.body.classList.toggle("modal-open", shouldLock);
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.classList.remove("modal-open");
     };
   }, [frameModalOpen, cartOpen]);
 
@@ -689,6 +694,26 @@ export default function ServiceDetailPage({ params }) {
           transition: opacity 0.25s ease-in-out;
         }
         .lamp-light-beam.on { opacity: 1; }
+
+        /* Freeze the always-running decorative background animations while a
+           modal is open. They sit behind the modal's blurred overlay, so a
+           repainting animation there forces the browser to keep recompositing
+           the blur every frame — this is what made the frame picker feel like
+           it hung when scrolling. */
+        body.modal-open .glow,
+        body.modal-open .rotate,
+        body.modal-open .rotate .angle,
+        body.modal-open .rotate .angle .size,
+        body.modal-open .rotate .angle .size .position,
+        body.modal-open .rotate .angle .size .position .pulse,
+        body.modal-open .particle,
+        body.modal-open .particle::before,
+        body.modal-open .particle::after,
+        body.modal-open .catalog-glow,
+        body.modal-open .liquid-blob-1,
+        body.modal-open .liquid-blob-2 {
+          animation-play-state: paused !important;
+        }
 
         /* GLOW & PARTICLES */
         .exquisite-glow-container { top: 108px !important; }
@@ -1763,27 +1788,6 @@ export default function ServiceDetailPage({ params }) {
           box-shadow: 0 12px 35px rgba(0,0,0,0.6);
         }
 
-        /* Neutralize Warm Studio Lights (Remove Yellowish Effect) */
-        .photo-restoration-page .exquisite-wall-glow {
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 80%) !important;
-        }
-
-        .photo-restoration-page .lamp-bulb {
-          box-shadow: 0 0 12px 3px #ffffff, 0 0 24px 8px #ffffff !important;
-        }
-
-        .photo-restoration-page .lamp-light-beam {
-          background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0.03) 65%, transparent 85%) !important;
-        }
-
-        .photo-restoration-page .exquisite-inner-photo::after {
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 0%, transparent 100%) !important;
-        }
-
-        .photo-restoration-page .exquisite-wood-frame::after {
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.10) 60%, transparent 100%) !important;
-        }
-
         /* Swiper Carousel styles inside photo frame */
         .restoration-swiper-container {
           position: relative;
@@ -2010,7 +2014,11 @@ export default function ServiceDetailPage({ params }) {
                   </div>
                 </div>
 
-                {/* Swipe controls — outside the frame on either side */}
+                {/* Swipe controls — outside the frame on either side.
+                    Centered on the photo opening (not the outer frame box):
+                    a frame's matting can be top/bottom-asymmetric (e.g. a
+                    heavier bottom mat), which shifts the visible photo's
+                    center away from the frame's raw 50% midpoint. */}
                 {(slug === "photo-restoration" || slug === "photo-editing") && !userUploadedImage && (
                   <>
                     <button
@@ -2024,6 +2032,7 @@ export default function ServiceDetailPage({ params }) {
                         setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
                       }}
                       className="swiper-arrow swiper-arrow-prev"
+                      style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
                       aria-label="Previous image"
                     >
                       ‹
@@ -2039,6 +2048,7 @@ export default function ServiceDetailPage({ params }) {
                         setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
                       }}
                       className="swiper-arrow swiper-arrow-next"
+                      style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
                       aria-label="Next image"
                     >
                       ›
@@ -2230,6 +2240,7 @@ export default function ServiceDetailPage({ params }) {
       {/* FRAME SELECTION MODAL */}
       <div
         className={`frame-modal-overlay ${frameModalOpen ? "open" : ""}`}
+        data-lenis-prevent
         onClick={(e) => {
           if (e.target === e.currentTarget) setFrameModalOpen(false);
         }}
