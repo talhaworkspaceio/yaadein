@@ -36,7 +36,7 @@ export default function Footer() {
           transform: scale(1.03);
         }
         .footer-logo-img {
-          height: 75px;
+          height: 100px;
           width: auto;
           display: block;
         }

@@ -92,7 +92,8 @@ export default function NewArrivalsPage() {
 
   return (
     <div className="new-arrivals-root">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* PICTURE LIGHT LAMP STYLING */
         .exquisite-lamp {
           position: relative;
@@ -1400,13 +1401,13 @@ export default function NewArrivalsPage() {
         <p className="hero-desc">
           Experience the latest additions to the Yaadein catalogue. Exquisite styles handpicked by our designers to turn your photographs into museum-quality centerpieces.
         </p>
-        
+
         {/* Toggle switch panel */}
         <div className="light-control-panel">
           <span className="light-control-label">Studio Light</span>
-          <button 
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-            onClick={() => setLightOn(!lightOn)} 
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
             aria-label="Toggle Studio Light"
           >
             <span className="light-switch-knob" />
@@ -1435,7 +1436,7 @@ export default function NewArrivalsPage() {
               {products.map((p) => (
                 <div key={p.id} className="arrival-card">
                   {isNewArrival(p.id) && <div className="ribbon">New Arrival</div>}
-                  
+
                   <div className="card-thumb-wrap">
                     <div
                       className="card-frame"
@@ -1480,10 +1481,10 @@ export default function NewArrivalsPage() {
                           overflow: "hidden"
                         }}
                       >
-                        <img 
-                          src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"} 
-                          alt="Frame Art Preview" 
-                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }} 
+                        <img
+                          src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
+                          alt="Frame Art Preview"
+                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }}
                         />
                       </div>
                     </div>
@@ -1573,5 +1574,66 @@ export default function NewArrivalsPage() {
         )}
       </div>
     </div>
+  );
+}
+{
+  cartItems.length === 0 ? (
+    <div className="cart-empty">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="cart-empty-icon">
+        <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Zm6 0a.75.75 0 1 0 0-1.5.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+      </svg>
+      <p>Your shopping cart is empty.</p>
+      <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
+        Explore Collections
+      </button>
+    </div>
+  ) : (
+    <div className="cart-items-list">
+      {cartItems.map((item, idx) => (
+        <div key={idx} className="cart-item">
+          <div className="cart-item-thumb" style={{ background: item.frameColor }}>
+            {item.image ? (
+              <img src={item.image} alt={item.frameName} />
+            ) : (
+              <div className="cart-item-thumb-placeholder">Y</div>
+            )}
+          </div>
+          <div className="cart-item-details">
+            <div className="cart-item-name">{item.frameName}</div>
+            <div className="cart-item-meta">
+              {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+            </div>
+            <div className="cart-item-price">{item.price}</div>
+            <div className="cart-item-qty-row">
+              <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
+              <span className="qty-val">{item.quantity}</span>
+              <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
+            </div>
+          </div>
+          <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+        </div >
+{
+  cartItems.length > 0 && (
+    <div className="cart-drawer-footer">
+      <div className="cart-summary-row">
+        <span>Subtotal</span>
+        <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
+      </div>
+      <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
+      <a href="/checkout" className="btn-checkout-primary">
+        Proceed to Checkout
+      </a>
+    </div>
+  )
+}
+      </div >
+    </div >
   );
 }

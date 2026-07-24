@@ -1555,4 +1555,68 @@ export default function CategoryPage({ params }) {
       </div>
     </div>
   );
+}           </div >
+            <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
+            <a href="/checkout" className="btn-checkout-primary">
+              Proceed to Checkout
+            </a>
+          </div >
+        )}
+      </div >
+    </div >
+  );
+}             </svg >
+              <p>Your shopping cart is empty.</p>
+              <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
+                Explore Collections
+              </button>
+            </div >
+          ) : (
+  <div className="cart-items-list">
+    {cartItems.map((item, idx) => (
+      <div key={idx} className="cart-item">
+        <div className="cart-item-thumb" style={{ background: item.frameColor }}>
+          {item.image ? (
+            <img src={item.image} alt={item.frameName} />
+          ) : (
+            <div className="cart-item-thumb-placeholder">Y</div>
+          )}
+        </div>
+        <div className="cart-item-details">
+          <div className="cart-item-name">{item.frameName}</div>
+          <div className="cart-item-meta">
+            {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
+          </div>
+          <div className="cart-item-price">{item.price}</div>
+          <div className="cart-item-qty-row">
+            <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
+            <span className="qty-val">{item.quantity}</span>
+            <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
+          </div>
+        </div>
+        <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
+          ×
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+        </div >
+{
+  cartItems.length > 0 && (
+    <div className="cart-drawer-footer">
+      <div className="cart-summary-row">
+        <span>Subtotal</span>
+        <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
+      </div>
+      <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
+      <a href="/checkout" className="btn-checkout-primary">
+        Proceed to Checkout
+      </a>
+    </div>
+  )
+}
+      </div >
+    </div >
+  );
 }
