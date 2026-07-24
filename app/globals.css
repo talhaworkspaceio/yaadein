@@ -440,3 +440,14 @@ html.lenis, html.lenis body {
 .read-more-btn:hover {
   color: var(--accent2, #dfc38a);
 }
+
+/* REMOVE FIREFLIES & PARTICLE EFFECTS FROM LAMPS/BULBS ACROSS THE APPLICATION */
+.particles,
+.particle,
+.firefly,
+.fireflies {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

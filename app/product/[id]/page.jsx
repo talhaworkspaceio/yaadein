@@ -418,13 +418,13 @@ function ProductDetailContent({ params }) {
 
   // Swapped inner padding logic for rotated frames - simplified to native paddings since frame rotates
   const getPaddings = () => {
-    if (!selectedFrame) return { top: 0, left: 0, bottom: 0, right: 0 };
+    if (!selectedFrame) return { top: 4.5, left: 6.8, bottom: 4.5, right: 6.8 };
     const p = selectedFrame;
     return {
-      top: p.paddingTop || 0,
-      left: p.paddingLeft || 0,
-      bottom: p.paddingBottom || 0,
-      right: p.paddingRight || 0
+      top: p.paddingTop !== undefined && p.paddingTop > 0 ? p.paddingTop : 4.5,
+      left: p.paddingLeft !== undefined && p.paddingLeft > 0 ? p.paddingLeft : 6.8,
+      bottom: p.paddingBottom !== undefined && p.paddingBottom > 0 ? p.paddingBottom : 4.5,
+      right: p.paddingRight !== undefined && p.paddingRight > 0 ? p.paddingRight : 6.8
     };
   };
 
@@ -2290,318 +2290,318 @@ function ProductDetailContent({ params }) {
                 <div className={`lamp-light-beam ${lightOn ? "on" : ""}`} />
 
                 {/* Lamp glow & particle system */}
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
 
               </div>
@@ -2715,8 +2715,8 @@ function ProductDetailContent({ params }) {
                   {selectedFrame.desc || "Exquisitely designed wooden moulding frame, handcrafted to highlight contrast, depth, and the natural grain details of original timber prints."}
                 </p>
                 {(selectedFrame.desc || "Exquisitely designed wooden moulding frame, handcrafted to highlight contrast, depth, and the natural grain details of original timber prints.").length > 120 && (
-                  <button 
-                    onClick={() => setIsDescExpanded(!isDescExpanded)} 
+                  <button
+                    onClick={() => setIsDescExpanded(!isDescExpanded)}
                     style={{
                       background: "none",
                       border: "none",
@@ -2752,7 +2752,7 @@ function ProductDetailContent({ params }) {
                     <option value="">Choose Size</option>
                     {frameSizes.map((size) => {
                       const delta = parseInt(size.priceDelta) || 0;
-                      const deltaText = delta === 0 ? " (Base Price)" : delta > 0 ? ` (+ Rs. ${delta.toLocaleString()})` : ` (- Rs. ${Math.abs(delta).toLocaleString()})`;
+                      const deltaText = delta === 0 && " (Base Price)";
                       return (
                         <option key={size.label} value={size.label}>
                           {size.displayLabel}{deltaText}

@@ -169,7 +169,7 @@ export default function CatalogPage() {
         <div
           className="card-thumb-wrap"
           style={{
-            aspectRatio: isLandscape ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+            aspectRatio: isLandscape ? "3 / 2" : isGame ? "1 / 1" : "2 / 3",
             padding: isLandscape ? "8px" : isGame ? "20px" : "20px"
           }}
         >

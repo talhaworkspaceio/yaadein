@@ -1402,7 +1402,7 @@ export default function CategoryPage({ params }) {
                         <div
                           className="card-thumb-wrap"
                           style={{
-                            aspectRatio: p.orientation === "landscape" ? "3 / 2" : isGame ? "1 / 1" : "4 / 5",
+                            aspectRatio: p.orientation === "landscape" ? "3 / 2" : isGame ? "1 / 1" : "2 / 3",
                             padding: p.orientation === "landscape" ? "8px" : isGame ? "20px" : "20px"
                           }}
                         >

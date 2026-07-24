@@ -5591,7 +5591,7 @@ export default function HomePage() {
           position: relative;
           z-index: 10;
           width: 320px;
-          height: 450px;
+          height: 512px;
           flex-shrink: 0;
           box-shadow: 0 25px 50px rgba(0,0,0,0.85);
           overflow: hidden;
