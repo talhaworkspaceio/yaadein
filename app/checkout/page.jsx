@@ -2349,6 +2349,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!paymentReceipt) {
+      setErrorMsg("Please upload your payment receipt screenshot before placing the order.");
+      return;
+    }
+
     setIsSubmitting(true);
     const randomId = "FS-" + Math.floor(100000 + Math.random() * 900000);
 
@@ -3119,29 +3124,36 @@ export default function CheckoutPage() {
         .cod-details p { font-size: 13px; line-height: 1.6; color: var(--text2); }
 
         .btn-order {
-          max-width: 280px;
-          width: 100%;
-          margin: 22px auto 0;
-          display: block;
-          padding: 12px 24px !important;
+          max-width: 280px !important;
+          width: 100% !important;
+          height: 48px !important;
+          margin: 18px auto 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          box-sizing: border-box !important;
+          padding: 0 24px !important;
           border-radius: 9999px !important;
           background: var(--accent) !important;
           color: #1A1100 !important;
           font-family: var(--font-display) !important;
+          font-size: 13px !important;
           font-weight: 700 !important;
-          letter-spacing: 0.08em;
-          text-align: center;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
-          transition: all 0.3s ease;
-          text-transform: uppercase;
+          letter-spacing: 0.08em !important;
+          text-align: center !important;
+          cursor: pointer !important;
+          border: none !important;
+          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2) !important;
+          transition: all 0.3s ease !important;
+          text-transform: uppercase !important;
+          text-decoration: none !important;
+          line-height: 1 !important;
         }
-        .btn-order:hover {
+        .btn-order:hover:not(:disabled) {
           background: #dfc38a !important;
           transform: translateY(-1px);
         }
-        .btn-order:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .btn-order:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
         /* ── SIDEBAR ── */
         .checkout-sidebar {
@@ -4585,7 +4597,7 @@ export default function CheckoutPage() {
                           id="receipt-file-input"
                           style={{ display: "none" }}
                         />
-                        <label htmlFor="receipt-file-input" className="btn-order" style={{ margin: "6px auto 0", cursor: "pointer" }}>
+                        <label htmlFor="receipt-file-input" className="btn-order">
                           Upload Receipt
                         </label>
                       </>
@@ -4631,7 +4643,7 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <button type="submit" className="btn-order" disabled={isSubmitting}>
+                  <button type="submit" className="btn-order" disabled={isSubmitting || !paymentReceipt}>
                     {isSubmitting ? "Placing Order..." : "Place Order"}
                   </button>
                 </div>
