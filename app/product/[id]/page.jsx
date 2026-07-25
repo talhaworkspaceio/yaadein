@@ -431,6 +431,13 @@ function ProductDetailContent({ params }) {
   const paddings = getPaddings();
   const aspectRatio = "2 / 3"; // Always keep native portrait aspect ratio to avoid stretching the texture
 
+  // Calculate dynamic inner container aspect ratio for rotated landscape frames
+  const containerHeightPct = 100 - paddings.top - paddings.bottom;
+  const containerWidthPct = 100 - paddings.left - paddings.right;
+  const innerRatio = 1.5 * (containerHeightPct / (containerWidthPct || 1));
+  const landscapeImgWidth = `${(innerRatio * 100).toFixed(4)}%`;
+  const landscapeImgHeight = `${((1 / innerRatio) * 100).toFixed(4)}%`;
+
   // Cart Drawer operations
   const updateQuantity = (index, delta) => {
     const cart = getCart();
@@ -748,10 +755,9 @@ function ProductDetailContent({ params }) {
 
         .exquisite-inner-photo {
           position: absolute;
-          top: ${paddings.top}%;
-          left: ${paddings.left}%;
-          bottom: ${paddings.bottom}%;
-          right: ${paddings.right}%;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           background: #111;
           overflow: hidden;
           box-shadow: inset 0 0 12px rgba(0,0,0,0.9);

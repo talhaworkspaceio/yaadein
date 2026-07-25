@@ -1462,7 +1462,7 @@ export default function NewArrivalsPage() {
                             objectFit: "fill",
                             position: "absolute",
                             inset: 0,
-                            zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                            zIndex: 4,
                             pointerEvents: "none"
                           }}
                         />
@@ -1471,11 +1471,8 @@ export default function NewArrivalsPage() {
                         className="card-frame-inner"
                         style={{
                           position: "absolute",
-                          top: `${p.paddingTop || 0}%`,
-                          left: `${p.paddingLeft || 0}%`,
-                          bottom: `${p.paddingBottom || 0}%`,
-                          right: `${p.paddingRight || 0}%`,
-                          zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                          inset: 0,
+                          zIndex: 2,
                           background: "#2D2822",
                           boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
                           overflow: "hidden"

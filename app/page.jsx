@@ -4069,22 +4069,13 @@ export default function HomePage() {
               <img
                 src={p.imageUrl}
                 alt={p.name}
-                style={isLandscape ? {
-                  /* Natural ratio: height is pinned to the (rotated) frame box,
-                     width follows the image's real proportions. */
-                  width: "auto",
-                  height: "100%",
-                  display: "block",
-                  position: "relative",
-                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
-                  pointerEvents: "none"
-                } : {
+                style={{
                   width: "100%",
                   height: "100%",
                   objectFit: "fill",
                   position: "absolute",
                   inset: 0,
-                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                  zIndex: 4,
                   pointerEvents: "none"
                 }}
               />
@@ -4093,11 +4084,8 @@ export default function HomePage() {
               className="card-frame-inner"
               style={{
                 position: "absolute",
-                top: `${p.paddingTop || 0}%`,
-                left: `${p.paddingLeft || 0}%`,
-                bottom: `${p.paddingBottom || 0}%`,
-                right: `${p.paddingRight || 0}%`,
-                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                inset: 0,
+                zIndex: 2,
                 background: "#2D2822",
                 boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
                 overflow: "hidden"
@@ -4113,7 +4101,6 @@ export default function HomePage() {
                   position: "absolute",
                   top: "50%",
                   left: "50%",
-                  /* Counter-rotate the photo so it reads upright inside the rotated frame */
                   transform: isLandscape ? "translate(-50%, -50%) rotate(90deg)" : "translate(-50%, -50%)",
                   objectPosition: "center center"
                 }}

@@ -1430,7 +1430,7 @@ export default function CategoryPage({ params }) {
                                   objectFit: "fill",
                                   position: "absolute",
                                   inset: 0,
-                                  zIndex: p.imageUrl.endsWith('.png') ? 2 : 4,
+                                  zIndex: 4,
                                   pointerEvents: "none"
                                 }}
                               />
@@ -1439,11 +1439,8 @@ export default function CategoryPage({ params }) {
                               className="card-frame-inner"
                               style={{
                                 position: "absolute",
-                                top: `${p.paddingTop || 0}%`,
-                                left: `${p.paddingLeft || 0}%`,
-                                bottom: `${p.paddingBottom || 0}%`,
-                                right: `${p.paddingRight || 0}%`,
-                                zIndex: p.imageUrl && p.imageUrl.endsWith('.png') ? 4 : 2,
+                                inset: 0,
+                                zIndex: 2,
                                 background: "#2D2822",
                                 boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
                                 overflow: "hidden"
@@ -1554,69 +1551,5 @@ export default function CategoryPage({ params }) {
         )}
       </div>
     </div>
-  );
-}           </div >
-            <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
-            <a href="/checkout" className="btn-checkout-primary">
-              Proceed to Checkout
-            </a>
-          </div >
-        )}
-      </div >
-    </div >
-  );
-}             </svg >
-              <p>Your shopping cart is empty.</p>
-              <button className="btn-nav-primary" style={{ marginTop: "16px" }} onClick={() => setCartOpen(false)}>
-                Explore Collections
-              </button>
-            </div >
-          ) : (
-  <div className="cart-items-list">
-    {cartItems.map((item, idx) => (
-      <div key={idx} className="cart-item">
-        <div className="cart-item-thumb" style={{ background: item.frameColor }}>
-          {item.image ? (
-            <img src={item.image} alt={item.frameName} />
-          ) : (
-            <div className="cart-item-thumb-placeholder">Y</div>
-          )}
-        </div>
-        <div className="cart-item-details">
-          <div className="cart-item-name">{item.frameName}</div>
-          <div className="cart-item-meta">
-            {item.rotation !== 0 ? `Rotated ${item.rotation}°` : "Portrait"}
-          </div>
-          <div className="cart-item-price">{item.price}</div>
-          <div className="cart-item-qty-row">
-            <button className="qty-btn" onClick={() => updateQuantity(idx, -1)}>–</button>
-            <span className="qty-val">{item.quantity}</span>
-            <button className="qty-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
-          </div>
-        </div>
-        <button className="cart-item-remove" onClick={() => removeCartItem(idx)} title="Remove Item">
-          ×
-        </button>
-      </div>
-    ))}
-  </div>
-)}
-        </div >
-{
-  cartItems.length > 0 && (
-    <div className="cart-drawer-footer">
-      <div className="cart-summary-row">
-        <span>Subtotal</span>
-        <span className="cart-summary-total">Rs. {getCartSubtotal().toLocaleString()}</span>
-      </div>
-      <p className="cart-footer-note">Shipping and taxes calculated at checkout.</p>
-      <a href="/checkout" className="btn-checkout-primary">
-        Proceed to Checkout
-      </a>
-    </div>
-  )
-}
-      </div >
-    </div >
   );
 }

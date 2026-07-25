@@ -1388,7 +1388,7 @@ function FrameCustomizer() {
                               objectFit: "fill",
                               position: "absolute",
                               inset: 0,
-                              zIndex: f.imageUrl.endsWith('.png') ? 2 : 4,
+                              zIndex: 4,
                               pointerEvents: "none"
                             }}
                           />
@@ -1398,11 +1398,8 @@ function FrameCustomizer() {
                           className="frame-thumb-inner"
                           style={{
                             position: "absolute",
-                            top: `${f.paddingTop || 0}%`,
-                            left: `${f.paddingLeft || 0}%`,
-                            bottom: `${f.paddingBottom || 0}%`,
-                            right: `${f.paddingRight || 0}%`,
-                            zIndex: f.imageUrl && f.imageUrl.endsWith('.png') ? 4 : 2,
+                            inset: 0,
+                            zIndex: 2,
                             backgroundColor: "#3E352F",
                             backgroundImage: uploadedImage ? `url(${uploadedImage})` : "none",
                             backgroundSize: "cover",

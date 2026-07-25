@@ -892,10 +892,9 @@ export default function ServiceDetailPage({ params }) {
 
         .exquisite-inner-photo {
           position: absolute;
-          top: ${paddings.top}%;
-          left: ${paddings.left}%;
-          bottom: ${paddings.bottom}%;
-          right: ${paddings.right}%;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           background: #111;
           overflow: hidden;
           box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
@@ -2109,27 +2108,29 @@ export default function ServiceDetailPage({ params }) {
               </div>
 
               {/* Choose Frame */}
-              <div className="config-section">
-                <span className="config-label">Choose Frame</span>
-                <button
-                  className={`choose-frame-btn ${selectedCustomFrame ? "has-frame" : ""}`}
-                  onClick={() => setFrameModalOpen(true)}
-                >
-                  <span>
-                    {selectedCustomFrame ? selectedCustomFrame.name : "Browse Frames"}
-                  </span>
-                  <span className="frame-selected-name">
-                    {selectedCustomFrame
-                      ? `+ ${formatPrice(framePriceNum)}`
-                      : "›"}
-                  </span>
-                </button>
-                {selectedCustomFrame && (
-                  <button className="clear-frame-link" onClick={clearSelectedFrame}>
-                    Remove Selected Frame
+              {slug !== "photo-editing" && (
+                <div className="config-section">
+                  <span className="config-label">Choose Frame</span>
+                  <button
+                    className={`choose-frame-btn ${selectedCustomFrame ? "has-frame" : ""}`}
+                    onClick={() => setFrameModalOpen(true)}
+                  >
+                    <span>
+                      {selectedCustomFrame ? selectedCustomFrame.name : "Browse Frames"}
+                    </span>
+                    <span className="frame-selected-name">
+                      {selectedCustomFrame
+                        ? `+ ${formatPrice(framePriceNum)}`
+                        : "›"}
+                    </span>
                   </button>
-                )}
-              </div>
+                  {selectedCustomFrame && (
+                    <button className="clear-frame-link" onClick={clearSelectedFrame}>
+                      Remove Selected Frame
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* CTA Actions */}
               <div className="action-row">
