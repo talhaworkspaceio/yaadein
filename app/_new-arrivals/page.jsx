@@ -1452,37 +1452,64 @@ export default function NewArrivalsPage() {
                         overflow: "hidden"
                       }}
                     >
-                      {p.imageUrl && (
-                        <img
-                          src={p.imageUrl}
-                          alt={p.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "fill",
-                            position: "absolute",
-                            inset: 0,
-                            zIndex: 4,
-                            pointerEvents: "none"
-                          }}
-                        />
-                      )}
                       <div
-                        className="card-frame-inner"
-                        style={{
+                        style={p.orientation === "landscape" ? {
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          width: "66.6667%",
+                          height: "150%",
+                          transform: "translate(-50%, -50%) rotate(90deg)",
+                          overflow: "hidden"
+                        } : {
                           position: "absolute",
                           inset: 0,
-                          zIndex: 2,
-                          background: "#2D2822",
-                          boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                          width: "100%",
+                          height: "100%",
                           overflow: "hidden"
                         }}
                       >
-                        <img
-                          src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
-                          alt="Frame Art Preview"
-                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: p.orientation === "landscape" ? "center 15%" : "center center" }}
-                        />
+                        {p.imageUrl && (
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "fill",
+                              position: "absolute",
+                              inset: 0,
+                              zIndex: 4,
+                              pointerEvents: "none"
+                            }}
+                          />
+                        )}
+                        <div
+                          className="card-frame-inner"
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            zIndex: 2,
+                            background: "#2D2822",
+                            boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                            overflow: "hidden"
+                          }}
+                        >
+                          <img
+                            src={p.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg"}
+                            alt="Frame Art Preview"
+                            style={{
+                              width: p.orientation === "landscape" ? "152%" : "100%",
+                              height: p.orientation === "landscape" ? "152%" : "100%",
+                              objectFit: "cover",
+                              position: "absolute",
+                              top: "50%",
+                              left: "50%",
+                              transform: p.orientation === "landscape" ? "translate(-50%, -50%) rotate(-90deg)" : "translate(-50%, -50%)",
+                              objectPosition: p.orientation === "landscape" ? "center 15%" : "center center"
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

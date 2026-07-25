@@ -183,6 +183,44 @@ body {
   pointer-events: none;
 }
 
+/* HERO VIDEO VOLUME TOGGLE BUTTON */
+.hero-volume-btn {
+  position: absolute;
+  bottom: 35px;
+  right: 40px;
+  z-index: 10;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(12, 10, 8, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f3ece4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.hero-volume-btn:hover {
+  background: rgba(181, 139, 92, 0.85);
+  color: #0c0a08;
+  border-color: #b58b5c;
+  transform: scale(1.08);
+}
+
+@media (max-width: 768px) {
+  .hero-volume-btn {
+    bottom: 25px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+  }
+}
+
 .hero-vintage-tint {
   position: absolute;
   inset: 0;

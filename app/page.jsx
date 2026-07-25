@@ -3765,7 +3765,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "../lib/firebase";
 import { ref, onValue, push, set } from "firebase/database";
 import Navbar from "./components/Navbar";
@@ -3789,6 +3789,32 @@ const saveCart = (cart) => {
 };
 
 export default function HomePage() {
+  const heroVideoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const toggleMute = () => {
+    if (heroVideoRef.current) {
+      heroVideoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  useEffect(() => {
+    if (heroVideoRef.current) {
+      heroVideoRef.current.muted = false;
+      const playPromise = heroVideoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (heroVideoRef.current) {
+            heroVideoRef.current.muted = true;
+            setIsMuted(true);
+            heroVideoRef.current.play().catch(() => {});
+          }
+        });
+      }
+    }
+  }, []);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -4034,28 +4060,11 @@ export default function HomePage() {
         >
           <div
             className="card-frame"
-            style={isLandscape ? {
-              /* Portrait frame image rotated -90deg to display as landscape.
-                 The pre-rotation height (= visual width after rotation) is
-                 derived from the wrap width; the frame's own width follows
-                 the image's natural aspect ratio, so no stretching. */
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%) rotate(-90deg)",
-              transformOrigin: "center center",
-              height: "calc(100% * 1.5 - 16px)",
-              width: "auto",
-              boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden"
-            } : {
+            style={{
               position: "relative",
-              aspectRatio: isGame ? "1 / 1" : (p.aspectRatio || "2 / 3"),
-              width: "auto",
-              height: "100%",
+              aspectRatio: isGame ? "1 / 1" : p.aspectRatio || (isLandscape ? "3 / 2" : "2 / 3"),
+              width: isLandscape ? "100%" : "auto",
+              height: isLandscape ? "auto" : "100%",
               maxWidth: "100%",
               boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
               display: "flex",
@@ -4065,46 +4074,64 @@ export default function HomePage() {
               margin: "0 auto"
             }}
           >
-            {p.imageUrl && (
-              <img
-                src={p.imageUrl}
-                alt={p.name}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "fill",
-                  position: "absolute",
-                  inset: 0,
-                  zIndex: 4,
-                  pointerEvents: "none"
-                }}
-              />
-            )}
             <div
-              className="card-frame-inner"
-              style={{
+              style={isLandscape ? {
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "66.6667%",
+                height: "150%",
+                transform: "translate(-50%, -50%) rotate(90deg)",
+                overflow: "hidden"
+              } : {
                 position: "absolute",
                 inset: 0,
-                zIndex: 2,
-                background: "#2D2822",
-                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                width: "100%",
+                height: "100%",
                 overflow: "hidden"
               }}
             >
-              <img
-                src={getProductPreviewImage(p)}
-                alt="Frame Art Preview"
+              {p.imageUrl && (
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "fill",
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 4,
+                    pointerEvents: "none"
+                  }}
+                />
+              )}
+              <div
+                className="card-frame-inner"
                 style={{
-                  width: isLandscape ? "152%" : "100%",
-                  height: isLandscape ? "152%" : "100%",
-                  objectFit: isGame ? "fill" : "cover",
                   position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: isLandscape ? "translate(-50%, -50%) rotate(90deg)" : "translate(-50%, -50%)",
-                  objectPosition: "center center"
+                  inset: 0,
+                  zIndex: 2,
+                  background: "#2D2822",
+                  boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                  overflow: "hidden"
                 }}
-              />
+              >
+                <img
+                  src={getProductPreviewImage(p)}
+                  alt="Frame Art Preview"
+                  style={{
+                    width: isLandscape ? "152%" : "100%",
+                    height: isLandscape ? "152%" : "100%",
+                    objectFit: isGame ? "fill" : "cover",
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: isLandscape ? "translate(-50%, -50%) rotate(-90deg)" : "translate(-50%, -50%)",
+                    objectPosition: isLandscape ? "center 15%" : "center center"
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -6638,14 +6665,35 @@ export default function HomePage() {
       {/* FULLSCREEN VIDEO HERO BANNER */}
       <section className="hero-fullscreen-frame">
         <video
+          ref={heroVideoRef}
           src="/videos/yaadein.mp4"
           autoPlay
           loop
-          muted
+          muted={isMuted}
           playsInline
           className="hero-video-bg"
         />
         <div className="hero-video-overlay" />
+
+        <button
+          className="hero-volume-btn"
+          onClick={toggleMute}
+          aria-label={isMuted ? "Unmute video sound" : "Mute video sound"}
+          title={isMuted ? "Unmute Sound" : "Mute Sound"}
+        >
+          {isMuted ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          )}
+        </button>
 
         <div className="hero-fullscreen-content">
 

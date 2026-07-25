@@ -175,24 +175,11 @@ export default function CatalogPage() {
         >
           <div
             className="card-frame"
-            style={isLandscape ? {
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%) rotate(-90deg)",
-              transformOrigin: "center center",
-              height: "calc(100% * 1.5 - 16px)",
-              width: "auto",
-              boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden"
-            } : {
+            style={{
               position: "relative",
-              aspectRatio: isGame ? "1 / 1" : (p.aspectRatio || "2 / 3"),
-              width: "auto",
-              height: "100%",
+              aspectRatio: isGame ? "1 / 1" : p.aspectRatio || (isLandscape ? "3 / 2" : "2 / 3"),
+              width: isLandscape ? "100%" : "auto",
+              height: isLandscape ? "auto" : "100%",
               maxWidth: "100%",
               boxShadow: "0 10px 24px rgba(0,0,0,0.6)",
               display: "flex",
@@ -202,46 +189,64 @@ export default function CatalogPage() {
               margin: "0 auto"
             }}
           >
-            {p.imageUrl && (
-              <img
-                src={p.imageUrl}
-                alt={p.name}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "fill",
-                  position: "absolute",
-                  inset: 0,
-                  zIndex: 4,
-                  pointerEvents: "none"
-                }}
-              />
-            )}
             <div
-              className="card-frame-inner"
-              style={{
+              style={isLandscape ? {
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "66.6667%",
+                height: "150%",
+                transform: "translate(-50%, -50%) rotate(90deg)",
+                overflow: "hidden"
+              } : {
                 position: "absolute",
                 inset: 0,
-                zIndex: 2,
-                background: "#2D2822",
-                boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                width: "100%",
+                height: "100%",
                 overflow: "hidden"
               }}
             >
-              <img
-                src={getProductPreviewImage(p)}
-                alt="Frame Art Preview"
+              {p.imageUrl && (
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "fill",
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 4,
+                    pointerEvents: "none"
+                  }}
+                />
+              )}
+              <div
+                className="card-frame-inner"
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: isGame ? "fill" : "cover",
                   position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  objectPosition: "center center"
+                  inset: 0,
+                  zIndex: 2,
+                  background: "#2D2822",
+                  boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
+                  overflow: "hidden"
                 }}
-              />
+              >
+                <img
+                  src={getProductPreviewImage(p)}
+                  alt="Frame Art Preview"
+                  style={{
+                    width: isLandscape ? "152%" : "100%",
+                    height: isLandscape ? "152%" : "100%",
+                    objectFit: isGame ? "fill" : "cover",
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: isLandscape ? "translate(-50%, -50%) rotate(-90deg)" : "translate(-50%, -50%)",
+                    objectPosition: isLandscape ? "center 15%" : "center center"
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
