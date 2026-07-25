@@ -428,7 +428,8 @@ body {
 }
 
 /* ── LENIS SMOOTH SCROLL SUPPORT ── */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
 
