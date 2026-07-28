@@ -2441,6 +2441,13 @@ export default function CheckoutPage() {
       const newOrderRef = push(ordersRef);
       await set(newOrderRef, orderData);
 
+      // Dispatch ntfy push notification for received order
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "order", orderData }),
+      }).catch((err) => console.error("ntfy notification error:", err));
+
       setOrderId(randomId);
       setOrderSuccess(true);
 
