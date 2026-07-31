@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=Special+Elite&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Instrument+Sans:ital,wght@0,400..800;1,400..800&display=swap');
+
 @font-face {
   font-family: 'Shelly';
   src: url('/fonts/shelly.ttf') format('truetype');
@@ -5,7 +7,6 @@
   font-style: normal;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=Special+Elite&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Instrument+Sans:ital,wght@0,400..800;1,400..800&display=swap');
 
 *,
 *::before,
