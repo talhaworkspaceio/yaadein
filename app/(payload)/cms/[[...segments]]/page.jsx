@@ -2,10 +2,16 @@ import { RootPage, generatePageMetadata } from '@payloadcms/next/views'
 import configPromise from '../../../../payload.config'
 import { importMap } from '../importMap'
 
-export const generateMetadata = ({ params, searchParams }) =>
-  generatePageMetadata({ config: configPromise, params, searchParams })
+export const generateMetadata = async ({ params, searchParams }) => {
+  const resolvedParams = await params
+  const resolvedSearchParams = await searchParams
+  return generatePageMetadata({ config: configPromise, params: resolvedParams, searchParams: resolvedSearchParams })
+}
 
-const Page = ({ params, searchParams }) =>
-  RootPage({ config: configPromise, importMap, params, searchParams })
+const Page = async ({ params, searchParams }) => {
+  const resolvedParams = await params
+  const resolvedSearchParams = await searchParams
+  return RootPage({ config: configPromise, importMap, params: resolvedParams, searchParams: resolvedSearchParams })
+}
 
 export default Page

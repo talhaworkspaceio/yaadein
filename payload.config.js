@@ -20,7 +20,12 @@ import { TermsPage } from './payload/globals/TermsPage.js'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const serverURL = process.env.NEXT_PUBLIC_SERVER_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` :
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''))
+
 export default buildConfig({
+  serverURL,
   routes: {
     admin: '/cms',
   },
