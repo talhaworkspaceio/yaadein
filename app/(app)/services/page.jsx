@@ -5,6 +5,9 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BeforeAfterSlider from "../components/BeforeAfterSlider";
 import { useServicesPageContent } from "../../lib/cms";
+import { ref, onValue } from "firebase/database";
+import { db } from "../../lib/firebase";
+
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -29,25 +32,25 @@ export default function ServicesPage() {
 
   useEffect(() => {
     let isMounted = true;
-    async function fetchServices() {
-      try {
-        const res = await fetch('/api/services?depth=2&limit=100', {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store' },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.docs && json.docs.length > 0 && isMounted) {
-            setServicesList(json.docs);
+    try {
+      const servicesRef = ref(db, "cms_services");
+      const unsub = onValue(servicesRef, (snapshot) => {
+        const val = snapshot.val();
+        if (isMounted) {
+          if (val) {
+            setServicesList(Array.isArray(val) ? val : Object.values(val));
           }
         }
-      } catch (err) {
-        console.warn('[CMS Services Page] Error fetching services collection:', err);
-      }
+      });
+      return () => {
+        isMounted = false;
+        unsub();
+      };
+    } catch (e) {
+      console.warn("[Firebase Services] Error fetching services:", e);
     }
-    fetchServices();
-    return () => { isMounted = false; };
   }, []);
+
 
   const [cartOpen, setCartOpen] = useState(false);
   const [lightOn, setLightOn] = useState(true);

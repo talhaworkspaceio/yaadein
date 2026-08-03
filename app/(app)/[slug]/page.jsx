@@ -3,6 +3,9 @@
 import { use, useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { ref, onValue } from "firebase/database";
+import { db } from "../../lib/firebase";
+
 
 export default function CustomRootPage({ params }) {
   const resolvedParams = use(params);
@@ -15,36 +18,34 @@ export default function CustomRootPage({ params }) {
 
   useEffect(() => {
     let isMounted = true;
-    async function fetchCustomPage() {
-      if (!slug) return;
-      try {
-        const res = await fetch(`/api/pages?where[or][0][slug][equals]=${slug}&where[or][1][slug][equals]=/${slug}&depth=2`, {
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-          },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.docs && json.docs.length > 0 && json.docs[0].status === "published") {
-            if (isMounted) setPageData(json.docs[0]);
+    if (!slug) return;
+    try {
+      const pageRef = ref(db, `cms_pages/${slug}`);
+      const unsub = onValue(pageRef, (snapshot) => {
+        const val = snapshot.val();
+        if (isMounted) {
+          if (val) {
+            setPageData(val);
+            setNotFound(false);
           } else {
-            if (isMounted) setNotFound(true);
+            setNotFound(true);
           }
-        } else {
-          if (isMounted) setNotFound(true);
+          setLoading(false);
         }
-      } catch (err) {
-        console.warn("[CMS Page Builder] Failed to fetch custom page:", err);
-        if (isMounted) setNotFound(true);
-      } finally {
-        if (isMounted) setLoading(false);
+      });
+      return () => {
+        isMounted = false;
+        unsub();
+      };
+    } catch (err) {
+      console.warn("[Firebase Page Builder] Failed to fetch custom page:", err);
+      if (isMounted) {
+        setNotFound(true);
+        setLoading(false);
       }
     }
-
-    fetchCustomPage();
-    return () => { isMounted = false; };
   }, [slug]);
+
 
   if (loading) {
     return (

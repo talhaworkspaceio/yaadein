@@ -350,26 +350,26 @@ export default function ServiceDetailPage({ params }) {
 
   useEffect(() => {
     let isMounted = true;
-    async function fetchCmsService() {
-      if (!slug) return;
-      try {
-        const res = await fetch(`/api/services?where[or][0][slug][equals]=${slug}&where[or][1][slug][equals]=/${slug}&depth=2`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store' },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.docs && json.docs.length > 0 && isMounted) {
-            setCmsService(json.docs[0]);
-          }
+    if (!slug) return;
+    try {
+      const servicesRef = ref(db, "cms_services");
+      const unsub = onValue(servicesRef, (snapshot) => {
+        const val = snapshot.val();
+        if (isMounted && val) {
+          const list = Array.isArray(val) ? val : Object.values(val);
+          const found = list.find(s => s.slug === slug || s.slug === `/${slug}` || s.id === slug);
+          if (found) setCmsService(found);
         }
-      } catch (err) {
-        console.warn('[CMS Service] Error fetching service document:', err);
-      }
+      });
+      return () => {
+        isMounted = false;
+        unsub();
+      };
+    } catch (e) {
+      console.warn("[Firebase Service Detail] Error fetching service:", e);
     }
-    fetchCmsService();
-    return () => { isMounted = false; };
   }, [slug]);
+
 
   const fallbackService = SERVICES_DATA[slug];
 
