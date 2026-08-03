@@ -1147,7 +1147,8 @@ export default function TermsPage() {
 
         </div>
 
-        <h1 className="hero-title">{termsCms?.pageTitle || "Terms & Conditions"}</h1>
+        <h1 className="hero-title">{termsCms?.title || termsCms?.pageTitle || "Terms & Conditions"}</h1>
+
         
         {/* Toggle switch panel */}
         <div className="light-control-panel">

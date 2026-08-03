@@ -3783,11 +3783,111 @@ const getCart = () => {
   }
 };
 
-const saveCart = (cart) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("fs_cart", JSON.stringify(cart));
-  window.dispatchEvent(new Event("fs-cart-updated"));
-};
+function ReelVideoCard({ reel }) {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef(null);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  return (
+    <div className="social-post-card" style={{ minWidth: 320, flex: "0 0 calc(33.333% - 16px)", flexShrink: 0 }}>
+      <div className="social-post-image" onClick={togglePlay} style={{ cursor: "pointer", position: "relative" }}>
+        {reel.videoUrl ? (
+          <video
+            ref={videoRef}
+            src={reel.videoUrl}
+            poster={reel.thumbnailUrl || undefined}
+            preload="metadata"
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+
+        ) : (
+          <img src={reel.thumbnailUrl || "/images/instagram_mirror_selfie.jpg"} alt="yaadein.pk reel" />
+        )}
+
+        <div className="social-post-overlay">
+          {reel.videoUrl && (
+            <button
+              onClick={toggleMute}
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                background: "rgba(10, 8, 6, 0.8)",
+                border: "1px solid var(--accent)",
+                color: "var(--accent)",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                zIndex: 10,
+                transition: "transform 0.2s ease, background 0.2s ease",
+              }}
+              aria-label={isMuted ? "Unmute reel sound" : "Mute reel sound"}
+              title={isMuted ? "Unmute Sound" : "Mute Sound"}
+            >
+              {isMuted ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <line x1="23" y1="9" x2="17" y2="15"></line>
+                  <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+              )}
+            </button>
+          )}
+
+          <div className="social-post-stats">
+            <span>❤️ {reel.likesCount || "198"}</span>
+            <span>💬 {reel.commentsCount || "14"}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="social-post-body">
+        <div className="social-post-author">
+          <div className="social-post-author-avatar">Y</div>
+          <div>
+            <div className="social-post-author-name">@yaadein.pk</div>
+            <div className="social-post-platform">{reel.platform || "Instagram"}</div>
+          </div>
+        </div>
+        <p className="social-post-caption">{reel.caption}</p>
+        <span className="social-post-date">{reel.postDate || "Recently"}</span>
+      </div>
+    </div>
+  );
+}
+
 
 export default function HomePage() {
   const { data: homeCms } = useHomePageContent();
@@ -7560,17 +7660,17 @@ export default function HomePage() {
 
         <div className="social-feed-container">
           <div className="social-feed-header">
-            <p className="social-feed-tagline">Follow Our Journey</p>
-            <h2 className="social-feed-title">#YaadeinFrames</h2>
+            <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "Follow Our Journey"}</p>
+            <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "#YaadeinFrames"}</h2>
             <p className="social-feed-subtitle">
-              See how our customers style their spaces. Tag us to get featured in our gallery.
+              {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
             </p>
           </div>
 
           <div className="social-carousel-wrapper">
             <button
               className="carousel-arrow prev desktop-only-carousel"
-              onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + 2) % 2)}
+              onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3)) % Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3))}
               aria-label="Previous Posts"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -7578,247 +7678,84 @@ export default function HomePage() {
               </svg>
             </button>
 
-            <div className="social-carousel-viewport desktop-only-carousel">
-              <div className="social-carousel-track" style={{ transform: `translateX(-${currentSocialSlide * 50}%)` }}>
-                {/* Slide 1 */}
-                <div className="social-carousel-slide">
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Customer frame setup" />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 234</span>
-                          <span>💬 18</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">Y</div>
-                        <div>
-                          <div className="social-post-author-name">yaadein.pk</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dignissim lacinia nunc. 🖼️✨ #YaadeinFrames #HomeDecor
-                      </p>
-                      <span className="social-post-date">2 days ago</span>
-                    </div>
-                  </div>
-
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 189</span>
-                          <span>💬 12</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">A</div>
-                        <div>
-                          <div className="social-post-author-name">ayesha.interiors</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi. My living room transformation! 🏡 #InteriorDesign
-                      </p>
-                      <span className="social-post-date">5 days ago</span>
-                    </div>
-                  </div>
-
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 312</span>
-                          <span>💬 27</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">Y</div>
-                        <div>
-                          <div className="social-post-author-name">yaadein.pk</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. New collection drop! 🎨 #ArtFraming #BespokeFrames
-                      </p>
-                      <span className="social-post-date">1 week ago</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide 2 */}
-                <div className="social-carousel-slide">
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 156</span>
-                          <span>💬 9</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">H</div>
-                        <div>
-                          <div className="social-post-author-name">hassan.captures</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        Excepteur sint occaecat cupidatat non proident, sunt in culpa. Gallery wall completed! 📸 #WallArt #Photography
-                      </p>
-                      <span className="social-post-date">2 weeks ago</span>
-                    </div>
-                  </div>
-
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Oak frames bedroom decor" style={{ objectPosition: "center center" }} />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 245</span>
-                          <span>💬 19</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">Z</div>
-                        <div>
-                          <div className="social-post-author-name">zainab.frames</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        Absolutely in love with the classic oak frame! It matches my bedroom aesthetic perfectly. 🌿✨ #AestheticHome #Decor
-                      </p>
-                      <span className="social-post-date">3 weeks ago</span>
-                    </div>
-                  </div>
-
-                  <div className="social-post-card">
-                    <div className="social-post-image">
-                      <img src="/images/dummyImg.jpg" alt="Art studio gallery" style={{ objectPosition: "center 40%" }} />
-                      <div className="social-post-overlay">
-                        <div className="social-post-stats">
-                          <span>❤️ 198</span>
-                          <span>💬 14</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="social-post-body">
-                      <div className="social-post-author">
-                        <div className="social-post-author-avatar">M</div>
-                        <div>
-                          <div className="social-post-author-name">maryam.spaces</div>
-                          <div className="social-post-platform">Instagram</div>
-                        </div>
-                      </div>
-                      <p className="social-post-caption">
-                        The gold frame detailing is even more beautiful in person. Handcrafted perfection! 💛 #ArtStudio #LuxuryHome
-                      </p>
-                      <span className="social-post-date">1 month ago</span>
-                    </div>
-                  </div>
-                </div>
+            <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 24,
+                  width: "100%",
+                  transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                  transform: `translateX(-${currentSocialSlide * 344}px)`,
+                }}
+              >
+                {(homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0
+                  ? homeCms.socialFeedSection.reels
+                  : [
+                      {
+                        authorName: "yaadein.pk",
+                        avatarInitial: "Y",
+                        platform: "Instagram",
+                        videoUrl: "/videos/reel1.mp4",
+                        thumbnailUrl: "/images/instagram_mirror_selfie.jpg",
+                        caption: "Gallery wall completed! 📸 Handcrafted solid wood frames. #YaadeinFrames #HomeDecor",
+                        likesCount: "156",
+                        commentsCount: "9",
+                        postDate: "2 weeks ago",
+                      },
+                      {
+                        authorName: "yaadein.pk",
+                        avatarInitial: "Y",
+                        platform: "Instagram",
+                        videoUrl: "/videos/reel2.mp4",
+                        thumbnailUrl: "/images/gallery_walls.png",
+                        caption: "Classic oak frame matching elegant room aesthetic perfectly. 🌿✨ #YaadeinFrames #Bespoke",
+                        likesCount: "245",
+                        commentsCount: "19",
+                        postDate: "3 weeks ago",
+                      },
+                      {
+                        authorName: "yaadein.pk",
+                        avatarInitial: "Y",
+                        platform: "Instagram",
+                        videoUrl: "/videos/reel3.mp4",
+                        thumbnailUrl: "/images/bespoke_framing.png",
+                        caption: "Gold frame detailing handcrafted with precision. Museum grade glass! 💛 #YaadeinFrames #ArtStudio",
+                        likesCount: "198",
+                        commentsCount: "14",
+                        postDate: "1 month ago",
+                      },
+                      {
+                        authorName: "yaadein.pk",
+                        avatarInitial: "Y",
+                        platform: "Instagram",
+                        videoUrl: "/videos/reel4.mp4",
+                        thumbnailUrl: "/images/nikkahnama_images/sample1.jpeg",
+                        caption: "Master artisan assembling a bespoke Nikkah Nama frame set in real cured mahogany wood! 🖼️✨ #YaadeinFrames",
+                        likesCount: "312",
+                        commentsCount: "27",
+                        postDate: "3 days ago",
+                      },
+                    ]
+                ).map((reel, rIdx) => (
+                  <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                ))}
               </div>
             </div>
 
+
             <button
               className="carousel-arrow next desktop-only-carousel"
-              onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % 2)}
+              onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3)))}
               aria-label="Next Posts"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
-
-            {/* MOBILE ONLY SOCIAL CAROUSEL */}
-            <div className="social-carousel-viewport mobile-only-carousel social-mobile-carousel">
-              <div
-                className="social-carousel-track-mobile"
-                style={{ transform: `translateX(-${mobileSocialIndex * (100 / 6)}%)` }}
-              >
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Customer frame setup" /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">Y</div><div><div className="social-post-author-name">yaadein.pk</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">Lorem ipsum dolor sit amet, consectetur adipiscing elit. 🖼️✨ #YaadeinFrames #HomeDecor</p>
-                      <span className="social-post-date">2 days ago</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Frame collection" style={{ objectPosition: "center 30%" }} /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">A</div><div><div className="social-post-author-name">ayesha.interiors</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">My living room transformation! 🏡 #InteriorDesign</p>
-                      <span className="social-post-date">5 days ago</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Custom frame order" style={{ objectPosition: "center 70%" }} /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">Y</div><div><div className="social-post-author-name">yaadein.pk</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">New collection drop! 🎨 #ArtFraming #BespokeFrames</p>
-                      <span className="social-post-date">1 week ago</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Gallery wall" style={{ objectPosition: "20% center" }} /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">H</div><div><div className="social-post-author-name">hassan.captures</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">Gallery wall completed! 📸 #WallArt #Photography</p>
-                      <span className="social-post-date">2 weeks ago</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Oak frames bedroom decor" /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">Z</div><div><div className="social-post-author-name">zainab.frames</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">Classic oak frame! 🌿✨ #AestheticHome #Decor</p>
-                      <span className="social-post-date">3 weeks ago</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="social-slide-mobile-wrapper">
-                  <div className="social-post-card">
-                    <div className="social-post-image"><img src="/images/dummyImg.jpg" alt="Art studio gallery" style={{ objectPosition: "center 40%" }} /></div>
-                    <div className="social-post-body">
-                      <div className="social-post-author"><div className="social-post-author-avatar">M</div><div><div className="social-post-author-name">maryam.spaces</div><div className="social-post-platform">Instagram</div></div></div>
-                      <p className="social-post-caption">Handcrafted perfection! 💛 #ArtStudio #LuxuryHome</p>
-                      <span className="social-post-date">1 month ago</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="social-carousel-indicators desktop-only-carousel">
+
             {[0, 1].map((idx) => (
               <button
                 key={idx}

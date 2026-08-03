@@ -3,17 +3,18 @@
 import { useNavigationContent } from "../../lib/cms";
 
 export default function Footer() {
-  const { navigation } = useNavigationContent();
+  const { data: navigation } = useNavigationContent();
 
-  const tagline = navigation?.footerBrand?.tagline || "Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.";
+  const tagline = navigation?.tagline || navigation?.footerBrand?.tagline || "Masterpiece picture framing handcrafted for your unique memories. Designed digitally by you, hand-finished by master craftspeople in Pakistan.";
   const logoSrc = navigation?.footerBrand?.footerLogo?.url || "/images/logo-white-orig.png";
-  const workingHours = navigation?.studioInfo?.workingHours || "Mon - Fri: 9:00 AM - 6:00 PM";
-  const supportEmail = navigation?.studioInfo?.supportEmail || "team@yaadein.com";
-  const locationText = navigation?.studioInfo?.locationText || "Designed in Pakistan";
+  const workingHours = navigation?.studioHours || navigation?.studioInfo?.workingHours || "Mon - Fri: 9:00 AM - 6:00 PM";
+  const supportEmail = navigation?.supportEmail || navigation?.studioInfo?.supportEmail || "team@yaadein.com";
+  const locationText = navigation?.location || navigation?.studioInfo?.locationText || "Designed in Pakistan";
   const devLinkText = navigation?.studioInfo?.developerLinkText || "Developer LinkedIn";
-  const devLinkUrl = navigation?.studioInfo?.developerLinkUrl || "https://www.linkedin.com/in/talharshad/";
-  const copyrightText = navigation?.footerBottom?.copyrightText || `© ${new Date().getFullYear()} Yaadein. All rights reserved.`;
+  const devLinkUrl = navigation?.developerLink || navigation?.studioInfo?.developerLinkUrl || "https://www.linkedin.com/in/talharshad/";
+  const copyrightText = navigation?.copyrightText || navigation?.footerBottom?.copyrightText || `© ${new Date().getFullYear()} Yaadein. All rights reserved.`;
   const craftedText = navigation?.footerBottom?.craftedText || "Crafted with ♥ for timeless memories.";
+
 
   return (
     <footer className="global-footer">

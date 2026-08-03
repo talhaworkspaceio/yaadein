@@ -1792,10 +1792,12 @@ export default function CatalogPage() {
 
         </div>
 
-        <h1 className="hero-title">{catalogCms?.title || "Our Catalog"}</h1>
+        {catalogCms?.bannerEyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{catalogCms.bannerEyebrow}</span>}
+        <h1 className="hero-title">{catalogCms?.bannerTitle || catalogCms?.title || "Our Catalog"}</h1>
         <p className="hero-desc">
-          {catalogCms?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
+          {catalogCms?.bannerSubtitle || catalogCms?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
         </p>
+
 
 
         {/* Toggle switch panel */}

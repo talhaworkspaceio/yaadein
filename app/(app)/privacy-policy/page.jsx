@@ -1148,7 +1148,8 @@ export default function PrivacyPage() {
 
         </div>
 
-        <h1 className="hero-title">{privacyCms?.pageTitle || "Privacy Policy"}</h1>
+        <h1 className="hero-title">{privacyCms?.title || privacyCms?.pageTitle || "Privacy Policy"}</h1>
+
         
         {/* Toggle switch panel */}
         <div className="light-control-panel">

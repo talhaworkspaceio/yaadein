@@ -1147,7 +1147,8 @@ export default function RefundPage() {
 
         </div>
 
-        <h1 className="hero-title">{refundCms?.pageTitle || "Refund Policy"}</h1>
+        <h1 className="hero-title">{refundCms?.title || refundCms?.pageTitle || "Refund Policy"}</h1>
+
         
         {/* Toggle switch panel */}
         <div className="light-control-panel">

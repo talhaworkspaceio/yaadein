@@ -1403,10 +1403,12 @@ export default function ServicesPage() {
 
         </div>
 
-        <h1 className="hero-title">{servicesCms?.title || "Our Services"}</h1>
+        {servicesCms?.eyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{servicesCms.eyebrow}</span>}
+        <h1 className="hero-title">{servicesCms?.heroTitle || servicesCms?.title || "Our Services"}</h1>
         <p className="hero-desc">
-          {servicesCms?.subtitle || "We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence."}
+          {servicesCms?.heroSubtitle || servicesCms?.subtitle || "We combine traditional handcrafting methods with modern web customizers to provide bespoke framing and digital printing solutions of absolute visual excellence."}
         </p>
+
 
 
         {/* Toggle switch panel */}

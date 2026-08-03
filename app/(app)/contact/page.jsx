@@ -1438,9 +1438,11 @@ export default function ContactPage() {
         </div>
 
         <h1 className="hero-title">{contactCms?.title || "Contact Us"}</h1>
+
         <p className="hero-desc">
           {contactCms?.subtitle || "Have an inquiry about a custom frame project, bulk framing requirements, or need gallery installation support? Reach out to our team."}
         </p>
+
 
         {/* Toggle switch panel */}
         <div className="light-control-panel">
@@ -1535,16 +1537,17 @@ export default function ContactPage() {
               </div>
               <div className="info-item">
                 <span className="info-label">Call Us</span>
-                <span className="info-val">{contactCms?.phone || "+92 300 9876543"}</span>
+                <span className="info-val">{contactCms?.phone1 || contactCms?.phone || "+92 300 9876543"}{contactCms?.phone2 ? ` / ${contactCms.phone2}` : ""}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Address</span>
-                <span className="info-val">{contactCms?.address || "Block H3, Johar Town, Lahore, Pakistan"}</span>
+                <span className="info-val">{contactCms?.addressLine1 ? `${contactCms.addressLine1}${contactCms.addressLine2 ? `, ${contactCms.addressLine2}` : ""}` : (contactCms?.address || "Block H3, Johar Town, Lahore, Pakistan")}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Hours</span>
                 <span className="info-val">{contactCms?.workingHours || "Mon - Fri: 9:00 AM - 6:00 PM"}</span>
               </div>
+
             </div>
           </div>
 

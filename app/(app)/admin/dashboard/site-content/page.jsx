@@ -13,6 +13,7 @@ export default function AdminSiteContentPage() {
   const [message, setMessage] = useState("");
 
   // 1. HOMEPAGE SECTIONS
+  const [heroVideoUploading, setHeroVideoUploading] = useState(false);
   const [homeHero, setHomeHero] = useState({
     titleLine1: "Turn Your",
     titleLine2: "Moments Into",
@@ -20,6 +21,24 @@ export default function AdminSiteContentPage() {
     subtitle: "Experience bespoke picture framing handcrafted for your specific style. Customize details in real-time, and let our master artisans deliver it ready to hang.",
     backgroundVideoUrl: "/videos/yaadein.mp4",
   });
+
+  const handleHeroVideoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroVideoUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setHomeHero((prev) => ({ ...prev, backgroundVideoUrl: event.target.result }));
+      setHeroVideoUploading(false);
+    };
+    reader.onerror = () => {
+      alert("Failed to read video file.");
+      setHeroVideoUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const [homeFeaturedProducts, setHomeFeaturedProducts] = useState({
     title: "Featured Products",
@@ -57,31 +76,20 @@ export default function AdminSiteContentPage() {
 
   // 2. CATALOG PAGE
   const [catalogPage, setCatalogPage] = useState({
-    bannerEyebrow: "Artisanal Collection",
     bannerTitle: "Curated Masterpieces",
     bannerSubtitle: "Explore our handcrafted collection of solid wood picture frames, vintage gallery mounts, and luxury display frames.",
-    promoTitle: "Special Seasonal Offer",
-    promoSubtitle: "Get 15% off on your first bespoke frame order over Rs. 5,000.",
-    promoCode: "YAADEIN15",
-    promoDiscountText: "15% OFF",
   });
+
 
   // 3. SERVICES PAGE
   const [servicesPage, setServicesPage] = useState({
-    eyebrow: "Bespoke Services",
     heroTitle: "Bespoke Picture Framing & Fine Art Services",
     heroSubtitle: "Handcrafted in Pakistan with archival materials, museum-grade glass, and century-tested woodworking precision.",
-    feature1Title: "Precision Wood Curing",
-    feature1Desc: "Selected timber aged and seasoned to resist warping under humid climate conditions.",
-    feature2Title: "Archival Mounting",
-    feature2Desc: "100% acid-free mats that protect your photographs from fading and chemical degradation.",
-    feature3Title: "Museum UV Glass",
-    feature3Desc: "Anti-reflective glass filtering up to 99% of harmful ultraviolet solar radiation.",
   });
+
 
   // 4. TRACK ORDER PAGE
   const [trackPage, setTrackPage] = useState({
-    eyebrow: "Order Status",
     title: "Track Your Order",
     subtitle: "Enter your unique Order Reference ID (e.g. YDN-1092) below to view real-time crafting status and courier dispatch details.",
     instruction1: "Check your SMS confirmation or invoice email for your Order ID.",
@@ -92,7 +100,6 @@ export default function AdminSiteContentPage() {
 
   // 5. CONTACT PAGE
   const [contactPage, setContactPage] = useState({
-    eyebrow: "Get in Touch",
     title: "Visit Our Studio or Talk to an Artisan",
     subtitle: "Have a custom framing request, bulk order, or photo restoration inquiry? We are here to assist.",
     addressLine1: "Yaadein Craft Studio, Gulberg III",
@@ -103,6 +110,7 @@ export default function AdminSiteContentPage() {
     workingHours: "Monday – Saturday: 10:00 AM – 8:00 PM",
     mapEmbedUrl: "",
   });
+
 
   // 6. POLICY PAGES
   const [privacyContent, setPrivacyContent] = useState("");
@@ -310,10 +318,30 @@ export default function AdminSiteContentPage() {
                   <textarea value={homeHero.subtitle || ""} onChange={(e) => setHomeHero({ ...homeHero, subtitle: e.target.value })} rows={3} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Background Video File URL (MP4)</label>
-                  <input type="text" value={homeHero.backgroundVideoUrl || ""} onChange={(e) => setHomeHero({ ...homeHero, backgroundVideoUrl: e.target.value })} placeholder="/videos/yaadein.mp4" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+                <div style={{ background: "var(--surface2)", border: "1px dashed var(--border2)", borderRadius: 8, padding: 16 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 6 }}>
+                    Upload Background Video File (from your computer)
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleHeroVideoUpload}
+                    style={{ width: "100%", color: "var(--text2)", fontSize: 12 }}
+                  />
+                  {heroVideoUploading && <p style={{ fontSize: 11, color: "var(--accent)", marginTop: 4 }}>Processing video file...</p>}
+
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>or Video File URL / Relative Path:</label>
+                    <input
+                      type="text"
+                      value={homeHero.backgroundVideoUrl && homeHero.backgroundVideoUrl.length > 80 ? `${homeHero.backgroundVideoUrl.substring(0, 75)}... (Local Base64 Video)` : (homeHero.backgroundVideoUrl || "")}
+                      onChange={(e) => setHomeHero({ ...homeHero, backgroundVideoUrl: e.target.value })}
+                      placeholder="/videos/yaadein.mp4 or https://..."
+                      style={{ width: "100%", background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 12 }}
+                    />
+                  </div>
                 </div>
+
 
                 <div style={{ marginTop: 10 }}>
                   <button onClick={() => handleSaveSection("site_content/home-page/hero", homeHero, "Homepage Hero")} disabled={saving} style={{ background: "var(--accent)", color: "#000", border: "none", padding: "12px 28px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
@@ -487,41 +515,16 @@ export default function AdminSiteContentPage() {
       {/* TAB 2: CATALOG PAGE */}
       {activeTab === "catalog" && (
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
-          <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Catalog Page Banner & Promo Settings</h3>
+          <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Catalog Page Title & Subtitle Settings</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Banner Eyebrow Tagline</label>
-                <input type="text" value={catalogPage.bannerEyebrow || ""} onChange={(e) => setCatalogPage({ ...catalogPage, bannerEyebrow: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Banner Title</label>
-                <input type="text" value={catalogPage.bannerTitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, bannerTitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Banner Title</label>
+              <input type="text" value={catalogPage.bannerTitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, bannerTitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div>
               <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Banner Subtitle Description</label>
-              <textarea value={catalogPage.bannerSubtitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, bannerSubtitle: e.target.value })} rows={2} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Promo Title</label>
-                <input type="text" value={catalogPage.promoTitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, promoTitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Promo Subtitle</label>
-                <input type="text" value={catalogPage.promoSubtitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, promoSubtitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Promo Coupon Code</label>
-                <input type="text" value={catalogPage.promoCode || ""} onChange={(e) => setCatalogPage({ ...catalogPage, promoCode: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Promo Discount Badge</label>
-                <input type="text" value={catalogPage.promoDiscountText || ""} onChange={(e) => setCatalogPage({ ...catalogPage, promoDiscountText: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+              <textarea value={catalogPage.bannerSubtitle || ""} onChange={(e) => setCatalogPage({ ...catalogPage, bannerSubtitle: e.target.value })} rows={3} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div style={{ marginTop: 10 }}>
@@ -533,20 +536,15 @@ export default function AdminSiteContentPage() {
         </div>
       )}
 
+
       {/* TAB 3: SERVICES PAGE */}
       {activeTab === "services" && (
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
           <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Main Services Page (/services) Header Settings</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Hero Eyebrow</label>
-                <input type="text" value={servicesPage.eyebrow || ""} onChange={(e) => setServicesPage({ ...servicesPage, eyebrow: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Hero Title</label>
-                <input type="text" value={servicesPage.heroTitle || ""} onChange={(e) => setServicesPage({ ...servicesPage, heroTitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Hero Title</label>
+              <input type="text" value={servicesPage.heroTitle || ""} onChange={(e) => setServicesPage({ ...servicesPage, heroTitle: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div>
@@ -563,20 +561,15 @@ export default function AdminSiteContentPage() {
         </div>
       )}
 
+
       {/* TAB 4: TRACK ORDER PAGE */}
       {activeTab === "track" && (
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
           <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Track Order Page (/track-order) Settings</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Page Eyebrow</label>
-                <input type="text" value={trackPage.eyebrow || ""} onChange={(e) => setTrackPage({ ...trackPage, eyebrow: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Main Heading</label>
-                <input type="text" value={trackPage.title || ""} onChange={(e) => setTrackPage({ ...trackPage, title: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Main Heading</label>
+              <input type="text" value={trackPage.title || ""} onChange={(e) => setTrackPage({ ...trackPage, title: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div>
@@ -609,21 +602,16 @@ export default function AdminSiteContentPage() {
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
           <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Contact Page (/contact) Settings</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Page Eyebrow</label>
-                <input type="text" value={contactPage.eyebrow || ""} onChange={(e) => setContactPage({ ...contactPage, eyebrow: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Heading Title</label>
-                <input type="text" value={contactPage.title || ""} onChange={(e) => setContactPage({ ...contactPage, title: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Heading Title</label>
+              <input type="text" value={contactPage.title || ""} onChange={(e) => setContactPage({ ...contactPage, title: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div>
               <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Subtitle Description</label>
               <textarea value={contactPage.subtitle || ""} onChange={(e) => setContactPage({ ...contactPage, subtitle: e.target.value })} rows={2} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
+
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>

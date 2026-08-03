@@ -1512,9 +1512,11 @@ export default function TrackOrderPage() {
         </div>
 
         <h1 className="hero-title">{trackCms?.title || "Track Order"}</h1>
+
         <p className="hero-desc">
           {trackCms?.subtitle || "Review the status of your handcrafted orders. Enter your Order Reference ID code below to trace your design through production and delivery."}
         </p>
+
         
         {/* Toggle switch panel */}
         <div className="light-control-panel">

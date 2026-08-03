@@ -4,6 +4,53 @@ import { useState, useEffect } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 
+const DEFAULT_INITIAL_REELS = [
+  {
+    authorName: "yaadein.pk",
+    avatarInitial: "Y",
+    platform: "Instagram",
+    videoUrl: "/videos/reel1.mp4",
+    thumbnailUrl: "",
+    caption: "Gallery wall completed! 📸 Handcrafted solid wood frames. #YaadeinFrames #HomeDecor",
+    likesCount: "156",
+    commentsCount: "9",
+    postDate: "2 weeks ago",
+  },
+  {
+    authorName: "yaadein.pk",
+    avatarInitial: "Y",
+    platform: "Instagram",
+    videoUrl: "/videos/reel2.mp4",
+    thumbnailUrl: "",
+    caption: "Classic oak frame matching elegant room aesthetic perfectly. 🌿✨ #YaadeinFrames #Bespoke",
+    likesCount: "245",
+    commentsCount: "19",
+    postDate: "3 weeks ago",
+  },
+  {
+    authorName: "yaadein.pk",
+    avatarInitial: "Y",
+    platform: "Instagram",
+    videoUrl: "/videos/reel3.mp4",
+    thumbnailUrl: "",
+    caption: "Gold frame detailing handcrafted with precision. Museum grade glass! 💛 #YaadeinFrames #ArtStudio",
+    likesCount: "198",
+    commentsCount: "14",
+    postDate: "1 month ago",
+  },
+  {
+    authorName: "yaadein.pk",
+    avatarInitial: "Y",
+    platform: "Instagram",
+    videoUrl: "/videos/reel4.mp4",
+    thumbnailUrl: "",
+    caption: "Master artisan assembling a bespoke Nikkah Nama frame set in real cured mahogany wood! 🖼️✨ #YaadeinFrames",
+    likesCount: "312",
+    commentsCount: "27",
+    postDate: "3 days ago",
+  },
+];
+
 export default function AdminReelsPage() {
   const [tagline, setTagline] = useState("FOLLOW OUR JOURNEY");
   const [title, setTitle] = useState("#YaadeinFrames");
@@ -16,16 +63,19 @@ export default function AdminReelsPage() {
   // Modal / Form state for adding/editing a reel
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+
   const [reelForm, setReelForm] = useState({
     authorName: "yaadein.pk",
     avatarInitial: "Y",
     platform: "Instagram",
-    videoUrl: "/videos/yaadein.mp4",
-    thumbnailUrl: "/images/dummyImg.jpg",
-    caption: "Gallery wall completed! 🖼️✨ #YaadeinFrames #HomeDecor",
-    likesCount: "234",
-    commentsCount: "18",
-    postDate: "2 days ago",
+    videoUrl: "/videos/reel1.mp4",
+    thumbnailUrl: "",
+    caption: "Check out this customer styling! 🖼️✨ #YaadeinFrames",
+    likesCount: "198",
+    commentsCount: "14",
+    postDate: "Recently",
   });
 
   useEffect(() => {
@@ -36,44 +86,26 @@ export default function AdminReelsPage() {
         setTagline(val.tagline || "FOLLOW OUR JOURNEY");
         setTitle(val.title || "#YaadeinFrames");
         setSubtitle(val.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery.");
-        setReels(val.reels || []);
+        
+        // Clean reels so they use native video thumbnail unless a custom image is uploaded
+        const cleanedReels = (val.reels && val.reels.length > 0)
+          ? val.reels.map((r) => {
+              let thumb = r.thumbnailUrl || "";
+              if (thumb.includes("dummyImg.jpg") || thumb.includes("instagram_mirror_selfie.jpg") || thumb.includes("gallery_walls.png") || thumb.includes("bespoke_framing.png")) {
+                thumb = ""; // Clear image fallback so native video frame is used as thumbnail
+              }
+              return {
+                ...r,
+                authorName: "yaadein.pk",
+                avatarInitial: "Y",
+                thumbnailUrl: thumb,
+              };
+            })
+          : DEFAULT_INITIAL_REELS;
+
+        setReels(cleanedReels);
       } else {
-        // Default initial reels if empty
-        setReels([
-          {
-            authorName: "hassan.captures",
-            avatarInitial: "H",
-            platform: "Instagram",
-            videoUrl: "/videos/yaadein.mp4",
-            thumbnailUrl: "/images/dummyImg.jpg",
-            caption: "Excepteur sint occaecat cupidatat non proident, sunt in culpa. Gallery wall completed! 📸 #WallArt #Photography",
-            likesCount: "156",
-            commentsCount: "9",
-            postDate: "2 weeks ago",
-          },
-          {
-            authorName: "zainab.frames",
-            avatarInitial: "Z",
-            platform: "Instagram",
-            videoUrl: "/videos/yaadein.mp4",
-            thumbnailUrl: "/images/dummyImg.jpg",
-            caption: "Absolutely in love with the classic oak frame! It matches my bedroom aesthetic perfectly. 🌿✨ #AestheticHome #Decor",
-            likesCount: "245",
-            commentsCount: "19",
-            postDate: "3 weeks ago",
-          },
-          {
-            authorName: "maryam.spaces",
-            avatarInitial: "M",
-            platform: "Instagram",
-            videoUrl: "/videos/yaadein.mp4",
-            thumbnailUrl: "/images/dummyImg.jpg",
-            caption: "The gold frame detailing is even more beautiful in person. Handcrafted perfection! 💛 #ArtStudio #LuxuryHome",
-            likesCount: "198",
-            commentsCount: "14",
-            postDate: "1 month ago",
-          },
-        ]);
+        setReels(DEFAULT_INITIAL_REELS);
       }
       setLoading(false);
     });
@@ -106,8 +138,8 @@ export default function AdminReelsPage() {
       authorName: "yaadein.pk",
       avatarInitial: "Y",
       platform: "Instagram",
-      videoUrl: "/videos/yaadein.mp4",
-      thumbnailUrl: "/images/dummyImg.jpg",
+      videoUrl: "/videos/reel1.mp4",
+      thumbnailUrl: "",
       caption: "Check out this customer styling! 🖼️✨ #YaadeinFrames",
       likesCount: "198",
       commentsCount: "14",
@@ -118,17 +150,52 @@ export default function AdminReelsPage() {
 
   const openEditModal = (index) => {
     setEditIndex(index);
-    setReelForm({ ...reels[index] });
+    setReelForm({ ...reels[index], authorName: "yaadein.pk", avatarInitial: "Y" });
     setIsModalOpen(true);
+  };
+
+  const handleLocalVideoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setReelForm((prev) => ({ ...prev, videoUrl: event.target.result }));
+      setVideoUploading(false);
+    };
+    reader.onerror = () => {
+      alert("Failed to read video file.");
+      setVideoUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLocalImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setReelForm((prev) => ({ ...prev, thumbnailUrl: event.target.result }));
+      setImageUploading(false);
+    };
+    reader.onerror = () => {
+      alert("Failed to read image file.");
+      setImageUploading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveReel = (e) => {
     e.preventDefault();
     const updated = [...reels];
+    const itemToSave = { ...reelForm, authorName: "yaadein.pk", avatarInitial: "Y" };
     if (editIndex !== null) {
-      updated[editIndex] = reelForm;
+      updated[editIndex] = itemToSave;
     } else {
-      updated.push(reelForm);
+      updated.push(itemToSave);
     }
     setReels(updated);
     setIsModalOpen(false);
@@ -153,7 +220,7 @@ export default function AdminReelsPage() {
             #YaadeinFrames <span>Video Reels Manager</span>
           </h1>
           <p style={{ color: "var(--text2)", fontSize: 14, marginTop: 4 }}>
-            Upload & configure customer video reels displayed on the homepage carousel.
+            Upload local video files directly from your computer. Video elements automatically display their native 1st-frame video thumbnail.
           </p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
@@ -234,24 +301,30 @@ export default function AdminReelsPage() {
 
       {/* Video Reels Cards Grid */}
       <h3 style={{ fontSize: 18, color: "var(--text)", marginBottom: 16 }}>
-        Active Video Reels ({reels.length})
+        Active Playable Video Reels ({reels.length})
       </h3>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
         {reels.map((reel, idx) => (
           <div key={idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ position: "relative", width: "100%", height: 320, background: "#000" }}>
+            <div style={{ position: "relative", width: "100%", height: 340, background: "#000" }}>
               {reel.videoUrl ? (
                 <video
                   src={reel.videoUrl}
-                  poster={reel.thumbnailUrl}
+                  poster={reel.thumbnailUrl || undefined}
+                  preload="metadata"
                   controls
+                  loop
+                  muted
+                  playsInline
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               ) : (
-                <img src={reel.thumbnailUrl || "/images/dummyImg.jpg"} alt={reel.authorName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 12 }}>
+                  No Video Uploaded
+                </div>
               )}
-              <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.7)", color: "var(--accent)", padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+              <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.75)", color: "var(--accent)", padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
                 🎬 REEL #{idx + 1}
               </div>
             </div>
@@ -259,12 +332,12 @@ export default function AdminReelsPage() {
             <div style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--accent)", color: "#000", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
-                    {reel.avatarInitial || "Y"}
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--accent)", color: "#000", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                    Y
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>@{reel.authorName}</div>
-                    <div style={{ fontSize: 11, color: "var(--text2)" }}>{reel.platform} • {reel.postDate}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>@yaadein.pk</div>
+                    <div style={{ fontSize: 11, color: "var(--text2)" }}>Instagram • {reel.postDate || "Recently"}</div>
                   </div>
                 </div>
 
@@ -299,58 +372,73 @@ export default function AdminReelsPage() {
 
       {/* Modal for Add / Edit Reel */}
       {isModalOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 12, width: 550, maxWidth: "100%", padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 12, width: 580, maxWidth: "100%", padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ fontSize: 20, color: "var(--accent)", marginBottom: 20 }}>
               {editIndex !== null ? `Edit Reel #${editIndex + 1}` : "Add New Video Reel"}
             </h2>
 
             <form onSubmit={handleSaveReel} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Video File URL (MP4 / WebM)</label>
+              
+              {/* VIDEO FILE UPLOAD FROM LOCAL SYSTEM */}
+              <div style={{ background: "var(--surface2)", border: "1px dashed var(--border2)", borderRadius: 8, padding: 14 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 6 }}>
+                  1. Upload Local Video File (from your computer)
+                </label>
                 <input
-                  type="text"
-                  value={reelForm.videoUrl}
-                  onChange={(e) => setReelForm({ ...reelForm, videoUrl: e.target.value })}
-                  placeholder="/videos/yaadein.mp4 or https://..."
-                  required
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleLocalVideoUpload}
+                  style={{ width: "100%", color: "var(--text2)", fontSize: 12 }}
                 />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Thumbnail / Poster Image URL</label>
-                <input
-                  type="text"
-                  value={reelForm.thumbnailUrl}
-                  onChange={(e) => setReelForm({ ...reelForm, thumbnailUrl: e.target.value })}
-                  placeholder="/images/dummyImg.jpg or https://..."
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Author Username</label>
+                {videoUploading && <p style={{ fontSize: 11, color: "var(--accent)", marginTop: 4 }}>Processing video file...</p>}
+                
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>or Video URL / Relative Path:</label>
                   <input
                     type="text"
-                    value={reelForm.authorName}
-                    onChange={(e) => setReelForm({ ...reelForm, authorName: e.target.value })}
+                    value={reelForm.videoUrl.length > 80 ? `${reelForm.videoUrl.substring(0, 75)}... (Local Base64 Video)` : reelForm.videoUrl}
+                    onChange={(e) => setReelForm({ ...reelForm, videoUrl: e.target.value })}
+                    placeholder="/videos/reel1.mp4 or https://..."
                     required
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                    style={{ width: "100%", background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12 }}
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Avatar Initial Badge</label>
+              {/* OPTIONAL CUSTOM THUMBNAIL IMAGE UPLOAD */}
+              <div style={{ background: "var(--surface2)", border: "1px dashed var(--border2)", borderRadius: 8, padding: 14 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "var(--text2)", marginBottom: 6 }}>
+                  2. Optional Custom Poster Image (Leave blank to use native 1st frame video thumbnail)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLocalImageUpload}
+                  style={{ width: "100%", color: "var(--text2)", fontSize: 12 }}
+                />
+                {imageUploading && <p style={{ fontSize: 11, color: "var(--accent)", marginTop: 4 }}>Processing image file...</p>}
+
+                {reelForm.thumbnailUrl && (
+                  <div style={{ marginTop: 10, width: 80, height: 80, borderRadius: 6, overflow: "hidden", border: "1px solid var(--accent)" }}>
+                    <img src={reelForm.thumbnailUrl} alt="Thumbnail preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                )}
+
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>or Optional Thumbnail URL (leave empty for video thumbnail):</label>
                   <input
                     type="text"
-                    value={reelForm.avatarInitial}
-                    onChange={(e) => setReelForm({ ...reelForm, avatarInitial: e.target.value })}
-                    maxLength={2}
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                    value={reelForm.thumbnailUrl.length > 80 ? `${reelForm.thumbnailUrl.substring(0, 75)}... (Local Base64 Image)` : reelForm.thumbnailUrl}
+                    onChange={(e) => setReelForm({ ...reelForm, thumbnailUrl: e.target.value })}
+                    placeholder="Leave empty for video native thumbnail"
+                    style={{ width: "100%", background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12 }}
                   />
                 </div>
+              </div>
+
+              <div style={{ background: "rgba(201, 168, 76, 0.1)", border: "1px solid var(--border2)", borderRadius: 6, padding: 10, fontSize: 12, color: "var(--accent)" }}>
+                Author Profile: <strong>@yaadein.pk</strong> (Official Studio Account)
               </div>
 
               <div>
