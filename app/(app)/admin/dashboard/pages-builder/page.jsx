@@ -1,518 +1,1891 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 
-export default function AdminPageBuilder() {
-  const [pages, setPages] = useState({});
-  const [loading, setLoading] = useState(true);
+export const FONT_FAMILIES = [
+  { name: "Default (Inherit)", val: "inherit" },
+  { name: "Cinzel (Luxury Serif)", val: "'Cinzel', serif" },
+  { name: "Playfair Display (Editorial)", val: "'Playfair Display', serif" },
+  { name: "Inter (Modern Sans)", val: "'Inter', sans-serif" },
+  { name: "Montserrat (Bold Clean)", val: "'Montserrat', sans-serif" },
+  { name: "Lora (Classic Serif)", val: "'Lora', serif" },
+  { name: "Outfit (Contemporary)", val: "'Outfit', sans-serif" },
+  { name: "Monospace", val: "monospace" },
+];
+
+export const FONT_COLORS = [
+  { name: "Gold (Accent) (#C9A84C)", hex: "#C9A84C" },
+  { name: "Pure White (#FFFFFF)", hex: "#FFFFFF" },
+  { name: "Soft Cream (#E0D7CD)", hex: "#E0D7CD" },
+  { name: "Vibrant Gold (#FFD700)", hex: "#FFD700" },
+  { name: "Coral Pink (#FF5A5F)", hex: "#FF5A5F" },
+  { name: "Emerald Green (#2ECC71)", hex: "#2ECC71" },
+  { name: "Sky Blue (#3498DB)", hex: "#3498DB" },
+  { name: "Warm Amber (#E67E22)", hex: "#E67E22" },
+  { name: "Muted Steel (#A0A0A0)", hex: "#A0A0A0" },
+  { name: "Dark Charcoal (#1A1A1A)", hex: "#1A1A1A" },
+];
+
+export const BORDER_STYLES = [
+  { name: "None", val: "none" },
+  { name: "Solid Line", val: "solid" },
+  { name: "Dashed Line", val: "dashed" },
+  { name: "Dotted Line", val: "dotted" },
+  { name: "Double Line", val: "double" },
+];
+
+export const SHADOW_PRESETS = [
+  { name: "None", val: "none" },
+  { name: "Subtle Soft Shadow", val: "0 4px 12px rgba(0,0,0,0.4)" },
+  { name: "Gold Ambient Glow", val: "0 0 20px rgba(201, 168, 76, 0.35)" },
+  { name: "Deep Elevated 3D", val: "0 12px 32px rgba(0,0,0,0.8)" },
+  { name: "Inverted Inner Shadow", val: "inset 0 2px 8px rgba(0,0,0,0.6)" },
+];
+
+export const SAMPLE_TEMPLATES = [
+  {
+    id: "blog-layout",
+    title: "Editorial Blog & Art Journal Layout",
+    category: "Blog & Editorial",
+    icon: "📰",
+    slug: "art-journal-gallery-walls",
+    blocks: [
+      { id: "b1", type: "heading", tag: "h1", text: "The Art of Gallery Walls: 7 Secrets from Master Curators", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "38", fontWeight: "700", textAlign: "center", paddingTop: "20", paddingBottom: "10" },
+      { id: "b2", type: "paragraph", text: "Published by @yaadein.pk • 5 Min Read • Interior Art Curation Series", fontFamily: "'Inter', sans-serif", textColor: "#A0A0A0", fontSize: "14", fontWeight: "400", textAlign: "center", paddingTop: "0", paddingBottom: "20" },
+      { id: "b3", type: "row-2col", colRatio: "1fr 1fr", col1Type: "image", col1Image: "/images/bespoke_framing.png", col1Title: "Precision Spacing & Sightlines", col1Body: "A gallery wall should feel balanced, not cluttered.", col2Type: "text", col2Title: "1. Match Frame Profiles to Art Style", col2Body: "Pair ornate gilded frames with classical portraiture, and sleek matte black frames with modern line art.", col2ButtonText: "Explore Frame Profiles", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", paddingTop: "20", paddingBottom: "20" },
+      { id: "b4", type: "testimonial", name: "Sarah Khan", rating: "5", quote: "Following this gallery wall guide transformed our living room wall into a museum exhibit!", location: "Islamabad", textColor: "#C9A84C" },
+      { id: "b5", type: "cta-banner", title: "Want a Custom Gallery Wall Set?", subtitle: "Consult directly with our master framing artisans today.", buttonText: "Request Consultation", buttonLink: "/contact", textColor: "#FFD700" }
+    ]
+  },
+  {
+    id: "contact-layout",
+    title: "Studio Consultation & Contact Layout",
+    category: "Contact & Inquiry",
+    icon: "📞",
+    slug: "studio-consultation",
+    blocks: [
+      { id: "b1", type: "heading", tag: "h1", text: "Request a Free Studio Framing Consultation", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "40", fontWeight: "700", textAlign: "center", paddingTop: "20", paddingBottom: "10" },
+      { id: "b2", type: "row-2col", colRatio: "1fr 1fr", col1Type: "text", col1Title: "Yaadein Main Framing Studio", col1Body: "Visit our workshop or contact our framing advisors online.\n\n📍 Studio Address: Main Boulevard, Gulberg III, Lahore, Pakistan\n📞 Direct Line: +92 (300) 123-4567\n✉️ Email: concierge@yaadein.pk", col2Type: "text", col2Title: "Studio Operating Hours", col2Body: "Monday - Saturday: 11:00 AM - 9:00 PM\nSunday: By Appointment Only\n\nWe offer nationwide insured shipping across Pakistan.", col2ButtonText: "Call Concierge", col2ButtonLink: "tel:+923001234567", textColor: "#C9A84C", gap: "24", paddingTop: "20", paddingBottom: "20" },
+      { id: "b3", type: "faq", question: "How long does custom framing take?", answer: "Standard orders take 3-5 business days. Express 24-hour framing is available upon request.", textColor: "#C9A84C" },
+      { id: "b4", type: "faq", question: "Do you offer glass replacement?", answer: "Yes! We fit 99% UV-protective museum glass or non-reflective optical acrylic.", textColor: "#C9A84C" }
+    ]
+  }
+];
+
+export const WIDGET_PALETTE = [
+  { id: "heading", name: "Heading Headline", category: "Typography", icon: "🔤", defaultData: { type: "heading", tag: "h2", text: "Luxury Framing Headline", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "36", fontWeight: "700", textAlign: "center", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.3", letterSpacing: "0", wordSpacing: "0", textShadow: "none", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "paragraph", name: "Text Paragraph", category: "Typography", icon: "📄", defaultData: { type: "paragraph", text: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", fontFamily: "'Inter', sans-serif", textColor: "#E0D7CD", fontSize: "16", fontWeight: "400", textAlign: "left", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.8", letterSpacing: "0", wordSpacing: "0", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "row-2col", name: "2-Column Side-by-Side Row (50/50)", category: "Side-by-Side Layout", icon: "↔️", defaultData: { type: "row-2col", isContainer: true, layout: "2col", colRatio: "1fr 1fr", col1Type: "text", col1Image: "/images/bespoke_framing.png", col1Title: "Left Paragraph Headline", col1Body: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", col2Type: "text", col2Title: "Right Paragraph Headline", col2Body: "Our master woodcraftsmen build every frame to millimeter precision in our studio.", col2ButtonText: "", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", verticalAlign: "center", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "row-3col", name: "3-Column Side-by-Side Row (33/33/33)", category: "Side-by-Side Layout", icon: "📊", defaultData: { type: "row-3col", isContainer: true, layout: "3col", col1Title: "Feature 1", col1Body: "100% Acid-Free Mats", col2Title: "Feature 2", col2Body: "99% UV Glass Protection", col3Title: "Feature 3", col3Body: "Solid Teak & Mahogany Wood", textColor: "#C9A84C", gap: "20", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "image", name: "Image / Photo", category: "Media", icon: "🖼️", defaultData: { type: "image", url: "/images/bespoke_framing.png", caption: "Bespoke Solid Wood Framing", width: "100%", aspectRatio: "auto", objectFit: "cover", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 10px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "video", name: "Video Player", category: "Media", icon: "🎥", defaultData: { type: "video", url: "/videos/reel1.mp4", caption: "Craftsmanship Video Reel", aspectRatio: "16/9", autoPlay: false, loop: false, controls: true, muted: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "12", shadow: "0 12px 30px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "button", name: "Action Button", category: "Interactive", icon: "🔘", defaultData: { type: "button", text: "Explore Collection", link: "/catalog", btnStyle: "solid", iconName: "arrow", iconPos: "right", isFullWidth: false, alignment: "center", fontFamily: "'Inter', sans-serif", fontSize: "14", fontWeight: "700", textColor: "#000000", btnColor: "#C9A84C", hoverBtnColor: "#FFD700", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "auto", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 4px 14px rgba(0,0,0,0.4)", opacity: "1", paddingTop: "14", paddingBottom: "14", paddingLeft: "32", paddingRight: "32", marginTop: "10", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "cta-banner", name: "CTA Callout Banner", category: "Sections", icon: "📢", defaultData: { type: "cta-banner", title: "Custom Framing Order", subtitle: "Speak directly with our studio artisans.", buttonText: "Get Free Quote", buttonLink: "/contact", textColor: "#FFD700", bgGradient: "linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(20,12,6,0.9) 100%)", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "50", paddingBottom: "50", paddingLeft: "10", paddingRight: "10", marginTop: "20", marginBottom: "40", marginLeft: "", marginRight: "" } },
+  { id: "testimonial", name: "Testimonial Card", category: "Social Proof", icon: "⭐", defaultData: { type: "testimonial", name: "Fatima Ali", rating: "5", quote: "The quality of the wood framing and museum glass exceeded all my expectations!", location: "Lahore", textColor: "#C9A84C", avatarUrl: "", avatarShape: "circle", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(28, 15, 7, 0.6)", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201, 168, 76, 0.2)", borderRadius: "12", shadow: "0 8px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "28", paddingBottom: "28", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "faq", name: "FAQ Accordion Item", category: "Information", icon: "❓", defaultData: { type: "faq", question: "Do you ship nationwide across Pakistan?", answer: "Yes! We provide insured nationwide shipping in custom wooden crates.", textColor: "#C9A84C", iconStyle: "plus-minus", initialOpen: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(20, 12, 6, 0.7)", borderStyle: "solid", borderWidth: "1", borderColor: "var(--border)", borderRadius: "8", shadow: "none", opacity: "1", paddingTop: "0", paddingBottom: "0", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "14", marginLeft: "", marginRight: "" } },
+  { id: "pricing", name: "Pricing Card", category: "E-Commerce", icon: "🏷️", defaultData: { type: "pricing", title: "Custom Archival Package", currency: "Rs.", price: "4,500", period: "per frame", ribbonBadge: "MOST POPULAR", buttonText: "Configure Frame", buttonLink: "/customize", textColor: "#C9A84C", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(201, 168, 76, 0.15)", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "32", paddingBottom: "32", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "divider", name: "Divider Line", category: "Layout", icon: "➖", defaultData: { type: "divider", color: "#C9A84C", width: "100%", height: "1", borderStyle: "solid", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "0", paddingRight: "0", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "spacer", name: "Vertical Spacer", category: "Layout", icon: "↕️", defaultData: { type: "spacer", height: "40", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxAlign: "center" } },
+];
+
+export default function ElementorPageBuilder() {
+  const [pagesList, setPagesList] = useState([]);
+  const [selectedSlug, setSelectedSlug] = useState("art-journal-gallery-walls");
+  const [pageTitle, setPageTitle] = useState("Editorial Blog & Art Journal Layout");
+  const [pageBlocks, setPageBlocks] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const [activeSlug, setActiveSlug] = useState(null);
-  const [pageForm, setPageForm] = useState({
-    title: "",
-    slug: "",
-    blocks: [],
-  });
+  const [activeInspectorTab, setActiveInspectorTab] = useState("content");
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Create New Page Modal State
+  const [showCreatePageModal, setShowCreatePageModal] = useState(false);
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageSlug, setNewPageSlug] = useState("");
+  const [newPagePreset, setNewPagePreset] = useState("blank");
 
+  // Collapsible Sidebars State
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+
+  // Drag and Drop States
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+  const [draggedBlockIndex, setDraggedBlockIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // Interactive Resizing & Moving Ref States
+  const canvasRef = useRef(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMovingFree, setIsMovingFree] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0, initialWidth: 0, initialHeight: 0, initialX: 0, initialY: 0 });
+
+  // Sync sample templates & load pages from Firebase
   useEffect(() => {
     const pagesRef = ref(db, "cms_pages");
     const unsub = onValue(pagesRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
-        setPages(val);
-      } else {
-        // Initial default dummy page
-        setPages({
-          dummy: {
-            title: "Dummy Page",
-            slug: "dummy",
-            blocks: [
-              {
-                blockType: "hero",
-                title: "Welcome to Yaadein Custom Page",
-                subtitle: "This page was built using our native custom page builder inside the admin panel.",
-                buttonText: "Explore Catalog",
-                buttonLink: "/catalog",
-                bgImage: "/images/wood-bg.png",
-              },
-              {
-                blockType: "text-media-split",
-                heading: "Handcrafted Elegance",
-                body: "Every piece of timber is individually selected and cured to guarantee life-long beauty and structural strength.",
-                image: "/images/bespoke_framing.png",
-                imagePosition: "right",
-              },
-              {
-                blockType: "cta-banner",
-                title: "Ready to Frame Your Memories?",
-                subtitle: "Upload your photographs or choose from our luxury catalogue today.",
-                buttonText: "Launch Studio Customizer",
-                buttonLink: "/customize",
-              },
-            ],
-          },
+        const list = Object.values(val);
+        setPagesList(list);
+
+        let hasMergedMissing = false;
+        const currentSlugs = list.map(p => p.slug);
+        SAMPLE_TEMPLATES.forEach(tpl => {
+          if (!currentSlugs.includes(tpl.slug)) {
+            hasMergedMissing = true;
+            set(ref(db, `cms_pages/${tpl.slug}`), tpl).catch(console.error);
+          }
         });
+
+        const activePage = list.find(p => p.slug === selectedSlug);
+        if (activePage) {
+          setPageTitle(activePage.title);
+          setPageBlocks(Array.isArray(activePage.blocks) ? activePage.blocks : []);
+        } else if (!selectedSlug && list.length > 0) {
+          setSelectedSlug(list[0].slug);
+          setPageTitle(list[0].title);
+          setPageBlocks(Array.isArray(list[0].blocks) ? list[0].blocks : []);
+        }
+      } else {
+        SAMPLE_TEMPLATES.forEach(tpl => {
+          set(ref(db, `cms_pages/${tpl.slug}`), tpl).catch(console.error);
+        });
+        setPagesList(SAMPLE_TEMPLATES);
+        setPageBlocks(SAMPLE_TEMPLATES[0].blocks);
       }
-      setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [selectedSlug]);
 
-  const handleSaveAll = async () => {
-    setSaving(true);
-    setMessage("");
+  const handleSelectPage = (slug) => {
+    setSelectedSlug(slug);
+    const found = pagesList.find(p => p.slug === slug);
+    if (found) {
+      setPageTitle(found.title);
+      setPageBlocks(Array.isArray(found.blocks) ? found.blocks : []);
+    }
+    setSelectedIndex(null);
+  };
+
+  const handleCreateNewPage = async (e) => {
+    e.preventDefault();
+    if (!newPageTitle.trim()) return;
+    const cleanSlug = newPageSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || newPageTitle.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    if (!cleanSlug) return;
+
+    let initialBlocks = [];
+    if (newPagePreset !== "blank") {
+      const foundTpl = SAMPLE_TEMPLATES.find(t => t.id === newPagePreset);
+      if (foundTpl) {
+        initialBlocks = JSON.parse(JSON.stringify(foundTpl.blocks));
+      }
+    }
+
+    const newPageObj = {
+      title: newPageTitle.trim(),
+      slug: cleanSlug,
+      blocks: initialBlocks,
+      createdAt: new Date().toISOString(),
+    };
+
     try {
-      await set(ref(db, "cms_pages"), pages);
-      setMessage("✅ All custom pages saved successfully!");
+      await set(ref(db, `cms_pages/${cleanSlug}`), newPageObj);
+      setSelectedSlug(cleanSlug);
+      setPageTitle(newPageTitle.trim());
+      setPageBlocks(initialBlocks);
+      setSelectedIndex(null);
+      setShowCreatePageModal(false);
+      setNewPageTitle("");
+      setNewPageSlug("");
+      setMessage(`✅ New Custom Page "/${cleanSlug}" created successfully!`);
       setTimeout(() => setMessage(""), 4000);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to save custom pages.");
+      setMessage("❌ Failed to create new page.");
+    }
+  };
+
+  const handleSavePage = async () => {
+    if (!selectedSlug) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const pageRef = ref(db, `cms_pages/${selectedSlug}`);
+      await set(pageRef, {
+        title: pageTitle,
+        slug: selectedSlug,
+        blocks: pageBlocks,
+        updatedAt: new Date().toISOString(),
+      });
+      setMessage("✅ Page layout saved successfully to Firebase!");
+      setTimeout(() => setMessage(""), 4000);
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to save page layout.");
     } finally {
       setSaving(false);
     }
   };
 
-  const openAddPageModal = () => {
-    setActiveSlug(null);
-    setPageForm({
-      title: "New Custom Page",
-      slug: "new-page",
-      blocks: [
-        {
-          blockType: "hero",
-          title: "New Page Headline",
-          subtitle: "Subtext describing this custom page...",
-          buttonText: "Get Started",
-          buttonLink: "/contact",
-          bgImage: "/images/wood-bg.png",
-        },
-      ],
-    });
-    setIsModalOpen(true);
-  };
-
-  const openEditPageModal = (slugKey) => {
-    setActiveSlug(slugKey);
-    const item = pages[slugKey];
-    setPageForm({
-      title: item.title || slugKey,
-      slug: item.slug || slugKey,
-      blocks: Array.isArray(item.blocks) ? item.blocks : [],
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleAddBlock = (type) => {
-    let newBlock = {};
-    if (type === "hero") {
-      newBlock = {
-        blockType: "hero",
-        title: "Hero Section Title",
-        subtitle: "Engaging subtitle description text...",
-        buttonText: "Learn More",
-        buttonLink: "/catalog",
-        bgImage: "/images/wood-bg.png",
-      };
-    } else if (type === "text-media-split") {
-      newBlock = {
-        blockType: "text-media-split",
-        heading: "Section Heading",
-        body: "Rich narrative content detailing your brand craft or services...",
-        image: "/images/bespoke_framing.png",
-        imagePosition: "right",
-      };
-    } else if (type === "cta-banner") {
-      newBlock = {
-        blockType: "cta-banner",
-        title: "Call to Action Heading",
-        subtitle: "Promotional banner subtext encouraging user action.",
-        buttonText: "Contact Us Today",
-        buttonLink: "/contact",
-      };
-    }
-    setPageForm({
-      ...pageForm,
-      blocks: [...(pageForm.blocks || []), newBlock],
-    });
-  };
-
-  const handleRemoveBlock = (bIdx) => {
-    setPageForm({
-      ...pageForm,
-      blocks: pageForm.blocks.filter((_, i) => i !== bIdx),
-    });
-  };
-
-  const handleSavePage = (e) => {
-    e.preventDefault();
-    const cleanSlug = pageForm.slug.replace(/^\//, '').trim().toLowerCase().replace(/\s+/g, '-');
-    const updated = { ...pages };
-    
-    // If slug changed, delete old key
-    if (activeSlug && activeSlug !== cleanSlug) {
-      delete updated[activeSlug];
-    }
-
-    updated[cleanSlug] = {
-      title: pageForm.title,
-      slug: cleanSlug,
-      blocks: pageForm.blocks,
+  const handleAddWidget = (widget, targetIdx = null) => {
+    const newBlock = {
+      id: "b_" + Date.now(),
+      ...JSON.parse(JSON.stringify(widget.defaultData)),
     };
-
-    setPages(updated);
-    setIsModalOpen(false);
+    const updated = [...pageBlocks];
+    if (targetIdx !== null) {
+      updated.splice(targetIdx, 0, newBlock);
+      setSelectedIndex(targetIdx);
+    } else {
+      updated.push(newBlock);
+      setSelectedIndex(updated.length - 1);
+    }
+    setPageBlocks(updated);
   };
 
-  const handleDeletePage = (slugKey) => {
-    if (confirm(`Are you sure you want to delete page "/${slugKey}"?`)) {
-      const updated = { ...pages };
-      delete updated[slugKey];
-      setPages(updated);
+  const handleCanvasDrop = (e, targetIdx = null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
+    const widgetId = e.dataTransfer.getData("widgetId") || draggedWidgetId;
+    const blockIdxStr = e.dataTransfer.getData("blockIndex");
+
+    if (widgetId) {
+      const widget = WIDGET_PALETTE.find(w => w.id === widgetId);
+      if (widget) {
+        handleAddWidget(widget, targetIdx);
+        setMessage(`✨ Dropped new ${widget.name} widget onto canvas!`);
+        setTimeout(() => setMessage(""), 3000);
+      }
+      setDraggedWidgetId(null);
+    } else if (blockIdxStr !== "" && blockIdxStr !== null) {
+      const fromIdx = parseInt(blockIdxStr, 10);
+      if (!isNaN(fromIdx) && targetIdx !== null && fromIdx !== targetIdx) {
+        const updated = [...pageBlocks];
+        const [moved] = updated.splice(fromIdx, 1);
+        updated.splice(targetIdx, 0, moved);
+        setPageBlocks(updated);
+        setSelectedIndex(targetIdx);
+        setMessage(`🔄 Reordered block #${fromIdx + 1} to position #${targetIdx + 1}!`);
+        setTimeout(() => setMessage(""), 3000);
+      }
+      setDraggedBlockIndex(null);
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Page Builder...</div>;
-  }
+  const handleMoveBlock = (index, delta) => {
+    const targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= pageBlocks.length) return;
+    const updated = [...pageBlocks];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+    setPageBlocks(updated);
+    setSelectedIndex(targetIndex);
+  };
 
-  const pageEntries = Object.entries(pages);
+  const handleDuplicateBlock = (index) => {
+    const original = pageBlocks[index];
+    const duplicate = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: "b_" + Date.now(),
+    };
+    const updated = [...pageBlocks];
+    updated.splice(index + 1, 0, duplicate);
+    setPageBlocks(updated);
+    setSelectedIndex(index + 1);
+  };
+
+  const handleDeleteBlock = (index) => {
+    const updated = pageBlocks.filter((_, i) => i !== index);
+    setPageBlocks(updated);
+    if (selectedIndex === index) setSelectedIndex(null);
+    else if (selectedIndex > index) setSelectedIndex(selectedIndex - 1);
+  };
+
+  const handleUpdateSelectedBlock = (key, value) => {
+    if (selectedIndex === null) return;
+    const updated = [...pageBlocks];
+    updated[selectedIndex] = {
+      ...updated[selectedIndex],
+      [key]: value,
+    };
+    setPageBlocks(updated);
+  };
+
+  // Freeform Mouse Dragging & Resizing Logic
+  const handleMouseDownMove = (e, idx) => {
+    e.stopPropagation();
+    setSelectedIndex(idx);
+    const targetBlock = pageBlocks[idx];
+    if (targetBlock.positionMode !== "absolute") return;
+
+    setIsMovingFree(true);
+    setDragStartPos({
+      x: e.clientX,
+      y: e.clientY,
+      initialX: parseFloat(targetBlock.posX || 0),
+      initialY: parseFloat(targetBlock.posY || 0),
+    });
+  };
+
+  const handleMouseDownResize = (e, idx) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSelectedIndex(idx);
+    const targetBlock = pageBlocks[idx];
+    const el = e.currentTarget.parentElement;
+    const currentW = el ? el.offsetWidth : 300;
+    const currentH = el ? el.offsetHeight : 150;
+
+    setIsResizing(true);
+    setDragStartPos({
+      x: e.clientX,
+      y: e.clientY,
+      initialWidth: currentW,
+      initialHeight: currentH,
+    });
+  };
+
+  const handleMouseMoveGlobal = (e) => {
+    if (selectedIndex === null) return;
+
+    if (isMovingFree) {
+      const deltaX = e.clientX - dragStartPos.x;
+      const deltaY = e.clientY - dragStartPos.y;
+      const newX = Math.max(0, dragStartPos.initialX + deltaX);
+      const newY = Math.max(0, dragStartPos.initialY + deltaY);
+
+      const updated = [...pageBlocks];
+      updated[selectedIndex] = {
+        ...updated[selectedIndex],
+        posX: Math.round(newX),
+        posY: Math.round(newY),
+      };
+      setPageBlocks(updated);
+    } else if (isResizing) {
+      const deltaX = e.clientX - dragStartPos.x;
+      const deltaY = e.clientY - dragStartPos.y;
+      const newW = Math.max(80, dragStartPos.initialWidth + deltaX);
+      const newH = Math.max(40, dragStartPos.initialHeight + deltaY);
+
+      const updated = [...pageBlocks];
+      updated[selectedIndex] = {
+        ...updated[selectedIndex],
+        boxWidth: `${Math.round(newW)}px`,
+        boxHeight: `${Math.round(newH)}px`,
+      };
+      setPageBlocks(updated);
+    }
+  };
+
+  const handleMouseUpGlobal = () => {
+    if (isMovingFree || isResizing) {
+      setIsMovingFree(false);
+      setIsResizing(false);
+    }
+  };
+
+  const handleFontFileUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fontDataUrl = e.target.result;
+      const customFontName = `CustomFont_${Date.now()}`;
+      
+      const newStyle = document.createElement("style");
+      newStyle.appendChild(document.createTextNode(`
+        @font-face {
+          font-family: '${customFontName}';
+          src: url('${fontDataUrl}');
+        }
+      `));
+      document.head.appendChild(newStyle);
+
+      handleUpdateSelectedBlock("fontFamily", `'${customFontName}', sans-serif`);
+      handleUpdateSelectedBlock("customFontLoadedName", customFontName);
+      setMessage(`✅ Uploaded custom font "${file.name}"!`);
+      setTimeout(() => setMessage(""), 3000);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImportTemplate = (template) => {
+    setPageTitle(template.title);
+    setSelectedSlug(template.slug);
+    setPageBlocks(JSON.parse(JSON.stringify(template.blocks)));
+    setSelectedIndex(null);
+    setShowTemplateModal(false);
+    setMessage(`✅ Imported ${template.title}! Click 'Save Layout' to publish.`);
+    setTimeout(() => setMessage(""), 4000);
+  };
+
+  const filteredWidgets = WIDGET_PALETTE.filter(w =>
+    w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    w.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const selectedBlock = selectedIndex !== null ? pageBlocks[selectedIndex] : null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "10px 0 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, color: "var(--text)" }}>
-            Custom <span>Page Builder</span>
-          </h1>
-          <p style={{ color: "var(--text2)", fontSize: 14, marginTop: 4 }}>
-            Create dynamic website pages with custom layout blocks (Hero, Text & Media Split, CTA Banners).
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={openAddPageModal}
+    <div
+      onMouseMove={handleMouseMoveGlobal}
+      onMouseUp={handleMouseUpGlobal}
+      style={{ height: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", flexDirection: "column", fontFamily: "var(--font-serif)", overflow: "hidden", userSelect: (isMovingFree || isResizing) ? "none" : "auto" }}
+    >
+      
+      {/* ELEGANT STUDIO CONTROL BAR */}
+      <header style={{
+        height: "72px",
+        minHeight: "72px",
+        background: "rgba(13, 10, 7, 0.95)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(201, 168, 76, 0.25)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 28px",
+        zIndex: 200,
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.6)"
+      }}>
+        {/* LEFT GROUP */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <a
+            href="/admin/dashboard"
             style={{
-              background: "var(--surface2)",
-              color: "var(--accent)",
-              border: "1px solid var(--accent)",
-              borderRadius: 8,
-              padding: "10px 20px",
+              color: "var(--text2)",
+              textDecoration: "none",
+              fontSize: 13,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(255, 255, 255, 0.05)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: "1px solid var(--border)",
               fontWeight: 600,
-              cursor: "pointer",
+              transition: "all 0.2s ease"
             }}
           >
-            + Create New Page
-          </button>
+            ← Admin
+          </a>
 
           <button
-            onClick={handleSaveAll}
-            disabled={saving}
+            onClick={() => setLeftOpen(!leftOpen)}
+            style={{
+              background: leftOpen ? "rgba(201, 168, 76, 0.18)" : "rgba(255, 255, 255, 0.05)",
+              border: `1px solid ${leftOpen ? "var(--accent)" : "rgba(255, 255, 255, 0.15)"}`,
+              color: leftOpen ? "var(--accent)" : "#FFF",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s ease"
+            }}
+          >
+            <span>🎨</span> {leftOpen ? "Hide Palette" : "Show Palette"}
+          </button>
+        </div>
+
+        {/* CENTER GROUP: ACTIVE PAGE SELECTOR & NEW PAGE BUTTON */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(20, 15, 10, 0.85)", border: "1px solid rgba(201, 168, 76, 0.35)", padding: "6px 14px", borderRadius: "30px", boxShadow: "0 4px 15px rgba(0,0,0,0.5)" }}>
+          <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent)", fontWeight: 700 }}>
+            PAGE:
+          </span>
+          <select
+            value={selectedSlug}
+            onChange={(e) => {
+              if (e.target.value === "__create_new__") {
+                setShowCreatePageModal(true);
+              } else {
+                handleSelectPage(e.target.value);
+              }
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#FFF",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              outline: "none",
+              maxWidth: 280,
+              textOverflow: "ellipsis"
+            }}
+          >
+            <option value="__create_new__" style={{ background: "#1C150C", color: "var(--accent)", fontWeight: 700 }}>
+              ➕ Create New Custom Page...
+            </option>
+            {pagesList.map(p => (
+              <option key={p.slug} value={p.slug} style={{ background: "#110D09", color: "#FFF" }}>
+                {p.title} (/{p.slug})
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setShowCreatePageModal(true)}
             style={{
               background: "var(--accent)",
               color: "#000",
               border: "none",
-              borderRadius: 8,
-              padding: "10px 24px",
-              fontWeight: 700,
+              borderRadius: "16px",
+              padding: "5px 14px",
+              fontSize: 11,
+              fontWeight: 800,
               cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(201,168,76,0.3)"
             }}
           >
-            {saving ? "Saving..." : "Save All Pages"}
+            + Create New Page
           </button>
         </div>
-      </div>
+
+        {/* RIGHT GROUP */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={() => setShowTemplateModal(true)}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "var(--accent)",
+              border: "1px solid rgba(201, 168, 76, 0.3)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            📚 Templates
+          </button>
+
+          <a
+            href={`/${selectedSlug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#FFF",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: 12,
+              textDecoration: "none",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            👁️ Live Page
+          </a>
+
+          <button
+            onClick={() => setRightOpen(!rightOpen)}
+            style={{
+              background: rightOpen ? "rgba(201, 168, 76, 0.18)" : "rgba(255, 255, 255, 0.05)",
+              border: `1px solid ${rightOpen ? "var(--accent)" : "rgba(255, 255, 255, 0.15)"}`,
+              color: rightOpen ? "var(--accent)" : "#FFF",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            ⚙️ {rightOpen ? "Hide Inspector" : "Inspector"}
+          </button>
+
+          <button
+            onClick={handleSavePage}
+            disabled={saving}
+            style={{
+              background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
+              color: "#000",
+              border: "none",
+              padding: "9px 24px",
+              borderRadius: "20px",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(201, 168, 76, 0.4)",
+              letterSpacing: "0.03em"
+            }}
+          >
+            {saving ? "Publishing..." : "💾 Save Layout"}
+          </button>
+        </div>
+      </header>
 
       {message && (
-        <div style={{ background: "rgba(201, 168, 76, 0.15)", border: "1px solid var(--accent)", color: "var(--accent)", padding: 14, borderRadius: 8, marginBottom: 24 }}>
+        <div style={{ background: "rgba(201, 168, 76, 0.15)", borderBottom: "1px solid var(--accent)", color: "var(--accent)", padding: "8px 24px", fontSize: 12, textAlign: "center", fontWeight: 600 }}>
           {message}
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
-        {pageEntries.map(([slugKey, pageItem]) => (
-          <div key={slugKey} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 11, background: "rgba(201, 168, 76, 0.2)", color: "var(--accent)", fontWeight: 700, padding: "3px 8px", borderRadius: 4 }}>
-                  /{slugKey}
-                </span>
-                <a href={`/${slugKey}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--text2)", textDecoration: "underline" }}>
-                  View Live ↗
-                </a>
-              </div>
-
-              <h3 style={{ fontSize: 20, color: "#fff", marginBottom: 8 }}>{pageItem.title}</h3>
-              <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>
-                Contains {pageItem.blocks?.length || 0} layout section blocks.
-              </p>
+      {/* 3-PANE WORKSPACE */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        
+        {/* LEFT PANE: WIDGET PALETTE WITH DRAGGABLE WIDGETS */}
+        {leftOpen && (
+          <aside style={{ width: "300px", minWidth: "300px", background: "#0A0805", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.3s ease" }}>
+            <div style={{ padding: 16, borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--accent)", margin: 0, fontWeight: 700 }}>
+                🎥 Widgets Palette
+              </h3>
+              <button onClick={() => setLeftOpen(false)} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14 }}>◀</button>
+            </div>
+            <div style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>
+              <input
+                type="text"
+                placeholder="Search widgets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: "100%", background: "#14100B", border: "1px solid var(--border2)", color: "#FFF", padding: "8px 12px", borderRadius: 6, fontSize: 12 }}
+              />
+              <span style={{ fontSize: 10, color: "var(--text2)", display: "block", marginTop: 4 }}>💡 Click or Drag & Drop widgets onto canvas</span>
             </div>
 
-            <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
-              <button
-                onClick={() => openEditPageModal(slugKey)}
-                style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border2)", color: "#fff", padding: "9px 0", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
-              >
-                Edit Page & Blocks
-              </button>
-              <button
-                onClick={() => handleDeletePage(slugKey)}
-                style={{ background: "rgba(255, 62, 108, 0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "9px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal for Page Builder Editor */}
-      {isModalOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 12, width: 700, maxWidth: "100%", padding: 26, maxHeight: "90vh", overflowY: "auto" }}>
-            <h2 style={{ fontSize: 20, color: "var(--accent)", marginBottom: 20 }}>
-              {activeSlug ? `Edit Page: /${activeSlug}` : "Create New Dynamic Page"}
-            </h2>
-
-            <form onSubmit={handleSavePage} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Page Title *</label>
-                  <input
-                    type="text"
-                    value={pageForm.title}
-                    onChange={(e) => setPageForm({ ...pageForm, title: e.target.value })}
-                    required
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>URL Slug (e.g. dummy or about-us) *</label>
-                  <input
-                    type="text"
-                    value={pageForm.slug}
-                    onChange={(e) => setPageForm({ ...pageForm, slug: e.target.value })}
-                    required
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-              </div>
-
-              {/* Blocks Editor */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 15, color: "#fff" }}>Layout Blocks ({pageForm.blocks?.length || 0})</h3>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleAddBlock("hero")}
-                      style={{ background: "var(--surface2)", border: "1px solid var(--border2)", color: "var(--accent)", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
-                    >
-                      + Hero Block
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddBlock("text-media-split")}
-                      style={{ background: "var(--surface2)", border: "1px solid var(--border2)", color: "var(--accent)", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
-                    >
-                      + Split Block
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddBlock("cta-banner")}
-                      style={{ background: "var(--surface2)", border: "1px solid var(--border2)", color: "var(--accent)", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
-                    >
-                      + CTA Banner
-                    </button>
+            <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {filteredWidgets.map((widget) => (
+                <div
+                  key={widget.id}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("widgetId", widget.id);
+                    setDraggedWidgetId(widget.id);
+                  }}
+                  onClick={() => handleAddWidget(widget)}
+                  style={{
+                    background: "#14100B",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: 12,
+                    textAlign: "left",
+                    cursor: "grab",
+                    transition: "all 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    userSelect: "none"
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{widget.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 13, color: "#FFF", fontWeight: 600 }}>{widget.name}</div>
+                    <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>{widget.category} • Drag Me</div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </aside>
+        )}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {pageForm.blocks?.map((block, bIdx) => (
-                    <div key={bIdx} style={{ background: "var(--surface2)", border: "1px solid var(--border2)", borderRadius: 8, padding: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase" }}>
-                          Block #{bIdx + 1}: {block.blockType}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveBlock(bIdx)}
-                          style={{ background: "none", border: "none", color: "#FF5A5A", cursor: "pointer", fontSize: 12 }}
-                        >
-                          Remove Block
-                        </button>
+        {/* CENTER PANE: SPACIOUS LIVE VISUAL CANVAS DROP TARGET */}
+        <main
+          ref={canvasRef}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleCanvasDrop(e)}
+          style={{ flex: 1, background: "#050403", backgroundImage: "radial-gradient(rgba(201, 168, 76, 0.08) 1px, transparent 1px)", backgroundSize: "24px 24px", overflowY: "auto", padding: "40px 60px", position: "relative" }}
+        >
+          <div style={{ maxWidth: "1100px", margin: "0 auto", minHeight: "850px", background: "#080605", border: "1px solid var(--border)", borderRadius: 16, padding: "40px 30px", boxShadow: "0 20px 50px rgba(0,0,0,0.8)", position: "relative", overflow: "hidden" }}>
+            
+            {/* Signature Floating Animated Background Liquid Blobs */}
+            <div className="canvas-liquid-blob-1" />
+            <div className="canvas-liquid-blob-2" />
+
+            <style dangerouslySetInnerHTML={{
+              __html: `
+              .canvas-liquid-blob-1 {
+                position: absolute;
+                top: -10%;
+                left: 10%;
+                width: 500px;
+                height: 500px;
+                background: radial-gradient(circle, rgba(181, 139, 92, 0.22) 0%, rgba(139, 94, 60, 0) 70%);
+                border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
+                animation: liquid-move-1 25s infinite alternate ease-in-out;
+                pointer-events: none;
+                z-index: 0;
+              }
+              .canvas-liquid-blob-2 {
+                position: absolute;
+                bottom: -15%;
+                right: 5%;
+                width: 550px;
+                height: 550px;
+                background: radial-gradient(circle, rgba(139, 94, 60, 0.2) 0%, rgba(201, 168, 76, 0) 70%);
+                border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+                animation: liquid-move-2 30s infinite alternate ease-in-out;
+                pointer-events: none;
+                z-index: 0;
+              }
+              @keyframes liquid-move-1 {
+                0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+                33% { transform: translate(60px, -40px) scale(1.15) rotate(45deg); }
+                66% { transform: translate(-30px, 60px) scale(0.9) rotate(90deg); }
+                100% { transform: translate(0, 0) scale(1) rotate(180deg); }
+              }
+              @keyframes liquid-move-2 {
+                0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+                50% { transform: translate(-80px, 40px) scale(1.2) rotate(120deg); }
+                100% { transform: translate(50px, -50px) scale(0.9) rotate(-60deg); }
+              }
+            ` }} />
+
+            {/* Signature Fixed Header Preview */}
+            <div style={{ borderBottom: "1px dashed var(--accent)", paddingBottom: 24, marginBottom: 40, textAlign: "center", opacity: 0.85, position: "relative", zIndex: 2 }}>
+              <span style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent)" }}>Yaadein Header Preview</span>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "#FFF", margin: "8px 0" }}>{pageTitle}</h2>
+              <span style={{ fontSize: 12, color: "var(--text2)" }}>💡 Studio Lamp Header Fixed Across All Pages</span>
+            </div>
+
+            {/* Dropped Layout Blocks */}
+            {pageBlocks.length > 0 ? (
+              pageBlocks.map((block, idx) => {
+                const isSelected = selectedIndex === idx;
+                const isDragOver = dragOverIndex === idx;
+                const textColor = block.textColor || "#C9A84C";
+                const fontFamily = block.fontFamily || "inherit";
+                const fontStyle = block.fontStyle || "normal";
+                const textDecoration = block.textDecoration || "none";
+                const textTransform = block.textTransform || "none";
+
+                // Layout Flow & Sizing Math
+                const isAbsolute = block.positionMode === "absolute";
+                const displayMode = block.displayMode || "block";
+                const isInline = displayMode === "inline-50" || displayMode === "inline-33" || (block.boxWidth && block.boxWidth !== "100%" && block.boxWidth !== "auto");
+                
+                const boxWidth = block.boxWidth || (displayMode === "inline-50" ? "48%" : displayMode === "inline-33" ? "31%" : "100%");
+                const boxHeight = block.boxHeight || "auto";
+                const mLeft = block.marginLeft !== undefined && block.marginLeft !== "" ? `${block.marginLeft}px` : (block.boxAlign === "center" ? "auto" : block.boxAlign === "right" ? "auto" : "0");
+                const mRight = block.marginRight !== undefined && block.marginRight !== "" ? `${block.marginRight}px` : (block.boxAlign === "center" ? "auto" : block.boxAlign === "left" ? "auto" : "0");
+
+                const wrapperStyle = {
+                  position: isAbsolute ? "absolute" : "relative",
+                  left: isAbsolute ? `${block.posX || 0}px` : "auto",
+                  top: isAbsolute ? `${block.posY || 0}px` : "auto",
+                  display: isAbsolute ? "block" : (isInline ? "inline-block" : "block"),
+                  verticalAlign: "top",
+                  boxSizing: "border-box",
+                  width: boxWidth,
+                  height: boxHeight,
+                  marginTop: isAbsolute ? 0 : `${block.marginTop || 0}px`,
+                  marginBottom: isAbsolute ? 0 : `${block.marginBottom || 20}px`,
+                  marginLeft: isAbsolute ? 0 : mLeft,
+                  marginRight: isAbsolute ? 0 : mRight,
+                  paddingTop: `${block.paddingTop || 10}px`,
+                  paddingBottom: `${block.paddingBottom || 10}px`,
+                  paddingLeft: `${block.paddingLeft || 10}px`,
+                  paddingRight: `${block.paddingRight || 10}px`,
+                  background: block.bgColor === "transparent" ? "transparent" : (block.bgColor || (block.bgGradient ? block.bgGradient : "transparent")),
+                  backdropFilter: block.backdropBlur ? `blur(${block.backdropBlur}px)` : "none",
+                  borderStyle: block.borderStyle || "none",
+                  borderWidth: `${block.borderWidth || 1}px`,
+                  borderColor: block.borderColor || "transparent",
+                  borderRadius: `${block.borderRadius || 0}px`,
+                  boxShadow: block.shadow || "none",
+                  opacity: block.opacity ? parseFloat(block.opacity) : 1,
+                  outline: isDragOver ? "3px solid #FFD700" : isSelected ? "2px solid var(--accent)" : "1px dashed rgba(255,255,255,0.1)",
+                  outlineOffset: "4px",
+                  cursor: isAbsolute ? "move" : "grab",
+                  transition: isMovingFree || isResizing ? "none" : "all 0.2s ease",
+                  zIndex: isSelected ? 50 : 2,
+                };
+
+                return (
+                  <div
+                    key={block.id || idx}
+                    draggable={!isAbsolute}
+                    onMouseDown={(e) => isAbsolute && handleMouseDownMove(e, idx)}
+                    onDragStart={(e) => {
+                      if (!isAbsolute) {
+                        e.dataTransfer.setData("blockIndex", idx.toString());
+                        setDraggedBlockIndex(idx);
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      if (!isAbsolute) {
+                        e.preventDefault();
+                        setDragOverIndex(idx);
+                      }
+                    }}
+                    onDragLeave={() => setDragOverIndex(null)}
+                    onDrop={(e) => !isAbsolute && handleCanvasDrop(e, idx)}
+                    style={wrapperStyle}
+                    onClick={() => setSelectedIndex(idx)}
+                  >
+                    
+                    {/* Floating Block Toolbar */}
+                    {isSelected && (
+                      <div style={{ position: "absolute", top: -32, right: 0, background: "var(--accent)", color: "#000", padding: "3px 12px", borderRadius: "6px 6px 0 0", fontSize: 11, fontWeight: 700, display: "flex", gap: 10, alignItems: "center", zIndex: 100 }}>
+                        <span>Selected #{idx + 1} ({block.type}) {isAbsolute ? "📍 Freeform Drag" : ""}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, -1); }} style={{ background: "none", border: "none", cursor: "pointer" }}>▲</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, 1); }} style={{ background: "none", border: "none", cursor: "pointer" }}>▼</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDuplicateBlock(idx); }} style={{ background: "none", border: "none", cursor: "pointer" }}>📋</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteBlock(idx); }} style={{ background: "none", border: "none", cursor: "pointer" }}>🗑️</button>
                       </div>
+                    )}
 
-                      {block.blockType === "hero" && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <input
-                            type="text"
-                            placeholder="Hero Title"
-                            value={block.title || ""}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].title = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <textarea
-                            placeholder="Hero Subtitle"
-                            value={block.subtitle || ""}
-                            rows={2}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].subtitle = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                            <input
-                              type="text"
-                              placeholder="Button Text"
-                              value={block.buttonText || ""}
-                              onChange={(e) => {
-                                const updated = [...pageForm.blocks];
-                                updated[bIdx].buttonText = e.target.value;
-                                setPageForm({ ...pageForm, blocks: updated });
-                              }}
-                              style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Button Link"
-                              value={block.buttonLink || ""}
-                              onChange={(e) => {
-                                const updated = [...pageForm.blocks];
-                                updated[bIdx].buttonLink = e.target.value;
-                                setPageForm({ ...pageForm, blocks: updated });
-                              }}
-                              style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
+                    {/* CORNER RESIZE HANDLE (↘) */}
+                    {isSelected && (
+                      <div
+                        onMouseDown={(e) => handleMouseDownResize(e, idx)}
+                        style={{
+                          position: "absolute",
+                          bottom: -6,
+                          right: -6,
+                          width: 16,
+                          height: 16,
+                          background: "var(--accent)",
+                          border: "2px solid #000",
+                          borderRadius: "50%",
+                          cursor: "se-resize",
+                          zIndex: 110,
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.8)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 8,
+                          color: "#000",
+                          fontWeight: 900
+                        }}
+                      >
+                        ↘
+                      </div>
+                    )}
+
+                    {/* RENDERERS */}
+                    {block.type === "heading" && (
+                      <h2 style={{ fontFamily, fontSize: `${block.fontSize || 36}px`, color: textColor, textAlign: block.textAlign || "center", fontWeight: block.fontWeight || "700", fontStyle, textDecoration, textTransform, letterSpacing: `${block.letterSpacing || 0}px`, lineHeight: block.lineHeight || "1.3", textShadow: block.textShadow || "none", margin: 0 }}>
+                        {block.text}
+                      </h2>
+                    )}
+
+                    {block.type === "paragraph" && (
+                      <p style={{ fontFamily, fontSize: `${block.fontSize || 16}px`, color: textColor, textAlign: block.textAlign || "left", fontWeight: block.fontWeight || "400", fontStyle, textDecoration, textTransform, letterSpacing: `${block.letterSpacing || 0}px`, lineHeight: block.lineHeight || "1.8", textShadow: block.textShadow || "none", margin: 0 }}>
+                        {block.text}
+                      </p>
+                    )}
+
+                    {block.type === "row-2col" && (
+                      <div style={{ display: "grid", gridTemplateColumns: block.colRatio || "1fr 1fr", gap: `${block.gap || 24}px`, alignItems: block.verticalAlign || "center" }}>
+                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 10, border: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>LEFT COLUMN (50%)</span>
+                          {block.col1Type === "image" ? (
+                            <img src={block.col1Image || "/images/bespoke_framing.png"} alt="Left Media" style={{ width: "100%", borderRadius: 8, height: 180, objectFit: "cover", marginTop: 8 }} />
+                          ) : (
+                            <div style={{ marginTop: 8 }}>
+                              {block.col1Title && <h4 style={{ fontSize: 18, color: textColor, margin: "0 0 6px 0" }}>{block.col1Title}</h4>}
+                              <p style={{ fontSize: 13, color: "var(--text2)", margin: 0 }}>{block.col1Body}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 10, border: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>RIGHT COLUMN (50%)</span>
+                          {block.col2Type === "image" ? (
+                            <img src={block.col2Image || "/images/bespoke_framing.png"} alt="Right Media" style={{ width: "100%", borderRadius: 8, height: 180, objectFit: "cover", marginTop: 8 }} />
+                          ) : (
+                            <div style={{ marginTop: 8 }}>
+                              {block.col2Title && <h4 style={{ fontSize: 18, color: textColor, margin: "0 0 6px 0" }}>{block.col2Title}</h4>}
+                              <p style={{ fontSize: 13, color: "var(--text2)", margin: 0 }}>{block.col2Body}</p>
+                              {block.col2ButtonText && <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "8px 20px", borderRadius: 6, fontSize: 12, marginTop: 10 }}>{block.col2ButtonText}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {block.type === "row-3col" && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: `${block.gap || 20}px` }}>
+                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
+                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col1Title}</h5>
+                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col1Body}</p>
+                        </div>
+                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
+                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col2Title}</h5>
+                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col2Body}</p>
+                        </div>
+                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
+                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col3Title}</h5>
+                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col3Body}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {block.type === "image" && (
+                      <div style={{ textAlign: "center" }}>
+                        <img src={block.url || "/images/bespoke_framing.png"} alt="Widget" style={{ maxWidth: block.width || "100%", borderRadius: `${block.borderRadius || 8}px`, border: `${block.borderWidth || 1}px ${block.borderStyle || "solid"} ${block.borderColor || "transparent"}`, objectFit: block.objectFit || "cover" }} />
+                        {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>{block.caption}</p>}
+                      </div>
+                    )}
+
+                    {block.type === "video" && (
+                      <div style={{ textAlign: "center" }}>
+                        <video src={block.url || "/videos/reel1.mp4"} controls style={{ width: "100%", maxHeight: 350, borderRadius: `${block.borderRadius || 12}px`, background: "#000" }} />
+                        {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>{block.caption}</p>}
+                      </div>
+                    )}
+
+                    {block.type === "button" && (
+                      <div style={{ textAlign: block.alignment || "center" }}>
+                        <span style={{ display: "inline-block", background: block.btnColor || textColor, color: block.textColor || "#000", fontFamily, fontWeight: block.fontWeight || "700", fontSize: `${block.fontSize || 14}px`, padding: `${block.paddingTop || 14}px ${block.paddingRight || 32}px`, borderRadius: `${block.borderRadius || 8}px` }}>
+                          {block.text} {block.iconName === "arrow" ? "→" : block.iconName === "star" ? "✦" : ""}
+                        </span>
+                      </div>
+                    )}
+
+                    {block.type === "cta-banner" && (
+                      <div style={{ background: block.bgGradient || "linear-gradient(135deg, rgba(201, 168, 76, 0.2) 0%, rgba(20, 12, 6, 0.9) 100%)", border: `1px solid ${textColor}`, borderRadius: 16, padding: 40, textAlign: "center" }}>
+                        <h3 style={{ fontFamily, fontSize: 30, color: textColor, marginBottom: 10 }}>{block.title}</h3>
+                        <p style={{ color: "var(--text2)", fontSize: 15, marginBottom: 20 }}>{block.subtitle}</p>
+                        <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "12px 28px", borderRadius: 8, fontSize: 13 }}>{block.buttonText}</span>
+                      </div>
+                    )}
+
+                    {block.type === "testimonial" && (
+                      <div style={{ background: "rgba(28, 15, 7, 0.6)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: 12, padding: 24 }}>
+                        <div style={{ color: textColor, fontSize: 18, marginBottom: 8 }}>{"★".repeat(parseInt(block.rating || "5"))}</div>
+                        <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "#fff", fontStyle: "italic", marginBottom: 12 }}>"{block.quote}"</p>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: textColor }}>{block.name} ({block.location})</div>
+                      </div>
+                    )}
+
+                    {block.type === "faq" && (
+                      <div style={{ background: "rgba(20, 12, 6, 0.7)", border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
+                        <div style={{ fontWeight: 600, color: textColor, fontSize: 15 }}>❓ {block.question}</div>
+                        <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 6 }}>{block.answer}</div>
+                      </div>
+                    )}
+
+                    {block.type === "pricing" && (
+                      <div style={{ background: "rgba(201, 168, 76, 0.15)", border: `1px solid ${textColor}`, borderRadius: 16, padding: 28, textAlign: "center" }}>
+                        {block.ribbonBadge && <span style={{ background: textColor, color: "#000", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4 }}>{block.ribbonBadge}</span>}
+                        <h4 style={{ fontSize: 20, color: "#fff", marginTop: 6 }}>{block.title}</h4>
+                        <div style={{ fontSize: 32, fontWeight: 700, color: textColor, margin: "8px 0" }}>{block.currency || "Rs."} {block.price}</div>
+                        <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "10px 24px", borderRadius: 8, fontSize: 13, marginTop: 12 }}>{block.buttonText}</span>
+                      </div>
+                    )}
+
+                    {block.type === "divider" && (
+                      <div style={{ padding: "10px 0", display: "flex", alignItems: "center" }}>
+                        <div style={{ width: "100%", height: parseInt(block.height || "1"), background: textColor }} />
+                      </div>
+                    )}
+
+                    {block.type === "spacer" && (
+                      <div style={{ height: parseInt(block.height || "40"), background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--text2)" }}>
+                        Spacer Gap ({block.height || 40}px)
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ padding: "100px 20px", textAlign: "center", color: "var(--text2)" }}>
+                <h3>Your Canvas is Empty</h3>
+                <p style={{ fontSize: 14, marginTop: 8 }}>Drag & drop any widget from the left palette or click it to add it to your layout.</p>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* RIGHT PANE: COLLAPSIBLE INSPECTOR */}
+        {rightOpen && (
+          <aside style={{ width: "340px", minWidth: "340px", background: "#0A0805", borderLeft: "1px solid var(--border)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.3s ease" }}>
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--accent)", margin: 0, fontWeight: 700 }}>
+                ⚙️ Inspector: {selectedBlock ? selectedBlock.type : "Select Block"}
+              </h3>
+              <button onClick={() => setRightOpen(false)} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14 }}>▶</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+              {selectedBlock ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  
+                  {/* INSPECTOR SUB-TABS */}
+                  <div style={{ display: "flex", background: "#14100B", padding: 3, borderRadius: 6, border: "1px solid var(--border)" }}>
+                    {["content", "typography", "style", "spacing"].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveInspectorTab(tab)}
+                        style={{
+                          flex: 1,
+                          background: activeInspectorTab === tab ? "var(--accent)" : "none",
+                          color: activeInspectorTab === tab ? "#000" : "#fff",
+                          border: "none",
+                          padding: "6px 4px",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          textTransform: "capitalize"
+                        }}
+                      >
+                        {tab === "style" ? "Box Style" : tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* TAB 1: CONTENT & SPECIFIC ENTITIES */}
+                  {activeInspectorTab === "content" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      
+                      {selectedBlock.type === "heading" && (
+                        <>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>HTML Heading Tag</label>
+                            <select
+                              value={selectedBlock.tag || "h2"}
+                              onChange={(e) => handleUpdateSelectedBlock("tag", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                            >
+                              <option value="h1">H1 (Main Title)</option>
+                              <option value="h2">H2 (Section Header)</option>
+                              <option value="h3">H3 (Sub Header)</option>
+                              <option value="h4">H4 (Minor Title)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Headline Text String</label>
+                            <textarea
+                              value={selectedBlock.text || ""}
+                              onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
+                              rows={3}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
                             />
                           </div>
+                        </>
+                      )}
+
+                      {selectedBlock.type === "paragraph" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Paragraph Text Content</label>
+                          <textarea
+                            value={selectedBlock.text || ""}
+                            onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
+                            rows={5}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
                         </div>
                       )}
 
-                      {block.blockType === "text-media-split" && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <input
-                            type="text"
-                            placeholder="Section Heading"
-                            value={block.heading || ""}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].heading = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <textarea
-                            placeholder="Body paragraph text..."
-                            value={block.body || ""}
-                            rows={3}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].body = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Image URL"
-                            value={block.image || ""}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].image = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                        </div>
-                      )}
-
-                      {block.blockType === "cta-banner" && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <input
-                            type="text"
-                            placeholder="Banner Title"
-                            value={block.title || ""}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].title = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Banner Subtitle"
-                            value={block.subtitle || ""}
-                            onChange={(e) => {
-                              const updated = [...pageForm.blocks];
-                              updated[bIdx].subtitle = e.target.value;
-                              setPageForm({ ...pageForm, blocks: updated });
-                            }}
-                            style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                          />
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {selectedBlock.type === "image" && (
+                        <>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>Select Image File (Local Storage)</label>
                             <input
-                              type="text"
-                              placeholder="Button Label"
-                              value={block.buttonText || ""}
+                              type="file"
+                              accept="image/*"
                               onChange={(e) => {
-                                const updated = [...pageForm.blocks];
-                                updated[bIdx].buttonText = e.target.value;
-                                setPageForm({ ...pageForm, blocks: updated });
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (evt) => {
+                                    handleUpdateSelectedBlock("url", evt.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
                               }}
-                              style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Button Link"
-                              value={block.buttonLink || ""}
-                              onChange={(e) => {
-                                const updated = [...pageForm.blocks];
-                                updated[bIdx].buttonLink = e.target.value;
-                                setPageForm({ ...pageForm, blocks: updated });
-                              }}
-                              style={{ background: "var(--surface3)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 4, fontSize: 13 }}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
                             />
                           </div>
-                        </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Caption Text</label>
+                            <input
+                              type="text"
+                              value={selectedBlock.caption || ""}
+                              onChange={(e) => handleUpdateSelectedBlock("caption", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {selectedBlock.type === "video" && (
+                        <>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>Select Video File (Local Storage)</label>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (evt) => {
+                                    handleUpdateSelectedBlock("url", evt.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {selectedBlock.type === "button" && (
+                        <>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Button Label</label>
+                            <input
+                              type="text"
+                              value={selectedBlock.text || ""}
+                              onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Button Link Target</label>
+                            <input
+                              type="text"
+                              value={selectedBlock.link || ""}
+                              onChange={(e) => handleUpdateSelectedBlock("link", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {selectedBlock.type === "row-2col" && (
+                        <>
+                          <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
+                            <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>Left Column (50%)</h4>
+                            <select
+                              value={selectedBlock.col1Type || "text"}
+                              onChange={(e) => handleUpdateSelectedBlock("col1Type", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 8 }}
+                            >
+                              <option value="text">Paragraph / Narrative Text</option>
+                              <option value="image">Image / Photo</option>
+                            </select>
+                            {selectedBlock.col1Type === "image" ? (
+                              <div>
+                                <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Select Left Image File</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (evt) => {
+                                        handleUpdateSelectedBlock("col1Image", evt.target.result);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
+                                />
+                              </div>
+                            ) : (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Left Title (Optional)"
+                                  value={selectedBlock.col1Title || ""}
+                                  onChange={(e) => handleUpdateSelectedBlock("col1Title", e.target.value)}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                                />
+                                <textarea
+                                  placeholder="Left Paragraph Text"
+                                  value={selectedBlock.col1Body || ""}
+                                  onChange={(e) => handleUpdateSelectedBlock("col1Body", e.target.value)}
+                                  rows={3}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                                />
+                              </>
+                            )}
+                          </div>
+
+                          <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
+                            <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>Right Column (50%)</h4>
+                            <select
+                              value={selectedBlock.col2Type || "text"}
+                              onChange={(e) => handleUpdateSelectedBlock("col2Type", e.target.value)}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 8 }}
+                            >
+                              <option value="text">Paragraph / Narrative Text</option>
+                              <option value="image">Image / Photo</option>
+                            </select>
+                            {selectedBlock.col2Type === "image" ? (
+                              <div>
+                                <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Select Right Image File</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (evt) => {
+                                        handleUpdateSelectedBlock("col2Image", evt.target.result);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
+                                />
+                              </div>
+                            ) : (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Right Title (Optional)"
+                                  value={selectedBlock.col2Title || ""}
+                                  onChange={(e) => handleUpdateSelectedBlock("col2Title", e.target.value)}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                                />
+                                <textarea
+                                  placeholder="Right Paragraph Text"
+                                  value={selectedBlock.col2Body || ""}
+                                  onChange={(e) => handleUpdateSelectedBlock("col2Body", e.target.value)}
+                                  rows={3}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Button Label (Optional)"
+                                  value={selectedBlock.col2ButtonText || ""}
+                                  onChange={(e) => handleUpdateSelectedBlock("col2ButtonText", e.target.value)}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                                />
+                              </>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                  ))}
+                  )}
+
+                  {/* TAB 2: ADVANCED TYPOGRAPHY SUITE */}
+                  {activeInspectorTab === "typography" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>🔤 Font Family</label>
+                        <select
+                          value={selectedBlock.fontFamily || "inherit"}
+                          onChange={(e) => handleUpdateSelectedBlock("fontFamily", e.target.value)}
+                          style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                        >
+                          {FONT_FAMILIES.map(f => (
+                            <option key={f.val} value={f.val}>{f.name}</option>
+                          ))}
+                        </select>
+
+                        {/* UPLOAD CUSTOM FONT FILE */}
+                        <div style={{ background: "rgba(201,168,76,0.1)", padding: 8, borderRadius: 6, border: "1px solid var(--border)" }}>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📁 Upload Custom Font (.ttf, .otf, .woff)</label>
+                          <input
+                            type="file"
+                            accept=".ttf,.otf,.woff,.woff2"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFontFileUpload(file);
+                            }}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 10 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* TEXT COLOR & COLOR PICKER */}
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>🎨 Text Font Color & Color Picker</label>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="color"
+                            value={selectedBlock.textColor || "#C9A84C"}
+                            onChange={(e) => handleUpdateSelectedBlock("textColor", e.target.value)}
+                            style={{ width: 40, height: 32, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
+                          />
+                          <select
+                            value={selectedBlock.textColor || "#C9A84C"}
+                            onChange={(e) => handleUpdateSelectedBlock("textColor", e.target.value)}
+                            style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: selectedBlock.textColor || "#C9A84C", fontWeight: 700, padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            {FONT_COLORS.map(c => (
+                              <option key={c.hex} value={c.hex} style={{ color: c.hex, background: "#111" }}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Font Size: {selectedBlock.fontSize || 36}px</label>
+                        <input
+                          type="range"
+                          min="12"
+                          max="96"
+                          value={selectedBlock.fontSize || 36}
+                          onChange={(e) => handleUpdateSelectedBlock("fontSize", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Font Weight</label>
+                          <select
+                            value={selectedBlock.fontWeight || "700"}
+                            onChange={(e) => handleUpdateSelectedBlock("fontWeight", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            <option value="300">300 (Light)</option>
+                            <option value="400">400 (Regular)</option>
+                            <option value="600">600 (Semi-Bold)</option>
+                            <option value="700">700 (Bold)</option>
+                            <option value="900">900 (Black)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Alignment</label>
+                          <select
+                            value={selectedBlock.textAlign || "center"}
+                            onChange={(e) => handleUpdateSelectedBlock("textAlign", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Text Transform</label>
+                          <select
+                            value={selectedBlock.textTransform || "none"}
+                            onChange={(e) => handleUpdateSelectedBlock("textTransform", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            <option value="none">None</option>
+                            <option value="uppercase">UPPERCASE</option>
+                            <option value="lowercase">lowercase</option>
+                            <option value="capitalize">Capitalize</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Text Style</label>
+                          <select
+                            value={selectedBlock.fontStyle || "normal"}
+                            onChange={(e) => handleUpdateSelectedBlock("fontStyle", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="italic">Italic</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: BOX STYLE & FREEFORM POSITIONING */}
+                  {activeInspectorTab === "style" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      
+                      {/* FREEFORM DRAG VS FLOW MODE */}
+                      <div style={{ background: "rgba(201,168,76,0.12)", padding: 10, borderRadius: 8, border: "1px solid var(--accent)" }}>
+                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📍 Position Mode</label>
+                        <select
+                          value={selectedBlock.positionMode || "relative"}
+                          onChange={(e) => handleUpdateSelectedBlock("positionMode", e.target.value)}
+                          style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                        >
+                          <option value="relative">Flow Layout (Auto Vertical Flow)</option>
+                          <option value="absolute">Freeform Canvas Drag (Absolute X/Y)</option>
+                        </select>
+
+                        {selectedBlock.positionMode === "absolute" && (
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6 }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, color: "var(--text2)" }}>X Pos (Left px)</label>
+                              <input
+                                type="number"
+                                value={selectedBlock.posX || 0}
+                                onChange={(e) => handleUpdateSelectedBlock("posX", parseInt(e.target.value) || 0)}
+                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, color: "var(--text2)" }}>Y Pos (Top px)</label>
+                              <input
+                                type="number"
+                                value={selectedBlock.posY || 0}
+                                onChange={(e) => handleUpdateSelectedBlock("posY", parseInt(e.target.value) || 0)}
+                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* DISPLAY LAYOUT MODE */}
+                      {selectedBlock.positionMode !== "absolute" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📐 Flow Placement</label>
+                          <select
+                            value={selectedBlock.displayMode || (selectedBlock.boxWidth === "48%" || selectedBlock.boxWidth === "45%" ? "inline-50" : "block")}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              handleUpdateSelectedBlock("displayMode", val);
+                              if (val === "inline-50") {
+                                handleUpdateSelectedBlock("boxWidth", "45%");
+                                handleUpdateSelectedBlock("marginRight", "20");
+                              } else if (val === "inline-33") {
+                                handleUpdateSelectedBlock("boxWidth", "30%");
+                                handleUpdateSelectedBlock("marginRight", "16");
+                              } else {
+                                handleUpdateSelectedBlock("boxWidth", "100%");
+                                handleUpdateSelectedBlock("marginRight", "");
+                              }
+                            }}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          >
+                            <option value="block">Full Width Row Block (Default)</option>
+                            <option value="inline-50">Inline Side-by-Side (45% Width + Gap)</option>
+                            <option value="inline-33">Inline Side-by-Side (30% Width + Gap)</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* WIDTH & HEIGHT */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Box Width</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.boxWidth || "100%"}
+                            onChange={(e) => handleUpdateSelectedBlock("boxWidth", e.target.value)}
+                            placeholder="e.g. 100%, 450px, 45%"
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Box Height</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.boxHeight || "auto"}
+                            onChange={(e) => handleUpdateSelectedBlock("boxHeight", e.target.value)}
+                            placeholder="e.g. auto, 250px"
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* BOX POSITION / ALIGNMENT */}
+                      {selectedBlock.positionMode !== "absolute" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📍 Box Alignment Position</label>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            {["left", "center", "right"].map((pos) => (
+                              <button
+                                key={pos}
+                                onClick={() => handleUpdateSelectedBlock("boxAlign", pos)}
+                                style={{
+                                  flex: 1,
+                                  background: (selectedBlock.boxAlign || "center") === pos ? "var(--accent)" : "var(--surface2)",
+                                  color: (selectedBlock.boxAlign || "center") === pos ? "#000" : "#fff",
+                                  border: "1px solid var(--border)",
+                                  padding: "6px 0",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  textTransform: "capitalize",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {pos}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* BACKGROUND COLOR & TRANSPARENT TOGGLE */}
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <label style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>Background Color</label>
+                          <button
+                            onClick={() => handleUpdateSelectedBlock("bgColor", "transparent")}
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid var(--border)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}
+                          >
+                            Set Transparent
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="color"
+                            value={selectedBlock.bgColor === "transparent" ? "#000000" : (selectedBlock.bgColor || "#080605")}
+                            onChange={(e) => handleUpdateSelectedBlock("bgColor", e.target.value)}
+                            style={{ width: 36, height: 30, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
+                          />
+                          <input
+                            type="text"
+                            value={selectedBlock.bgColor || "transparent"}
+                            onChange={(e) => handleUpdateSelectedBlock("bgColor", e.target.value)}
+                            placeholder="transparent or #14100B"
+                            style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* BORDER STYLE, WIDTH & COLOR */}
+                      <div style={{ background: "rgba(201,168,76,0.05)", padding: 10, borderRadius: 8, border: "1px solid var(--border)" }}>
+                        <h4 style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 8 }}>🖼️ Border & Frame Styling</h4>
+                        
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Style</label>
+                            <select
+                              value={selectedBlock.borderStyle || "none"}
+                              onChange={(e) => {
+                                handleUpdateSelectedBlock("borderStyle", e.target.value);
+                                if (!selectedBlock.borderWidth || selectedBlock.borderWidth === "0") {
+                                  handleUpdateSelectedBlock("borderWidth", "1");
+                                }
+                              }}
+                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11 }}
+                            >
+                              {BORDER_STYLES.map(b => (
+                                <option key={b.val} value={b.val}>{b.name}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Color</label>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <input
+                                type="color"
+                                value={selectedBlock.borderColor || "#C9A84C"}
+                                onChange={(e) => handleUpdateSelectedBlock("borderColor", e.target.value)}
+                                style={{ width: 28, height: 26, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
+                              />
+                              <input
+                                type="text"
+                                value={selectedBlock.borderColor || "#C9A84C"}
+                                onChange={(e) => handleUpdateSelectedBlock("borderColor", e.target.value)}
+                                style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 3, borderRadius: 4, fontSize: 10 }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Width: {selectedBlock.borderWidth || 1}px</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="20"
+                            value={selectedBlock.borderWidth || 1}
+                            onChange={(e) => handleUpdateSelectedBlock("borderWidth", e.target.value)}
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+
+                        <div style={{ marginTop: 6 }}>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Radius: {selectedBlock.borderRadius || 0}px</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="60"
+                            value={selectedBlock.borderRadius || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("borderRadius", e.target.value)}
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* SHADOW & OPACITY */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Box Shadow Preset</label>
+                          <select
+                            value={selectedBlock.shadow || "none"}
+                            onChange={(e) => handleUpdateSelectedBlock("shadow", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
+                          >
+                            {SHADOW_PRESETS.map(s => (
+                              <option key={s.name} value={s.val}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Opacity: {selectedBlock.opacity || 1}</label>
+                          <input
+                            type="range"
+                            min="0.1"
+                            max="1.0"
+                            step="0.05"
+                            value={selectedBlock.opacity || 1}
+                            onChange={(e) => handleUpdateSelectedBlock("opacity", e.target.value)}
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
+                  {/* TAB 4: SPACING & HORIZONTAL MARGINS/PADDING */}
+                  {activeInspectorTab === "spacing" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
+                        <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>↔️ Quick Side-by-Side Gap Presets</h4>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {[
+                            { label: "Small (10px)", gap: "10" },
+                            { label: "Medium (20px)", gap: "20" },
+                            { label: "Large (35px)", gap: "35" },
+                          ].map(preset => (
+                            <button
+                              key={preset.gap}
+                              onClick={() => {
+                                handleUpdateSelectedBlock("marginRight", preset.gap);
+                              }}
+                              style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: "6px 0", borderRadius: 4, fontSize: 10, cursor: "pointer" }}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Padding Top (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.paddingTop || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("paddingTop", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Padding Bottom (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.paddingBottom || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("paddingBottom", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Padding Left (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.paddingLeft || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("paddingLeft", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Padding Right (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.paddingRight || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("paddingRight", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Margin Top (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.marginTop || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("marginTop", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Margin Bottom (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.marginBottom || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("marginBottom", e.target.value)}
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Margin Left (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.marginLeft || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("marginLeft", e.target.value)}
+                            placeholder="0"
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Margin Right (px)</label>
+                          <input
+                            type="number"
+                            value={selectedBlock.marginRight || 0}
+                            onChange={(e) => handleUpdateSelectedBlock("marginRight", e.target.value)}
+                            placeholder="e.g. 20"
+                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              ) : (
+                <div style={{ padding: 30, textAlign: "center", color: "var(--text2)", fontSize: 12 }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>⚙️</div>
+                  <p>Click any element on the center canvas to open its real-time Style & Property Inspector.</p>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+
+      </div>
+
+      {/* CREATE NEW CUSTOM PAGE MODAL */}
+      {showCreatePageModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 30, maxWidth: 540, width: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <h2 style={{ fontSize: 20, color: "var(--accent)", fontWeight: 700 }}>➕ Create New Custom Page</h2>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>Add a brand new page route to your website & page builder.</p>
+              </div>
+              <button onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
+            </div>
+
+            <form onSubmit={handleCreateNewPage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>Page Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Bespoke Framing Guide"
+                  value={newPageTitle}
+                  onChange={(e) => {
+                    setNewPageTitle(e.target.value);
+                    if (!newPageSlug) {
+                      setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+                    }
+                  }}
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>URL Slug / Route *</label>
+                <div style={{ display: "flex", alignItems: "center", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px" }}>
+                  <span style={{ fontSize: 12, color: "var(--accent)", fontFamily: "monospace" }}>/</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="bespoke-framing-guide"
+                    value={newPageSlug}
+                    onChange={(e) => setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                    style={{ flex: 1, background: "none", border: "none", color: "#fff", padding: "10px 4px", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                  />
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ background: "none", border: "1px solid var(--border2)", color: "var(--text2)", padding: "10px 18px", borderRadius: 6, cursor: "pointer" }}
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>Starting Layout Preset</label>
+                <select
+                  value={newPagePreset}
+                  onChange={(e) => setNewPagePreset(e.target.value)}
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
                 >
+                  <option value="blank">✨ Blank Canvas (Empty Page)</option>
+                  {SAMPLE_TEMPLATES.map(t => (
+                    <option key={t.id} value={t.id}>📋 {t.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 10 }}>
+                <button type="button" onClick={() => setShowCreatePageModal(false)} style={{ background: "var(--surface2)", color: "#fff", border: "1px solid var(--border)", padding: "10px 20px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
                   Cancel
                 </button>
-
-                <button
-                  type="submit"
-                  style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
-                >
-                  {activeSlug ? "Update Page" : "Create Page"}
+                <button type="submit" style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Create & Launch Editor
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* SAMPLE TEMPLATES IMPORTER MODAL */}
+      {showTemplateModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 30, maxWidth: 840, width: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <h2 style={{ fontSize: 22, color: "var(--accent)", fontWeight: 700 }}>📚 Load Sample Template</h2>
+                <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Select a pre-designed luxury layout template to load into your editor.</p>
+              </div>
+              <button onClick={() => setShowTemplateModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
+              {SAMPLE_TEMPLATES.map((tpl) => (
+                <div key={tpl.id} style={{ background: "var(--surface2)", border: "1px solid var(--border2)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontSize: 24 }}>{tpl.icon}</span>
+                      <div>
+                        <h3 style={{ fontSize: 16, color: "#fff", fontWeight: 700 }}>{tpl.title}</h3>
+                        <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>{tpl.category}</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text2)", margin: "10px 0 16px" }}>
+                      Includes {tpl.blocks.length} pre-formatted layout blocks.
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleImportTemplate(tpl)}
+                    style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}
+                  >
+                    Import Template
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -3788,6 +3788,41 @@ function ReelVideoCard({ reel }) {
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef(null);
 
+  const rawUrl = reel.instagramUrl || reel.url || reel.videoUrl || "";
+  const isInstagram = rawUrl.includes("instagram.com") || rawUrl.includes("/reel/") || rawUrl.includes("/p/");
+
+  const normalizeIg = (u) => {
+    if (!u) return "";
+    let clean = u.trim();
+    if (!clean.endsWith("/")) clean += "/";
+    return clean;
+  };
+
+  const getEmbedUrl = (u) => {
+    if (!u) return "";
+    const norm = normalizeIg(u);
+    if (norm.includes("/embed")) return norm;
+    return `${norm}embed/?cr=1&v=14&rd=`;
+  };
+
+  if (isInstagram) {
+    const embedSrc = getEmbedUrl(rawUrl);
+    return (
+      <div className="social-post-card" style={{ width: 340, minWidth: 320, flex: "0 0 340px", flexShrink: 0, borderRadius: 20, overflow: "hidden", background: "#000", border: "1px solid var(--border)", boxShadow: "0 14px 40px rgba(0,0,0,0.8)" }}>
+        <div style={{ position: "relative", width: "100%", height: 620, background: "#000" }}>
+          <iframe
+            title={`Instagram Reel ${reel.caption || ''}`}
+            src={embedSrc}
+            style={{ width: "100%", height: "100%", border: 0, borderRadius: 20, background: "#000" }}
+            allow="autoplay; encrypted-media; clipboard-write"
+            allowFullScreen
+            scrolling="no"
+          />
+        </div>
+      </div>
+    );
+  }
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -3822,7 +3857,6 @@ function ReelVideoCard({ reel }) {
             playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-
         ) : (
           <img src={reel.thumbnailUrl || "/images/instagram_mirror_selfie.jpg"} alt="yaadein.pk reel" />
         )}
@@ -7646,154 +7680,136 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── SOCIAL MEDIA FEED SECTION ── */}
-      <section className="social-feed-section" id="social">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="social-feed-container">
-          <div className="social-feed-header">
-            <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "Follow Our Journey"}</p>
-            <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "#YaadeinFrames"}</h2>
-            <p className="social-feed-subtitle">
-              {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
-            </p>
+        {/* ── SOCIAL MEDIA FEED SECTION ── */}
+        <section className="social-feed-section" id="social">
+          {/* Dynamic liquid backdrop elements */}
+          <div className="catalog-glass-bg">
+            <div className="liquid-blob-1" />
+            <div className="liquid-blob-2" />
+            <div className="catalog-glow" />
           </div>
 
-          <div className="social-carousel-wrapper">
-            <button
-              className="carousel-arrow prev desktop-only-carousel"
-              onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3)) % Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3))}
-              aria-label="Previous Posts"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
+          {/* Frosted Glass overlay sheet */}
+          <div className="catalog-glass-pane" />
 
-            <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%" }}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 24,
-                  width: "100%",
-                  transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-                  transform: `translateX(-${currentSocialSlide * 344}px)`,
-                }}
-              >
-                {(homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0
-                  ? homeCms.socialFeedSection.reels
-                  : [
-                      {
-                        authorName: "yaadein.pk",
-                        avatarInitial: "Y",
-                        platform: "Instagram",
-                        videoUrl: "/videos/reel1.mp4",
-                        thumbnailUrl: "/images/instagram_mirror_selfie.jpg",
-                        caption: "Gallery wall completed! 📸 Handcrafted solid wood frames. #YaadeinFrames #HomeDecor",
-                        likesCount: "156",
-                        commentsCount: "9",
-                        postDate: "2 weeks ago",
-                      },
-                      {
-                        authorName: "yaadein.pk",
-                        avatarInitial: "Y",
-                        platform: "Instagram",
-                        videoUrl: "/videos/reel2.mp4",
-                        thumbnailUrl: "/images/gallery_walls.png",
-                        caption: "Classic oak frame matching elegant room aesthetic perfectly. 🌿✨ #YaadeinFrames #Bespoke",
-                        likesCount: "245",
-                        commentsCount: "19",
-                        postDate: "3 weeks ago",
-                      },
-                      {
-                        authorName: "yaadein.pk",
-                        avatarInitial: "Y",
-                        platform: "Instagram",
-                        videoUrl: "/videos/reel3.mp4",
-                        thumbnailUrl: "/images/bespoke_framing.png",
-                        caption: "Gold frame detailing handcrafted with precision. Museum grade glass! 💛 #YaadeinFrames #ArtStudio",
-                        likesCount: "198",
-                        commentsCount: "14",
-                        postDate: "1 month ago",
-                      },
-                      {
-                        authorName: "yaadein.pk",
-                        avatarInitial: "Y",
-                        platform: "Instagram",
-                        videoUrl: "/videos/reel4.mp4",
-                        thumbnailUrl: "/images/nikkahnama_images/sample1.jpeg",
-                        caption: "Master artisan assembling a bespoke Nikkah Nama frame set in real cured mahogany wood! 🖼️✨ #YaadeinFrames",
-                        likesCount: "312",
-                        commentsCount: "27",
-                        postDate: "3 days ago",
-                      },
-                    ]
-                ).map((reel, rIdx) => (
-                  <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
-                ))}
+          {(() => {
+            const rawReels = homeCms?.socialFeedSection?.reels;
+            const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
+            let reelsToRender = [];
+
+            if (rawReels !== undefined && rawReels !== null) {
+              reelsToRender = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+            } else if (isCustom) {
+              reelsToRender = [];
+            } else {
+              reelsToRender = [
+                {
+                  instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
+                  caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
+                  authorName: "yaadein.pk",
+                },
+                {
+                  instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
+                  caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
+                  authorName: "yaadein.pk",
+                },
+                {
+                  instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
+                  caption: "Colour artistry, up close with 99% UV museum glass.",
+                  authorName: "yaadein.pk",
+                },
+              ];
+            }
+
+            return (
+              <div className="social-feed-container">
+                <div className="social-feed-header">
+                  <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "OUR WORK IN MOTION"}</p>
+                  <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "Straight from our Instagram"}</h2>
+                  <p className="social-feed-subtitle">
+                    {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
+                  </p>
+                </div>
+
+                <div className="social-carousel-wrapper">
+                  <button
+                    className="carousel-arrow prev desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Previous Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+
+                  <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: reelsToRender.length < 3 ? "center" : "flex-start" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 28,
+                        justifyContent: reelsToRender.length < 3 ? "center" : "flex-start",
+                        transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                        transform: reelsToRender.length < 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
+                      }}
+                    >
+                      {reelsToRender.map((reel, rIdx) => (
+                        <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    className="carousel-arrow next desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Next Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="social-carousel-indicators desktop-only-carousel">
+                  {[0, 1].map((idx) => (
+                    <button
+                      key={idx}
+                      className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
+                      onClick={() => setCurrentSocialSlide(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Mobile social indicators */}
+                <div className="social-carousel-indicators mobile-only-carousel mobile-indicators-centered">
+                  {[0, 1, 2, 3, 4, 5].map((idx) => (
+                    <button
+                      key={idx}
+                      className={`carousel-dot ${mobileSocialIndex === idx ? 'active' : ''}`}
+                      onClick={() => setMobileSocialIndex(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <div className="social-feed-footer">
+                  <span className="social-handle">@yaadein.pk</span>
+                  <div className="social-links">
+                    <a href="https://instagram.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                      📸 Follow on Instagram
+                    </a>
+                    <a href="https://facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                      👤 Follow on Facebook
+                    </a>
+                    <a href="https://tiktok.com/@yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                      🎵 Follow on TikTok
+                    </a>
+                  </div>
+                </div>
               </div>
-            </div>
-
-
-            <button
-              className="carousel-arrow next desktop-only-carousel"
-              onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(((homeCms?.socialFeedSection?.reels && homeCms.socialFeedSection.reels.length > 0 ? homeCms.socialFeedSection.reels : [1, 2, 3, 4]).length) / 3)))}
-              aria-label="Next Posts"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-          </div>
-
-          <div className="social-carousel-indicators desktop-only-carousel">
-
-            {[0, 1].map((idx) => (
-              <button
-                key={idx}
-                className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
-                onClick={() => setCurrentSocialSlide(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          {/* Mobile social indicators */}
-          <div className="social-carousel-indicators mobile-only-carousel mobile-indicators-centered">
-            {[0, 1, 2, 3, 4, 5].map((idx) => (
-              <button
-                key={idx}
-                className={`carousel-dot ${mobileSocialIndex === idx ? 'active' : ''}`}
-                onClick={() => setMobileSocialIndex(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          <div className="social-feed-footer">
-            <span className="social-handle">@yaadein.pk</span>
-            <div className="social-links">
-              <a href="https://instagram.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                📸 Follow on Instagram
-              </a>
-              <a href="https://facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                👤 Follow on Facebook
-              </a>
-              <a href="https://tiktok.com/@yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                🎵 Follow on TikTok
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+            );
+          })()}
+        </section>
 
       {/* FOOTER */}
       <Footer />

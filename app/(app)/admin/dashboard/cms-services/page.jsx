@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 
-const INITIAL_DEFAULT_SERVICES = [
+export const INITIAL_DEFAULT_SERVICES = [
   {
     id: "instagram-mirror-selfie",
     title: "Instagram Mirror Selfie Frame",
@@ -110,10 +110,24 @@ export default function AdminServicesPage() {
     const servicesRef = ref(db, "cms_services");
     const unsub = onValue(servicesRef, (snapshot) => {
       const val = snapshot.val();
+      let list = [];
       if (val) {
-        setServices(Array.isArray(val) ? val : Object.values(val));
-      } else {
-        setServices(INITIAL_DEFAULT_SERVICES);
+        list = Array.isArray(val) ? val : Object.values(val);
+      }
+
+      let hasNewMerged = false;
+      const mergedList = [...list];
+      INITIAL_DEFAULT_SERVICES.forEach(defSrv => {
+        const exists = mergedList.some(s => s.id === defSrv.id || s.slug === defSrv.slug);
+        if (!exists) {
+          mergedList.push(defSrv);
+          hasNewMerged = true;
+        }
+      });
+
+      setServices(mergedList);
+      if (hasNewMerged) {
+        set(ref(db, "cms_services"), mergedList).catch(console.error);
       }
       setLoading(false);
     });
@@ -138,84 +152,90 @@ export default function AdminServicesPage() {
   const openAddModal = () => {
     setEditIndex(null);
     setServiceForm({
-      title: "New Custom Service",
-      slug: "new-custom-service",
-      tagline: "Custom Bespoke Offering",
-      shortDesc: "Short description of the new custom service...",
-      detailedText: "Detailed explanation of what this custom service offers to customers...",
-      priceInfo: "Starting from Rs. 2,500",
+      title: "",
+      slug: "",
+      tagline: "",
+      shortDesc: "",
+      detailedText: "",
+      priceInfo: "",
       imageUrl: "/images/bespoke_framing.png",
-      features: ["Custom size & dimensions available", "Archival quality materials & finishing"],
-      ctaText: "Order Service",
+      features: [],
+      ctaText: "Explore Details",
       ctaLink: "/contact",
     });
     setFeatureInput("");
     setIsModalOpen(true);
   };
 
-  const openEditModal = (index) => {
-    setEditIndex(index);
-    const item = services[index];
+  const openEditModal = (idx) => {
+    setEditIndex(idx);
+    const item = services[idx];
     setServiceForm({
-      ...item,
+      title: item.title || "",
+      slug: item.slug || "",
+      tagline: item.tagline || "",
+      shortDesc: item.shortDesc || "",
+      detailedText: item.detailedText || "",
+      priceInfo: item.priceInfo || "",
+      imageUrl: item.imageUrl || "/images/bespoke_framing.png",
       features: Array.isArray(item.features) ? item.features : [],
+      ctaText: item.ctaText || "Explore Details",
+      ctaLink: item.ctaLink || "/contact",
     });
     setFeatureInput("");
     setIsModalOpen(true);
+  };
+
+  const handleDelete = (idx) => {
+    if (!confirm("Are you sure you want to delete this service card?")) return;
+    const updated = services.filter((_, i) => i !== idx);
+    setServices(updated);
   };
 
   const handleAddFeature = () => {
     if (!featureInput.trim()) return;
     setServiceForm({
       ...serviceForm,
-      features: [...(serviceForm.features || []), featureInput.trim()],
+      features: [...serviceForm.features, featureInput.trim()],
     });
     setFeatureInput("");
   };
 
   const handleRemoveFeature = (fIdx) => {
-    setServiceForm({
-      ...serviceForm,
-      features: serviceForm.features.filter((_, i) => i !== fIdx),
-    });
+    const updated = serviceForm.features.filter((_, i) => i !== fIdx);
+    setServiceForm({ ...serviceForm, features: updated });
   };
 
-  const handleSaveModal = (e) => {
+  const handleModalSave = (e) => {
     e.preventDefault();
-    const updated = [...services];
-    const cleanSlug = serviceForm.slug.replace(/^\//, '').trim().toLowerCase().replace(/\s+/g, '-');
-    const finalForm = {
+    const cleanSlug = serviceForm.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || serviceForm.title.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const updatedItem = {
       ...serviceForm,
       id: cleanSlug,
       slug: cleanSlug,
     };
 
+    const updatedList = [...services];
     if (editIndex !== null) {
-      updated[editIndex] = finalForm;
+      updatedList[editIndex] = updatedItem;
     } else {
-      updated.push(finalForm);
+      updatedList.push(updatedItem);
     }
-    setServices(updated);
+
+    setServices(updatedList);
     setIsModalOpen(false);
   };
 
-  const handleDeleteService = (index) => {
-    if (confirm(`Are you sure you want to delete "${services[index].title}"?`)) {
-      const updated = services.filter((_, i) => i !== index);
-      setServices(updated);
-    }
-  };
-
   if (loading) {
-    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Services Content...</div>;
+    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Services Manager...</div>;
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "10px 0 60px" }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 0 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
         <div>
           <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, color: "var(--text)" }}>
-            Services <span>Content Manager</span>
+            Services Content Manager
           </h1>
           <p style={{ color: "var(--text2)", fontSize: 14, marginTop: 4 }}>
             Create and edit service cards, descriptions, prices, feature bullets, and inner service pages.
@@ -261,206 +281,181 @@ export default function AdminServicesPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
+      {/* Services Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 24 }}>
         {services.map((srv, idx) => (
-          <div key={srv.id || idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ position: "relative", width: "100%", height: 200, background: "#111" }}>
-              <img src={srv.imageUrl || "/images/bespoke_framing.png"} alt={srv.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.75)", color: "var(--accent)", padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
-                /services/{srv.slug}
-              </div>
-            </div>
-
-            <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div>
-                <h3 style={{ fontSize: 18, color: "#fff", marginBottom: 4 }}>{srv.title}</h3>
-                <div style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginBottom: 12 }}>{srv.tagline}</div>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, marginBottom: 14 }}>
-                  {srv.shortDesc || srv.detailedText}
-                </p>
-
-                <div style={{ fontSize: 12, color: "#fff", background: "var(--surface2)", padding: 8, borderRadius: 6, marginBottom: 14 }}>
-                  💰 {srv.priceInfo || "Custom pricing"}
+          <div key={srv.id || idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ position: "relative", height: 180, background: "#000" }}>
+                <img
+                  src={srv.imageUrl || "/images/bespoke_framing.png"}
+                  alt={srv.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,0.75)", color: "var(--accent)", fontSize: 11, padding: "3px 8px", borderRadius: 4, fontFamily: "monospace" }}>
+                  /services/{srv.slug}
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-                <button
-                  onClick={() => openEditModal(idx)}
-                  style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border2)", color: "#fff", padding: "8px 0", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
-                >
-                  Edit Service
-                </button>
-                <button
-                  onClick={() => handleDeleteService(idx)}
-                  style={{ background: "rgba(255, 62, 108, 0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
-                >
-                  Delete
-                </button>
+              <div style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 18, color: "#fff", fontWeight: 700, marginBottom: 4 }}>{srv.title}</h3>
+                <div style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginBottom: 12 }}>{srv.tagline}</div>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, marginBottom: 14 }}>{srv.shortDesc}</p>
+
+                {srv.priceInfo && (
+                  <div style={{ background: "var(--surface2)", padding: 10, borderRadius: 6, fontSize: 12, color: "#fff", borderLeft: "3px solid var(--accent)", marginBottom: 14 }}>
+                    💰 {srv.priceInfo}
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, padding: 16, borderTop: "1px solid var(--border)", background: "var(--surface2)" }}>
+              <button
+                onClick={() => openEditModal(idx)}
+                style={{ flex: 1, background: "var(--surface)", color: "#fff", border: "1px solid var(--border2)", padding: "8px 0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Edit Service
+              </button>
+              <button
+                onClick={() => handleDelete(idx)}
+                style={{ background: "rgba(255, 90, 90, 0.15)", color: "#FF5A5A", border: "1px solid rgba(255, 90, 90, 0.3)", padding: "8px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Modal for Edit/Add Service */}
+      {/* Service Editor Modal */}
       {isModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 12, width: 620, maxWidth: "100%", padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 30, maxWidth: 680, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ fontSize: 20, color: "var(--accent)", marginBottom: 20 }}>
-              {editIndex !== null ? `Edit Service: ${serviceForm.title}` : "Add New Custom Service"}
+              {editIndex !== null ? "Edit Service Card" : "Add New Service Card"}
             </h2>
 
-            <form onSubmit={handleSaveModal} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <form onSubmit={handleModalSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Service Title *</label>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Service Title</label>
                   <input
                     type="text"
+                    required
                     value={serviceForm.title}
                     onChange={(e) => setServiceForm({ ...serviceForm, title: e.target.value })}
-                    required
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
                   />
                 </div>
-
                 <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>URL Slug (e.g. dummyservice) *</label>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>URL Slug</label>
                   <input
                     type="text"
+                    required
                     value={serviceForm.slug}
                     onChange={(e) => setServiceForm({ ...serviceForm, slug: e.target.value })}
-                    required
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Tagline / Subheading</label>
-                  <input
-                    type="text"
-                    value={serviceForm.tagline}
-                    onChange={(e) => setServiceForm({ ...serviceForm, tagline: e.target.value })}
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Price Info (e.g. Starting from Rs. 4,999)</label>
-                  <input
-                    type="text"
-                    value={serviceForm.priceInfo}
-                    onChange={(e) => setServiceForm({ ...serviceForm, priceInfo: e.target.value })}
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Image URL / Path</label>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Tagline / Badge</label>
                 <input
                   type="text"
-                  value={serviceForm.imageUrl}
-                  onChange={(e) => setServiceForm({ ...serviceForm, imageUrl: e.target.value })}
-                  placeholder="/images/instagram_mirror_selfie.jpg or https://..."
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                  value={serviceForm.tagline}
+                  onChange={(e) => setServiceForm({ ...serviceForm, tagline: e.target.value })}
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Short Description (Cards Grid)</label>
+                <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 6 }}>Select Service Image (Local Computer Storage)</label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                          setServiceForm({ ...serviceForm, imageUrl: evt.target.result });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12, flex: 1 }}
+                  />
+                </div>
+                {serviceForm.imageUrl && (
+                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
+                    <img src={serviceForm.imageUrl} alt="Selected Preview" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--accent)" }} />
+                    <span style={{ fontSize: 12, color: "var(--accent)" }}>✓ Local File Selected</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Short Description (Card Summary)</label>
                 <textarea
+                  rows={3}
                   value={serviceForm.shortDesc}
                   onChange={(e) => setServiceForm({ ...serviceForm, shortDesc: e.target.value })}
-                  rows={2}
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Detailed Description (Inner Page)</label>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Detailed Text (Inner Page Narrative)</label>
                 <textarea
+                  rows={4}
                   value={serviceForm.detailedText}
                   onChange={(e) => setServiceForm({ ...serviceForm, detailedText: e.target.value })}
-                  rows={3}
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
                 />
               </div>
 
-              {/* Key Features Bullets */}
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 6 }}>Key Feature Bullets ({serviceForm.features?.length || 0})</label>
-                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Price Info Badge</label>
+                <input
+                  type="text"
+                  value={serviceForm.priceInfo}
+                  onChange={(e) => setServiceForm({ ...serviceForm, priceInfo: e.target.value })}
+                  placeholder="e.g. Starting from Rs. 4,000 depending on wood selection"
+                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6, fontSize: 13 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Feature Bullets</label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <input
                     type="text"
                     value={featureInput}
                     onChange={(e) => setFeatureInput(e.target.value)}
-                    placeholder="Add bullet point specification..."
-                    style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
+                    placeholder="Add bullet point..."
+                    style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12 }}
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddFeature}
-                    style={{ background: "var(--surface3)", border: "1px solid var(--border2)", color: "#fff", padding: "0 16px", borderRadius: 6, cursor: "pointer" }}
-                  >
-                    + Add Bullet
-                  </button>
+                  <button type="button" onClick={handleAddFeature} style={{ background: "var(--accent)", color: "#000", border: "none", padding: "0 16px", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {serviceForm.features?.map((feat, fIdx) => (
-                    <div key={fIdx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface2)", padding: "8px 12px", borderRadius: 6, fontSize: 13, color: "#fff" }}>
-                      <span>• {feat}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFeature(fIdx)}
-                        style={{ background: "none", border: "none", color: "#FF5A5A", cursor: "pointer", fontSize: 14 }}
-                      >
-                        ✕
-                      </button>
+                  {serviceForm.features.map((f, fIdx) => (
+                    <div key={fIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surface2)", padding: "6px 12px", borderRadius: 6, fontSize: 12 }}>
+                      <span>• {f}</span>
+                      <button type="button" onClick={() => handleRemoveFeature(fIdx)} style={{ background: "none", border: "none", color: "#FF5A5A", cursor: "pointer", fontSize: 14 }}>&times;</button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Button Action Label</label>
-                  <input
-                    type="text"
-                    value={serviceForm.ctaText}
-                    onChange={(e) => setServiceForm({ ...serviceForm, ctaText: e.target.value })}
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Button Target Link</label>
-                  <input
-                    type="text"
-                    value={serviceForm.ctaLink}
-                    onChange={(e) => setServiceForm({ ...serviceForm, ctaLink: e.target.value })}
-                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ background: "none", border: "1px solid var(--border2)", color: "var(--text2)", padding: "10px 18px", borderRadius: 6, cursor: "pointer" }}
-                >
+              <div style={{ display: "flex", gap: 12, marginTop: 10, justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: "var(--surface2)", color: "#fff", border: "1px solid var(--border)", padding: "10px 20px", borderRadius: 8, cursor: "pointer" }}>
                   Cancel
                 </button>
-
-                <button
-                  type="submit"
-                  style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
-                >
-                  {editIndex !== null ? "Update Service" : "Add Service"}
+                <button type="submit" style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                  Save Service
                 </button>
               </div>
             </form>

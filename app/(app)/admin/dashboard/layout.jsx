@@ -362,7 +362,11 @@ export default function AdminDashboardLayout({ children }) {
         .animate-in-5 { animation-delay: 0.25s; }
       ` }} />
 
-      <header className="admin-header">
+      {pathname === "/admin/dashboard/pages-builder" ? (
+        children
+      ) : (
+        <>
+          <header className="admin-header">
         <div className="admin-brand">
           Yaadein
           <span className="admin-brand-badge">Admin</span>
@@ -399,6 +403,8 @@ export default function AdminDashboardLayout({ children }) {
           {children}
         </main>
       </div>
+      </>
+      )}
     </div>
   );
 }

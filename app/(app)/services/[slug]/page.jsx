@@ -1872,7 +1872,7 @@ export default function ServiceDetailPage({ params }) {
           aspect-ratio: 9 / 16 !important;
           max-width: 320px !important;
           width: 100% !important;
-          margin: 0px 0 60px 0 !important;
+          margin: 70px 0 60px 0 !important;
           background: transparent !important;
           border: none !important;
           border-image: none !important;
@@ -1899,10 +1899,10 @@ export default function ServiceDetailPage({ params }) {
           object-fit: contain !important;
         }
         .instagram-mirror-selfie-page .product-visual-pane {
-          padding-top: 10px;
+          padding-top: 60px;
         }
         .instagram-mirror-selfie-page .exquisite-frame-component {
-          padding-top: 120px;
+          padding-top: 180px;
         }
 
 
