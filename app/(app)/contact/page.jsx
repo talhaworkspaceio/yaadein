@@ -1097,7 +1097,26 @@ export default function ContactPage() {
         }
 
         @media (max-width: 800px) {
-          .hero-title { font-size: 38px; }
+          .hero-banner {
+            padding: 80px 20px 40px !important;
+          }
+          .hero-title {
+            font-size: 36px !important;
+          }
+          .hero-desc {
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+          }
+          .catalog-lamp, .contact-lamp {
+            transform: scale(0.6) !important;
+            transform-origin: top center !important;
+            margin-top: -10px !important;
+            margin-bottom: -70px !important;
+          }
+          .catalog-lamp .lamp-rod, .contact-lamp .lamp-rod {
+            height: 120px !important;
+          }
+
           .contact-section { padding: 40px 20px; }
           .contact-container { grid-template-columns: 1fr; gap: 40px; }
           .map-container { min-height: 250px; }
@@ -1109,7 +1128,7 @@ export default function ContactPage() {
 
       <div className="hero-banner">
         {/* Suspended Brass Lamp on top of Contact Us heading */}
-        <div className={`exquisite-lamp contact-lamp ${lightOn ? 'on' : ''}`}>
+        <div className={`exquisite-lamp catalog-lamp contact-lamp ${lightOn ? 'on' : ''}`}>
           <div className="lamp-rod" />
           <div className="lamp-mount" />
           <div className="lamp-arm" />

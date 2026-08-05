@@ -3808,8 +3808,8 @@ function ReelVideoCard({ reel }) {
   if (isInstagram) {
     const embedSrc = getEmbedUrl(rawUrl);
     return (
-      <div className="social-post-card" style={{ width: 340, minWidth: 320, flex: "0 0 340px", flexShrink: 0, borderRadius: 20, overflow: "hidden", background: "#000", border: "1px solid var(--border)", boxShadow: "0 14px 40px rgba(0,0,0,0.8)" }}>
-        <div style={{ position: "relative", width: "100%", height: 620, background: "#000" }}>
+      <div className="social-post-card" style={{ width: "100%", maxWidth: 340, minWidth: 280, borderRadius: 20, overflow: "hidden", background: "#000", border: "1px solid var(--border)", boxShadow: "0 14px 40px rgba(0,0,0,0.8)", margin: "0 auto", boxSizing: "border-box" }}>
+        <div style={{ position: "relative", width: "100%", height: 580, maxHeight: "75vh", background: "#000" }}>
           <iframe
             title={`Instagram Reel ${reel.caption || ''}`}
             src={embedSrc}
@@ -3843,7 +3843,7 @@ function ReelVideoCard({ reel }) {
   };
 
   return (
-    <div className="social-post-card" style={{ minWidth: 320, flex: "0 0 calc(33.333% - 16px)", flexShrink: 0 }}>
+    <div className="social-post-card" style={{ width: "100%", maxWidth: 340, minWidth: 280, borderRadius: 20, overflow: "hidden", background: "#000", border: "1px solid var(--border)", margin: "0 auto", boxSizing: "border-box" }}>
       <div className="social-post-image" onClick={togglePlay} style={{ cursor: "pointer", position: "relative" }}>
         {reel.videoUrl ? (
           <video
@@ -3975,6 +3975,35 @@ export default function HomePage() {
   const [mobileReviewIndex, setMobileReviewIndex] = useState(0);
   const [mobileSocialIndex, setMobileSocialIndex] = useState(0);
 
+  const socialTouchStartX = useRef(0);
+  const socialTouchEndX = useRef(0);
+
+  const handleSocialTouchStart = (e) => {
+    if (e.targetTouches && e.targetTouches.length > 0) {
+      socialTouchStartX.current = e.targetTouches[0].clientX;
+      socialTouchEndX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleSocialTouchMove = (e) => {
+    if (e.targetTouches && e.targetTouches.length > 0) {
+      socialTouchEndX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleSocialTouchEnd = (totalCount = 3) => {
+    if (!socialTouchStartX.current || !socialTouchEndX.current) return;
+    const diff = socialTouchStartX.current - socialTouchEndX.current;
+    const minCount = Math.max(1, totalCount);
+    if (diff > 40) {
+      setMobileSocialIndex((prev) => (prev + 1) % minCount);
+    } else if (diff < -40) {
+      setMobileSocialIndex((prev) => (prev - 1 + minCount) % minCount);
+    }
+    socialTouchStartX.current = 0;
+    socialTouchEndX.current = 0;
+  };
+
   // Auto-play: reviews carousel now moves left -> right (decrementing index
   // instead of incrementing) so new cards slide in from the left.
   useEffect(() => {
@@ -3999,6 +4028,21 @@ export default function HomePage() {
     }, 8000);
     return () => clearInterval(timer);
   }, []);
+
+  // Auto-play: mobile social feed carousel
+  useEffect(() => {
+    const rawReels = homeCms?.socialFeedSection?.reels;
+    let count = 3;
+    if (rawReels !== undefined && rawReels !== null) {
+      const arr = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+      count = arr.length;
+    }
+    if (count <= 1) return;
+    const timer = setInterval(() => {
+      setMobileSocialIndex((prev) => (prev + 1) % count);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, [homeCms?.socialFeedSection?.reels]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -6003,11 +6047,14 @@ export default function HomePage() {
             margin: 0 auto;
           }
           .mobile-carousel-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            justify-content: center !important;
             gap: 20px;
             margin-top: 24px;
+            width: 100%;
             z-index: 10;
           }
           .carousel-arrow-mobile {
@@ -7693,32 +7740,35 @@ export default function HomePage() {
           <div className="catalog-glass-pane" />
 
           {(() => {
+            const defaultReels = [
+              {
+                instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
+                caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
+                authorName: "yaadein.pk",
+              },
+              {
+                instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
+                caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
+                authorName: "yaadein.pk",
+              },
+              {
+                instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
+                caption: "Colour artistry, up close with 99% UV museum glass.",
+                authorName: "yaadein.pk",
+              },
+            ];
+
             const rawReels = homeCms?.socialFeedSection?.reels;
             const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
             let reelsToRender = [];
 
             if (rawReels !== undefined && rawReels !== null) {
-              reelsToRender = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+              const parsed = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+              reelsToRender = parsed.length > 0 ? parsed : defaultReels;
             } else if (isCustom) {
               reelsToRender = [];
             } else {
-              reelsToRender = [
-                {
-                  instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
-                  caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
-                  authorName: "yaadein.pk",
-                },
-                {
-                  instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
-                  caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
-                  authorName: "yaadein.pk",
-                },
-                {
-                  instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
-                  caption: "Colour artistry, up close with 99% UV museum glass.",
-                  authorName: "yaadein.pk",
-                },
-              ];
+              reelsToRender = defaultReels;
             }
 
             return (
@@ -7732,24 +7782,27 @@ export default function HomePage() {
                 </div>
 
                 <div className="social-carousel-wrapper">
-                  <button
-                    className="carousel-arrow prev desktop-only-carousel"
-                    onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                    aria-label="Previous Posts"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                  </button>
+                  {reelsToRender.length > 3 && (
+                    <button
+                      className="carousel-arrow prev desktop-only-carousel"
+                      onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                      aria-label="Previous Posts"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                  )}
 
-                  <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: reelsToRender.length < 3 ? "center" : "flex-start" }}>
+                  {/* DESKTOP ONLY SOCIAL CAROUSEL */}
+                  <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: "center" }}>
                     <div
                       style={{
                         display: "flex",
                         gap: 28,
-                        justifyContent: reelsToRender.length < 3 ? "center" : "flex-start",
+                        justifyContent: "center",
                         transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-                        transform: reelsToRender.length < 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
+                        transform: reelsToRender.length <= 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
                       }}
                     >
                       {reelsToRender.map((reel, rIdx) => (
@@ -7758,39 +7811,171 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <button
-                    className="carousel-arrow next desktop-only-carousel"
-                    onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                    aria-label="Next Posts"
+                  {/* MOBILE ONLY SOCIAL CAROUSEL */}
+                  <div
+                    className="social-carousel-viewport mobile-only-carousel social-mobile-carousel"
+                    onTouchStart={handleSocialTouchStart}
+                    onTouchMove={handleSocialTouchMove}
+                    onTouchEnd={() => handleSocialTouchEnd(reelsToRender.length)}
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </button>
+                    <div
+                      className="social-carousel-track-mobile"
+                      style={{
+                        width: `${reelsToRender.length * 100}%`,
+                        transform: `translateX(-${mobileSocialIndex * (100 / Math.max(1, reelsToRender.length))}%)`
+                      }}
+                    >
+                      {reelsToRender.map((reel, rIdx) => (
+                        <div key={rIdx} className="social-slide-mobile-wrapper" style={{ width: `${100 / Math.max(1, reelsToRender.length)}%` }}>
+                          <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {reelsToRender.length > 3 && (
+                    <button
+                      className="carousel-arrow next desktop-only-carousel"
+                      onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                      aria-label="Next Posts"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
-                <div className="social-carousel-indicators desktop-only-carousel">
-                  {[0, 1].map((idx) => (
-                    <button
-                      key={idx}
-                      className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
-                      onClick={() => setCurrentSocialSlide(idx)}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
+                {reelsToRender.length > 3 && (
+                  <div className="social-carousel-indicators desktop-only-carousel">
+                    {Array.from({ length: Math.ceil(reelsToRender.length / 3) }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
+                        onClick={() => setCurrentSocialSlide(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
 
-                {/* Mobile social indicators */}
-                <div className="social-carousel-indicators mobile-only-carousel mobile-indicators-centered">
-                  {[0, 1, 2, 3, 4, 5].map((idx) => (
+                {/* Mobile Social Carousel Controls */}
+                {reelsToRender.length > 1 ? (
+                  <div
+                    className="mobile-carousel-controls mobile-only-carousel"
+                    style={{
+                      marginTop: 24,
+                      display: "flex !important",
+                      flexDirection: "row !important",
+                      flexWrap: "nowrap !important",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 20,
+                      width: "100%"
+                    }}
+                  >
                     <button
-                      key={idx}
-                      className={`carousel-dot ${mobileSocialIndex === idx ? 'active' : ''}`}
-                      onClick={() => setMobileSocialIndex(idx)}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
+                      className="carousel-arrow-mobile prev"
+                      onClick={() => setMobileSocialIndex((prev) => (prev - 1 + reelsToRender.length) % reelsToRender.length)}
+                      aria-label="Previous Reel"
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: "rgba(20, 17, 14, 0.85)",
+                        border: "1.5px solid var(--accent)",
+                        color: "var(--accent)",
+                        fontSize: 22,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                        flexShrink: 0
+                      }}
+                    >
+                      ‹
+                    </button>
+
+                    <div
+                      className="carousel-indicators-mobile"
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        flexWrap: "nowrap",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 10
+                      }}
+                    >
+                      {reelsToRender.map((_, idx) => (
+                        <button
+                          key={idx}
+                          className={`carousel-dot-mobile ${mobileSocialIndex === idx ? 'active' : ''}`}
+                          onClick={() => setMobileSocialIndex(idx)}
+                          aria-label={`Go to slide ${idx + 1}`}
+                          style={{
+                            width: mobileSocialIndex === idx ? 12 : 8,
+                            height: mobileSocialIndex === idx ? 12 : 8,
+                            borderRadius: "50%",
+                            background: mobileSocialIndex === idx ? "var(--accent)" : "rgba(255, 255, 255, 0.25)",
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease"
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      className="carousel-arrow-mobile next"
+                      onClick={() => setMobileSocialIndex((prev) => (prev + 1) % reelsToRender.length)}
+                      aria-label="Next Reel"
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: "rgba(20, 17, 14, 0.85)",
+                        border: "1.5px solid var(--accent)",
+                        color: "var(--accent)",
+                        fontSize: 22,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                        flexShrink: 0
+                      }}
+                    >
+                      ›
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="mobile-carousel-controls mobile-only-carousel"
+                    style={{
+                      marginTop: 24,
+                      display: "flex !important",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      width: "100%"
+                    }}
+                  >
+                    <div className="carousel-indicators-mobile" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                      <button
+                        className="carousel-dot-mobile active"
+                        aria-label="Slide 1"
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: "var(--accent)",
+                          border: "none"
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="social-feed-footer">
                   <span className="social-handle">@yaadein.pk</span>

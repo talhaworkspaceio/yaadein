@@ -1001,7 +1001,26 @@ export default function CategoryPage({ params }) {
         }
 
         @media (max-width: 768px) {
-          .hero-title { font-size: 38px; }
+          .hero-banner {
+            padding: 80px 20px 40px !important;
+          }
+          .hero-title {
+            font-size: 36px !important;
+          }
+          .hero-desc {
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+          }
+          .catalog-lamp {
+            transform: scale(0.6) !important;
+            transform-origin: top center !important;
+            margin-top: -10px !important;
+            margin-bottom: -70px !important;
+          }
+          .catalog-lamp .lamp-rod {
+            height: 120px !important;
+          }
+
           .exhibition-section { padding: 40px 20px; }
           .gallery-grid { gap: 20px; }
           .arrival-card { width: 100%; max-width: 320px; }

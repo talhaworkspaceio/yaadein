@@ -512,7 +512,26 @@ export default function ServicesPage() {
         }
 
         @media (max-width: 800px) {
-          .hero-title { font-size: 38px; }
+          .hero-banner {
+            padding: 80px 20px 40px !important;
+          }
+          .hero-title {
+            font-size: 36px !important;
+          }
+          .hero-desc {
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+          }
+          .catalog-lamp, .services-lamp {
+            transform: scale(0.6) !important;
+            transform-origin: top center !important;
+            margin-top: -10px !important;
+            margin-bottom: -70px !important;
+          }
+          .catalog-lamp .lamp-rod, .services-lamp .lamp-rod {
+            height: 120px !important;
+          }
+
           .services-section { padding: 40px 20px; gap: 30px; }
           .service-card { grid-template-columns: 1fr !important; padding: 24px; gap: 20px; }
           .service-visual { order: -1 !important; aspect-ratio: 16/9; }
@@ -523,7 +542,7 @@ export default function ServicesPage() {
 
       <div className="hero-banner">
         {/* Suspended Brass Lamp on top of Our Services heading */}
-        <div className={`exquisite-lamp services-lamp ${lightOn ? 'on' : ''}`}>
+        <div className={`exquisite-lamp catalog-lamp services-lamp ${lightOn ? 'on' : ''}`}>
           <div className="lamp-rod" />
           <div className="lamp-mount" />
           <div className="lamp-arm" />
