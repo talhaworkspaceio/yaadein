@@ -60,6 +60,14 @@ export default function AdminSiteContentPage() {
     signature: "Yaadein Art Studio",
   });
 
+  const [homeGoogleReviews, setHomeGoogleReviews] = useState({
+    title: "What Our Clients Say",
+    subtitle: "Real reviews from our verified customers on Google. Every frame tells a story — here's what they have to say.",
+    averageScore: "4.9",
+    totalReviewsText: "Based on 127 Google Reviews",
+    googleReviewUrl: "https://g.page/r/yaadein-art-studio/review",
+  });
+
   const [homeServicesSection, setHomeServicesSection] = useState({
     eyebrow: "Our Services",
     title: "Crafted With Care, Delivered With Pride",

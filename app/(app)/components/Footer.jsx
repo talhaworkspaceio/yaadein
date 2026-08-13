@@ -138,13 +138,16 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="footer-title">Studio Info</h4>
+          <h4 className="footer-title">Studio Info & Social</h4>
           <div className="footer-links">
             <span className="footer-link" style={{ cursor: "default" }}>{workingHours}</span>
             <span className="footer-link" style={{ cursor: "default" }}>
               {supportEmail.includes(":") ? supportEmail : `Support: ${supportEmail}`}
             </span>
             <span className="footer-link" style={{ cursor: "default" }}>{locationText}</span>
+            <a href="https://www.instagram.com/yaadein.pk/" target="_blank" rel="noopener noreferrer" className="footer-link">Instagram: @yaadein.pk</a>
+            <a href="https://www.facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="footer-link">Facebook: yaadein.pk</a>
+            <a href="https://www.tiktok.com/@yaadein.pk.official" target="_blank" rel="noopener noreferrer" className="footer-link">TikTok: @yaadein.pk.official</a>
             <a href={devLinkUrl} target="_blank" rel="noopener noreferrer" className="footer-link">{devLinkText}</a>
           </div>
         </div>

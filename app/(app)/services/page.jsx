@@ -618,7 +618,7 @@ export default function ServicesPage() {
                       </ul>
                     )}
                     <a href={`/services/${cleanSlug}`} className="btn-service">
-                      {srv.ctaText || "Explore Details"} &rarr;
+                      {(srv.ctaText ? srv.ctaText.replace(/Nikkah\s*Nama/gi, "Nikkahnama") : "Explore Details")} &rarr;
                     </a>
                   </div>
                 </div>

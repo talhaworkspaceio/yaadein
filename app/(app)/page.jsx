@@ -3946,7 +3946,7 @@ export default function HomePage() {
           if (heroVideoRef.current) {
             heroVideoRef.current.muted = true;
             setIsMuted(true);
-            heroVideoRef.current.play().catch(() => {});
+            heroVideoRef.current.play().catch(() => { });
           }
         });
       }
@@ -3974,6 +3974,18 @@ export default function HomePage() {
   const [mobileCuratedIndex, setMobileCuratedIndex] = useState(0);
   const [mobileReviewIndex, setMobileReviewIndex] = useState(0);
   const [mobileSocialIndex, setMobileSocialIndex] = useState(0);
+
+  const [googleReviewUrl, setGoogleReviewUrl] = useState("https://g.page/r/yaadein-art-studio/review");
+
+  useEffect(() => {
+    const settingsRef = ref(db, "settings/googleReviewUrl");
+    const unsub = onValue(settingsRef, (snapshot) => {
+      if (snapshot.exists() && snapshot.val()) {
+        setGoogleReviewUrl(snapshot.val());
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const socialTouchStartX = useRef(0);
   const socialTouchEndX = useRef(0);
@@ -6192,10 +6204,9 @@ export default function HomePage() {
             justify-content: center;
           }
           .exquisite-title { font-size: 32px; }
-          .feature-item { flex-direction: column; align-items: center; gap: 8px; }
-          .exquisite-frame-component { width: 300px; flex-shrink: 0; }
+          .exquisite-frame-component { width: 290px; flex-shrink: 0; }
           .lamp-rod { height: 60px; }
-          .exquisite-wood-frame { width: 300px; height: 394px; flex-shrink: 0; }
+          .exquisite-wood-frame { width: 290px !important; height: 464px !important; aspect-ratio: 320 / 512 !important; flex-shrink: 0; }
           .services-section .exquisite-content {
             align-items: center;
             text-align: center;
@@ -6288,6 +6299,7 @@ export default function HomePage() {
           height: 56px !important;
           box-sizing: border-box;
           user-select: none;
+          white-space: nowrap !important;
         }
         .light-control-panel:hover {
           border-color: rgba(212, 175, 55, 0.6);
@@ -6307,6 +6319,7 @@ export default function HomePage() {
           user-select: none;
           text-align: center;
           line-height: 1.2 !important;
+          white-space: nowrap !important;
         }
         .light-switch-btn {
           width: 46px;
@@ -6472,13 +6485,17 @@ export default function HomePage() {
           background: linear-gradient(135deg, rgba(20, 17, 14, 0.8) 0%, rgba(16, 13, 11, 0.9) 100%);
           border: 1.5px solid rgba(212, 175, 55, 0.12);
           border-radius: var(--radius);
-          padding: 28px 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
+          padding: 24px 20px;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+          height: 240px !important;
+          box-sizing: border-box !important;
+          gap: 10px;
           transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
           position: relative;
           overflow: hidden;
+          text-decoration: none !important;
         }
         .review-card::before {
           content: '';
@@ -6498,15 +6515,15 @@ export default function HomePage() {
           gap: 12px;
         }
         .review-avatar {
-          width: 44px;
-          height: 44px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           background: linear-gradient(135deg, var(--accent), #8B6914);
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: var(--font-display);
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 700;
           color: #0C0A08;
           flex-shrink: 0;
@@ -6531,25 +6548,38 @@ export default function HomePage() {
           gap: 6px;
         }
         .review-stars-row {
-          font-size: 14px;
+          font-size: 13px;
           letter-spacing: 2px;
           color: #FBBF24;
         }
         .review-text {
           font-family: var(--font-serif);
-          font-size: 14px;
-          line-height: 1.7;
+          font-size: 13.5px;
+          line-height: 1.6;
           color: var(--text2);
           flex: 1;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-height: 6.4em;
+          margin: 0;
         }
         .review-google-badge {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 6px;
           font-family: var(--font-typewriter);
-          font-size: 10px;
-          color: var(--text2);
-          opacity: 0.6;
+          font-size: 11px;
+          color: var(--accent);
+          opacity: 0.9;
+          font-weight: 600;
+          transition: opacity 0.2s ease;
+        }
+        .review-card:hover .review-google-badge {
+          opacity: 1;
+          text-decoration: underline;
         }
         .reviews-cta {
           text-align: center;
@@ -7121,25 +7151,28 @@ export default function HomePage() {
           {/* Left Column: Content */}
           <div className="exquisite-content">
             <h2 className="exquisite-title">{homeCms?.memoriesSection?.title || "Where Memories Meet Nature's Light"}</h2>
+            
+            {/* Light Switch button positioned on top above paragraph for consistency */}
+            <button
+              className="light-control-panel"
+              onClick={() => setLightOn(!lightOn)}
+              aria-label="Toggle Light Switch"
+              style={{ marginTop: 4, marginBottom: 4 }}
+            >
+              <span className="light-control-label">{homeCms?.memoriesSection?.lightSwitchText || "Light Switch"}</span>
+              <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
+                <span className="light-switch-knob" />
+              </div>
+            </button>
+
             <p className="exquisite-desc">
               {homeCms?.memoriesSection?.body || "Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments."}
             </p>
+
             <div className="exquisite-actions">
-              <a href={homeCms?.memoriesSection?.browseButtonLink || "/catalog"} className="btn-premium exquisite-btn ">
+              <a href={homeCms?.memoriesSection?.browseButtonLink || "/catalog"} className="btn-premium exquisite-btn">
                 {homeCms?.memoriesSection?.browseButtonText || "BROWSE CATALOGUE"}
               </a>
-
-              {/* Toggle switch button styled identical to Browse Catalog */}
-              <button
-                className="light-control-panel"
-                onClick={() => setLightOn(!lightOn)}
-                aria-label="Toggle Light Switch"
-              >
-                <span className="light-control-label">{homeCms?.memoriesSection?.lightSwitchText || "Light Switch"}</span>
-                <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
-                  <span className="light-switch-knob" />
-                </div>
-              </button>
             </div>
           </div>
 
@@ -7286,98 +7319,109 @@ export default function HomePage() {
               <div className="reviews-carousel-track" style={{ transform: `translateX(-${currentReviewSlide * 50}%)` }}>
                 {/* Slide 1 */}
                 <div className="reviews-carousel-slide">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">AK</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Ayesha Khan</span>
-                        <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">AK</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Ayesha Khan</span>
+                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+                  </a>
 
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">HA</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Hassan Ali</span>
-                        <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">HA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Hassan Ali</span>
+                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
 
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">SM</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Sara Malik</span>
-                        <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">SM</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Sara Malik</span>
+                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 2 */}
                 <div className="reviews-carousel-slide">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">OA</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Omar Ahmed</span>
-                        <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">OA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Omar Ahmed</span>
+                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★☆</div>
-                    <p className="review-text">
-                      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
 
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">FZ</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Fatima Zahra</span>
-                        <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
-                      </div>
-                    </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+                  </a>
 
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">BI</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Bilal Iqbal</span>
-                        <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">FZ</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Fatima Zahra</span>
+                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">BI</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Bilal Iqbal</span>
+                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
+                      </p>
+                    </div>
+
+                  </a>
                 </div>
               </div>
             </div>
@@ -7400,110 +7444,122 @@ export default function HomePage() {
               >
                 {/* Slide 1 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">AK</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Ayesha Khan</span>
-                        <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">AK</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Ayesha Khan</span>
+                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. The craftsmanship is absolutely stunning!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 2 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">HA</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Hassan Ali</span>
-                        <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">HA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Hassan Ali</span>
+                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. The attention to detail in every frame is remarkable. Highly recommend Yaadein!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 3 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">SM</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Sara Malik</span>
-                        <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">SM</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Sara Malik</span>
+                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 4 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">OA</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Omar Ahmed</span>
-                        <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">OA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Omar Ahmed</span>
+                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★☆</div>
-                    <p className="review-text">
-                      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Beautifully crafted frames, fast delivery too!
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 5 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">FZ</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Fatima Zahra</span>
-                        <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">FZ</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Fatima Zahra</span>
+                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. The oak frame for my nikkah photo is absolutely divine.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
 
                 {/* Slide 6 */}
                 <div className="review-slide-mobile-wrapper">
-                  <div className="review-card">
-                    <div className="review-card-header">
-                      <div className="review-avatar">BI</div>
-                      <div className="review-author-info">
-                        <span className="review-author-name">Bilal Iqbal</span>
-                        <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">BI</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Bilal Iqbal</span>
+                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                        </div>
                       </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
+                      </p>
                     </div>
-                    <div className="review-stars-row">★★★★★</div>
-                    <p className="review-text">
-                      Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse. Premium quality frames that turned my living room into a gallery.
-                    </p>
-                    <div className="review-google-badge">🇬 Posted on Google</div>
-                  </div>
+
+                  </a>
                 </div>
               </div>
             </div>
@@ -7532,16 +7588,34 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="reviews-cta">
+          <div className="reviews-cta" style={{ textAlign: "center", marginTop: 28 }}>
             <a
-              href="https://g.page/r/yaadein-art-studio/review"
+              href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-review-cta"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 24px",
+                background: "rgba(20, 17, 14, 0.8)",
+                border: "1.5px solid var(--accent)",
+                borderRadius: 30,
+                color: "var(--accent)",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+                letterSpacing: "0.05em",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
+                transition: "all 0.2s ease"
+              }}
             >
-              ⭐ Leave Us a Review on Google
+              ⭐ View All Reviews on Google Profile ↗
             </a>
           </div>
+
+
         </div>
       </section>
 
@@ -7727,274 +7801,274 @@ export default function HomePage() {
         </div>
       </section>
 
-        {/* ── SOCIAL MEDIA FEED SECTION ── */}
-        <section className="social-feed-section" id="social">
-          {/* Dynamic liquid backdrop elements */}
-          <div className="catalog-glass-bg">
-            <div className="liquid-blob-1" />
-            <div className="liquid-blob-2" />
-            <div className="catalog-glow" />
-          </div>
+      {/* ── SOCIAL MEDIA FEED SECTION ── */}
+      <section className="social-feed-section" id="social">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
 
-          {/* Frosted Glass overlay sheet */}
-          <div className="catalog-glass-pane" />
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
 
-          {(() => {
-            const defaultReels = [
-              {
-                instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
-                caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
-                authorName: "yaadein.pk",
-              },
-              {
-                instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
-                caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
-                authorName: "yaadein.pk",
-              },
-              {
-                instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
-                caption: "Colour artistry, up close with 99% UV museum glass.",
-                authorName: "yaadein.pk",
-              },
-            ];
+        {(() => {
+          const defaultReels = [
+            {
+              instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
+              caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
+              authorName: "yaadein.pk",
+            },
+            {
+              instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
+              caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
+              authorName: "yaadein.pk",
+            },
+            {
+              instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
+              caption: "Colour artistry, up close with 99% UV museum glass.",
+              authorName: "yaadein.pk",
+            },
+          ];
 
-            const rawReels = homeCms?.socialFeedSection?.reels;
-            const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
-            let reelsToRender = [];
+          const rawReels = homeCms?.socialFeedSection?.reels;
+          const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
+          let reelsToRender = [];
 
-            if (rawReels !== undefined && rawReels !== null) {
-              const parsed = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
-              reelsToRender = parsed.length > 0 ? parsed : defaultReels;
-            } else if (isCustom) {
-              reelsToRender = [];
-            } else {
-              reelsToRender = defaultReels;
-            }
+          if (rawReels !== undefined && rawReels !== null) {
+            const parsed = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+            reelsToRender = parsed.length > 0 ? parsed : defaultReels;
+          } else if (isCustom) {
+            reelsToRender = [];
+          } else {
+            reelsToRender = defaultReels;
+          }
 
-            return (
-              <div className="social-feed-container">
-                <div className="social-feed-header">
-                  <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "OUR WORK IN MOTION"}</p>
-                  <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "Straight from our Instagram"}</h2>
-                  <p className="social-feed-subtitle">
-                    {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
-                  </p>
+          return (
+            <div className="social-feed-container">
+              <div className="social-feed-header">
+                <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "OUR WORK IN MOTION"}</p>
+                <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "Straight from our Instagram"}</h2>
+                <p className="social-feed-subtitle">
+                  {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
+                </p>
+              </div>
+
+              <div className="social-carousel-wrapper">
+                {reelsToRender.length > 3 && (
+                  <button
+                    className="carousel-arrow prev desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Previous Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                )}
+
+                {/* DESKTOP ONLY SOCIAL CAROUSEL */}
+                <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 28,
+                      justifyContent: "center",
+                      transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                      transform: reelsToRender.length <= 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
+                    }}
+                  >
+                    {reelsToRender.map((reel, rIdx) => (
+                      <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                    ))}
+                  </div>
                 </div>
 
-                <div className="social-carousel-wrapper">
-                  {reelsToRender.length > 3 && (
-                    <button
-                      className="carousel-arrow prev desktop-only-carousel"
-                      onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                      aria-label="Previous Posts"
-                    >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                      </svg>
-                    </button>
-                  )}
-
-                  {/* DESKTOP ONLY SOCIAL CAROUSEL */}
-                  <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: "center" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 28,
-                        justifyContent: "center",
-                        transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-                        transform: reelsToRender.length <= 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
-                      }}
-                    >
-                      {reelsToRender.map((reel, rIdx) => (
-                        <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* MOBILE ONLY SOCIAL CAROUSEL */}
+                {/* MOBILE ONLY SOCIAL CAROUSEL */}
+                <div
+                  className="social-carousel-viewport mobile-only-carousel social-mobile-carousel"
+                  onTouchStart={handleSocialTouchStart}
+                  onTouchMove={handleSocialTouchMove}
+                  onTouchEnd={() => handleSocialTouchEnd(reelsToRender.length)}
+                >
                   <div
-                    className="social-carousel-viewport mobile-only-carousel social-mobile-carousel"
-                    onTouchStart={handleSocialTouchStart}
-                    onTouchMove={handleSocialTouchMove}
-                    onTouchEnd={() => handleSocialTouchEnd(reelsToRender.length)}
+                    className="social-carousel-track-mobile"
+                    style={{
+                      width: `${reelsToRender.length * 100}%`,
+                      transform: `translateX(-${mobileSocialIndex * (100 / Math.max(1, reelsToRender.length))}%)`
+                    }}
                   >
-                    <div
-                      className="social-carousel-track-mobile"
-                      style={{
-                        width: `${reelsToRender.length * 100}%`,
-                        transform: `translateX(-${mobileSocialIndex * (100 / Math.max(1, reelsToRender.length))}%)`
-                      }}
-                    >
-                      {reelsToRender.map((reel, rIdx) => (
-                        <div key={rIdx} className="social-slide-mobile-wrapper" style={{ width: `${100 / Math.max(1, reelsToRender.length)}%` }}>
-                          <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
-                        </div>
-                      ))}
-                    </div>
+                    {reelsToRender.map((reel, rIdx) => (
+                      <div key={rIdx} className="social-slide-mobile-wrapper" style={{ width: `${100 / Math.max(1, reelsToRender.length)}%` }}>
+                        <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                      </div>
+                    ))}
                   </div>
-
-                  {reelsToRender.length > 3 && (
-                    <button
-                      className="carousel-arrow next desktop-only-carousel"
-                      onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                      aria-label="Next Posts"
-                    >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                      </svg>
-                    </button>
-                  )}
                 </div>
 
                 {reelsToRender.length > 3 && (
-                  <div className="social-carousel-indicators desktop-only-carousel">
-                    {Array.from({ length: Math.ceil(reelsToRender.length / 3) }).map((_, idx) => (
+                  <button
+                    className="carousel-arrow next desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Next Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {reelsToRender.length > 3 && (
+                <div className="social-carousel-indicators desktop-only-carousel">
+                  {Array.from({ length: Math.ceil(reelsToRender.length / 3) }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
+                      onClick={() => setCurrentSocialSlide(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Mobile Social Carousel Controls */}
+              {reelsToRender.length > 1 ? (
+                <div
+                  className="mobile-carousel-controls mobile-only-carousel"
+                  style={{
+                    marginTop: 24,
+                    display: "flex !important",
+                    flexDirection: "row !important",
+                    flexWrap: "nowrap !important",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 20,
+                    width: "100%"
+                  }}
+                >
+                  <button
+                    className="carousel-arrow-mobile prev"
+                    onClick={() => setMobileSocialIndex((prev) => (prev - 1 + reelsToRender.length) % reelsToRender.length)}
+                    aria-label="Previous Reel"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "rgba(20, 17, 14, 0.85)",
+                      border: "1.5px solid var(--accent)",
+                      color: "var(--accent)",
+                      fontSize: 22,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                      flexShrink: 0
+                    }}
+                  >
+                    ‹
+                  </button>
+
+                  <div
+                    className="carousel-indicators-mobile"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      flexWrap: "nowrap",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 10
+                    }}
+                  >
+                    {reelsToRender.map((_, idx) => (
                       <button
                         key={idx}
-                        className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
-                        onClick={() => setCurrentSocialSlide(idx)}
+                        className={`carousel-dot-mobile ${mobileSocialIndex === idx ? 'active' : ''}`}
+                        onClick={() => setMobileSocialIndex(idx)}
                         aria-label={`Go to slide ${idx + 1}`}
+                        style={{
+                          width: mobileSocialIndex === idx ? 12 : 8,
+                          height: mobileSocialIndex === idx ? 12 : 8,
+                          borderRadius: "50%",
+                          background: mobileSocialIndex === idx ? "var(--accent)" : "rgba(255, 255, 255, 0.25)",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.3s ease"
+                        }}
                       />
                     ))}
                   </div>
-                )}
 
-                {/* Mobile Social Carousel Controls */}
-                {reelsToRender.length > 1 ? (
-                  <div
-                    className="mobile-carousel-controls mobile-only-carousel"
+                  <button
+                    className="carousel-arrow-mobile next"
+                    onClick={() => setMobileSocialIndex((prev) => (prev + 1) % reelsToRender.length)}
+                    aria-label="Next Reel"
                     style={{
-                      marginTop: 24,
-                      display: "flex !important",
-                      flexDirection: "row !important",
-                      flexWrap: "nowrap !important",
-                      justifyContent: "center",
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "rgba(20, 17, 14, 0.85)",
+                      border: "1.5px solid var(--accent)",
+                      color: "var(--accent)",
+                      fontSize: 22,
+                      display: "inline-flex",
                       alignItems: "center",
-                      gap: 20,
-                      width: "100%"
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                      flexShrink: 0
                     }}
                   >
+                    ›
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="mobile-carousel-controls mobile-only-carousel"
+                  style={{
+                    marginTop: 24,
+                    display: "flex !important",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%"
+                  }}
+                >
+                  <div className="carousel-indicators-mobile" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                     <button
-                      className="carousel-arrow-mobile prev"
-                      onClick={() => setMobileSocialIndex((prev) => (prev - 1 + reelsToRender.length) % reelsToRender.length)}
-                      aria-label="Previous Reel"
+                      className="carousel-dot-mobile active"
+                      aria-label="Slide 1"
                       style={{
-                        width: 44,
-                        height: 44,
+                        width: 10,
+                        height: 10,
                         borderRadius: "50%",
-                        background: "rgba(20, 17, 14, 0.85)",
-                        border: "1.5px solid var(--accent)",
-                        color: "var(--accent)",
-                        fontSize: 22,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
-                        flexShrink: 0
+                        background: "var(--accent)",
+                        border: "none"
                       }}
-                    >
-                      ‹
-                    </button>
-
-                    <div
-                      className="carousel-indicators-mobile"
-                      style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        flexWrap: "nowrap",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: 10
-                      }}
-                    >
-                      {reelsToRender.map((_, idx) => (
-                        <button
-                          key={idx}
-                          className={`carousel-dot-mobile ${mobileSocialIndex === idx ? 'active' : ''}`}
-                          onClick={() => setMobileSocialIndex(idx)}
-                          aria-label={`Go to slide ${idx + 1}`}
-                          style={{
-                            width: mobileSocialIndex === idx ? 12 : 8,
-                            height: mobileSocialIndex === idx ? 12 : 8,
-                            borderRadius: "50%",
-                            background: mobileSocialIndex === idx ? "var(--accent)" : "rgba(255, 255, 255, 0.25)",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.3s ease"
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    <button
-                      className="carousel-arrow-mobile next"
-                      onClick={() => setMobileSocialIndex((prev) => (prev + 1) % reelsToRender.length)}
-                      aria-label="Next Reel"
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "50%",
-                        background: "rgba(20, 17, 14, 0.85)",
-                        border: "1.5px solid var(--accent)",
-                        color: "var(--accent)",
-                        fontSize: 22,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
-                        flexShrink: 0
-                      }}
-                    >
-                      ›
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className="mobile-carousel-controls mobile-only-carousel"
-                    style={{
-                      marginTop: 24,
-                      display: "flex !important",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: "100%"
-                    }}
-                  >
-                    <div className="carousel-indicators-mobile" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      <button
-                        className="carousel-dot-mobile active"
-                        aria-label="Slide 1"
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          background: "var(--accent)",
-                          border: "none"
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="social-feed-footer">
-                  <span className="social-handle">@yaadein.pk</span>
-                  <div className="social-links">
-                    <a href="https://instagram.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                      📸 Follow on Instagram
-                    </a>
-                    <a href="https://facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                      👤 Follow on Facebook
-                    </a>
-                    <a href="https://tiktok.com/@yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                      🎵 Follow on TikTok
-                    </a>
+                    />
                   </div>
                 </div>
+              )}
+
+              <div className="social-feed-footer">
+                <span className="social-handle">@yaadein.pk</span>
+                <div className="social-links">
+                  <a href="https://www.instagram.com/yaadein.pk/" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    📸 Follow on Instagram
+                  </a>
+                  <a href="https://www.facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    👤 Follow on Facebook
+                  </a>
+                  <a href="https://www.tiktok.com/@yaadein.pk.official" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    🎵 Follow on TikTok
+                  </a>
+                </div>
               </div>
-            );
-          })()}
-        </section>
+            </div>
+          );
+        })()}
+      </section>
 
       {/* FOOTER */}
       <Footer />

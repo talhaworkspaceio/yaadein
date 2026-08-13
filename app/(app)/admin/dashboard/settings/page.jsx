@@ -6,6 +6,7 @@ import { ref, onValue, set } from "firebase/database";
 
 export default function SettingsPage() {
   const [deliveryCharges, setDeliveryCharges] = useState(250);
+  const [googleReviewUrl, setGoogleReviewUrl] = useState("https://g.page/r/yaadein-art-studio/review");
   const [ntfyTopic, setNtfyTopic] = useState("yaadein-orders");
   const [ntfyServerUrl, setNtfyServerUrl] = useState("https://ntfy.sh");
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,9 @@ export default function SettingsPage() {
       if (data) {
         if (data.deliveryCharges !== undefined) {
           setDeliveryCharges(data.deliveryCharges);
+        }
+        if (data.googleReviewUrl) {
+          setGoogleReviewUrl(data.googleReviewUrl);
         }
         if (data.ntfyTopic) {
           setNtfyTopic(data.ntfyTopic);
@@ -42,6 +46,7 @@ export default function SettingsPage() {
     try {
       await set(ref(db, "settings"), {
         deliveryCharges: parseInt(deliveryCharges) || 0,
+        googleReviewUrl: googleReviewUrl.trim() || "https://g.page/r/yaadein-art-studio/review",
         ntfyTopic: ntfyTopic.trim() || "yaadein-orders",
         ntfyServerUrl: ntfyServerUrl.trim() || "https://ntfy.sh",
       });
@@ -159,6 +164,23 @@ export default function SettingsPage() {
               </div>
               <p style={{ fontSize: "11px", color: "var(--text2)", opacity: 0.7, marginTop: "6px" }}>
                 This shipping rate will be applied standard to all checkout calculations.
+              </p>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "24px" }}>
+              <label style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "var(--text2)", letterSpacing: "0.08em", display: "block", marginBottom: "8px" }}>
+                Google Profile / Reviews URL
+              </label>
+              <input
+                type="url"
+                className="form-control"
+                value={googleReviewUrl}
+                onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                style={{ width: "100%", maxWidth: "480px" }}
+                placeholder="https://g.page/r/yaadein-art-studio/review"
+              />
+              <p style={{ fontSize: "11px", color: "var(--text2)", opacity: 0.7, marginTop: "6px" }}>
+                When visitors click "⭐ VIEW ALL REVIEWS ON GOOGLE PROFILE ↗" or any review card on the homepage, they will be navigated to this Google Profile URL.
               </p>
             </div>
           </div>
