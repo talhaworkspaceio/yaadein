@@ -306,6 +306,7 @@ const SERVICES_DATA = {
     detailedText: "Take your selfie game and interior decor to the next level with our handcrafted Instagram Mirror Selfie Frame. Designed to replicate an authentic Instagram Reel UI complete with your custom handle, blue verified checkmark, custom audio name, and engagement stats. Featuring a high-definition shatterproof mirror at its center, this frame turns everyday mirror selfies into viral social media moments. It is tailor-made for cafes, fashion boutiques, photo studios, and modern bedrooms looking to add a stylish, interactive aesthetic centerpiece.",
     ctaText: "Customize & Order Mirror",
     ctaLink: "/contact",
+    videoUrl: "",
     gallery: [
       { img: "/images/instagram_mirror_selfie.jpg", caption: "Custom Instagram Mirror Frame" },
       { img: "/images/wood-bg.png", caption: "Solid Cured Wood Backing" },
@@ -315,15 +316,15 @@ const SERVICES_DATA = {
 };
 
 
-// Lamp glow & particle system (identical structure to the product page, rendered via map)
+// Optimized Lamp glow & particle system for smooth 60fps performance
 const LampParticles = ({ lightOn }) => (
   <>
-    {[...Array(6)].map((_, gi) => (
+    {[...Array(2)].map((_, gi) => (
       <div key={gi} className={`lamp-glow-container exquisite-glow-container ${lightOn ? "on" : ""}`}>
         <div className="glow"></div>
         <div className="particles">
           <div className="rotate">
-            {[...Array(5)].map((_, ai) => (
+            {[...Array(2)].map((_, ai) => (
               <div key={ai} className="angle">
                 <div className="size">
                   <div className="position">
@@ -341,16 +342,28 @@ const LampParticles = ({ lightOn }) => (
   </>
 );
 
+const SERVICE_DEFAULT_SIZES = [
+  { label: "12x18", displayLabel: '12" x 18" (Standard)', priceDelta: 0 },
+  { label: "16x24", displayLabel: '16" x 24"', priceDelta: 1500 },
+  { label: "20x30", displayLabel: '20" x 30" (Large)', priceDelta: 3500 },
+  { label: "24x36", displayLabel: '24" x 36" (Statement)', priceDelta: 6000 },
+  { label: "custom", displayLabel: 'Custom Dimensions (Custom Quote)', priceDelta: 0 },
+];
+
 export default function ServiceDetailPage({ params }) {
   const resolvedParams = use(params);
   const rawSlug = resolvedParams?.slug || "";
   const slug = rawSlug.replace(/^\//, '');
 
   const [cmsService, setCmsService] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    if (!slug) return;
+    if (!slug) {
+      setLoading(false);
+      return;
+    }
     try {
       const servicesRef = ref(db, "cms_services");
       const unsub = onValue(servicesRef, (snapshot) => {
@@ -360,6 +373,9 @@ export default function ServiceDetailPage({ params }) {
           const found = list.find(s => s.slug === slug || s.slug === `/${slug}` || s.id === slug);
           if (found) setCmsService(found);
         }
+        if (isMounted) {
+          setLoading(false);
+        }
       });
       return () => {
         isMounted = false;
@@ -367,36 +383,62 @@ export default function ServiceDetailPage({ params }) {
       };
     } catch (e) {
       console.warn("[Firebase Service Detail] Error fetching service:", e);
+      if (isMounted) setLoading(false);
     }
   }, [slug]);
 
+  const fallbackService = SERVICES_DATA[slug] || null;
 
-  const fallbackService = SERVICES_DATA[slug];
+  const rawImages = Array.isArray(cmsService?.images) && cmsService.images.length > 0
+    ? cmsService.images
+    : (cmsService?.imageUrl ? [cmsService.imageUrl] : (fallbackService?.image ? [fallbackService.image] : ["/images/bespoke_framing.png"]));
 
-  const service = cmsService ? {
-    title: cmsService.title || fallbackService?.title || slug.replace(/-/g, ' ').toUpperCase(),
-    tagline: cmsService.tagline || fallbackService?.tagline || "Custom Bespoke Service",
-    desc: cmsService.shortDesc || cmsService.detailedText || fallbackService?.desc || "Handcrafted custom framing service designed to your exact specifications.",
-    image: cmsService.mainImage?.url || cmsService.imageUrl || fallbackService?.image || "/images/bespoke_framing.png",
-    priceInfo: cmsService.priceInfo ? (cmsService.priceInfo.includes("Rs.") ? cmsService.priceInfo : `Starting from Rs. ${cmsService.priceInfo}`) : (fallbackService?.priceInfo || "Starting from Rs. 2,500"),
-    features: (cmsService.features && cmsService.features.length > 0)
+  const featuredImg = cmsService?.featuredImage || cmsService?.imageUrl || fallbackService?.image || rawImages[0] || "/images/bespoke_framing.png";
+
+  // Ensure featuredImg is always at index 0 of the slider
+  const serviceImages = rawImages.includes(featuredImg)
+    ? [featuredImg, ...rawImages.filter(img => img !== featuredImg)]
+    : [featuredImg, ...rawImages];
+
+  const service = (cmsService || fallbackService) ? {
+    title: cmsService?.title || fallbackService?.title || (slug ? slug.replace(/-/g, ' ').toUpperCase() : "CUSTOM SERVICE"),
+    tagline: cmsService?.tagline || fallbackService?.tagline || "Custom Bespoke Service",
+    desc: cmsService?.shortDesc || cmsService?.detailedText || fallbackService?.desc || "Handcrafted custom framing service designed to your exact specifications.",
+    image: featuredImg,
+    images: serviceImages,
+    priceInfo: cmsService?.priceInfo ? (cmsService.priceInfo.includes("Rs.") ? cmsService.priceInfo : `Starting from Rs. ${cmsService.priceInfo}`) : (fallbackService?.priceInfo || "Starting from Rs. 2,500"),
+    features: (cmsService?.features && cmsService.features.length > 0)
       ? cmsService.features.map(f => typeof f === 'string' ? f : (f.featureText || f))
       : (fallbackService?.features || [
-          "Handcrafted by master craftspeople in Pakistan",
-          "Custom size and dimensions tailored to your request",
-          "Archival quality materials and premium finishing"
-        ]),
-    detailedText: cmsService.detailedText || cmsService.shortDesc || fallbackService?.detailedText || "Each piece is individually built by hand in our workshop using premium local materials and traditional craftsmanship.",
-    ctaText: cmsService.ctaText || fallbackService?.ctaText || "Order Service",
-    ctaLink: cmsService.ctaLink || fallbackService?.ctaLink || "/contact",
+        "Handcrafted by master craftspeople in Pakistan",
+        "Custom size and dimensions tailored to your request",
+        "Archival quality materials and premium finishing"
+      ]),
+    detailedText: cmsService?.detailedText || cmsService?.shortDesc || fallbackService?.detailedText || "Each piece is individually built by hand in our workshop using premium local materials and traditional craftsmanship.",
+    ctaText: cmsService?.ctaText || fallbackService?.ctaText || "Order Service",
+    ctaLink: cmsService?.ctaLink || fallbackService?.ctaLink || "/contact",
+    videoUrl: cmsService?.videoUrl || fallbackService?.videoUrl || "",
+    orientation: cmsService?.orientation || (slug === "nikkahnama-framing" || slug === "instagram-mirror-selfie" ? "portrait" : "landscape"),
+    enableUploadPhoto: cmsService?.enableUploadPhoto !== undefined ? cmsService.enableUploadPhoto : (slug !== "instagram-mirror-selfie"),
+    enableChooseFrame: cmsService?.enableChooseFrame !== undefined ? cmsService.enableChooseFrame : (slug !== "photo-editing" && slug !== "instagram-mirror-selfie"),
+    enableSelectSize: cmsService?.enableSelectSize !== undefined ? cmsService.enableSelectSize : true,
+    enableMultipleImages: cmsService?.enableMultipleImages !== undefined ? cmsService.enableMultipleImages : true,
+    enableNavigationButton: cmsService?.enableNavigationButton !== undefined ? cmsService.enableNavigationButton : true,
     gallery: fallbackService?.gallery || [
-      { img: cmsService.mainImage?.url || cmsService.imageUrl || "/images/bespoke_framing.png", caption: "Custom Service Showcase" }
+      { img: featuredImg, caption: "Custom Service Showcase" }
     ],
     previews: fallbackService?.previews,
     colorPreviews: fallbackService?.colorPreviews,
-  } : fallbackService;
+  } : null;
 
   const [cartItems, setCartItems] = useState([]);
+  const [selectedGalleryPhoto, setSelectedGalleryPhoto] = useState(null);
+
+  // Size Selector States
+  const [selectedSize, setSelectedSize] = useState("12x18");
+  const [customWidth, setCustomWidth] = useState("");
+  const [customHeight, setCustomHeight] = useState("");
+  const [customUnit, setCustomUnit] = useState("inches");
 
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -489,14 +531,16 @@ export default function ServiceDetailPage({ params }) {
     }, 0);
   };
 
-  // ----- Pricing -----
+  // ----- Size and Pricing Calculation -----
+  const sizeObj = SERVICE_DEFAULT_SIZES.find(s => s.label === selectedSize);
+  const sizeDelta = sizeObj ? (parseInt(sizeObj.priceDelta) || 0) : 0;
   const servicePriceNum = extractServicePrice(service?.priceInfo);
   const framePriceNum = selectedCustomFrame ? parsePriceNum(selectedCustomFrame.price) : 0;
-  const totalPriceNum = servicePriceNum + framePriceNum;
+  const totalPriceNum = servicePriceNum + sizeDelta + (slug === "instagram-mirror-selfie" ? 0 : framePriceNum);
   const totalPriceStr = formatPrice(totalPriceNum);
 
   // ----- Photo & Frame preview -----
-  const currentPhoto = userUploadedImage || service?.image;
+  const currentPhoto = userUploadedImage || selectedGalleryPhoto || service?.image;
 
   const getPaddings = () => {
     if (slug === "photo-restoration" && !selectedCustomFrame) {
@@ -551,13 +595,17 @@ export default function ServiceDetailPage({ params }) {
       }
     }
 
+    const sizeDisplay = selectedSize === "custom"
+      ? `Custom Size (${customWidth || "0"} x ${customHeight || "0"} ${customUnit})`
+      : (sizeObj?.displayLabel || selectedSize);
+
     const item = {
-      id: `service-${slug}${selectedCustomFrame ? `-${selectedCustomFrame.id}` : ""}`,
+      id: `service-${slug}${selectedCustomFrame ? `-${selectedCustomFrame.id}` : ""}-${selectedSize}`,
       frameName: service.title,
       frameColor: selectedCustomFrame?.color || "",
       price: totalPriceStr,
-      size: selectedCustomFrame ? selectedCustomFrame.name : "Service Only",
-      orientation: "landscape",
+      size: slug === "instagram-mirror-selfie" ? sizeDisplay : (selectedCustomFrame ? selectedCustomFrame.name : sizeDisplay),
+      orientation: "portrait",
       rotation: 0,
       image: finalImage
     };
@@ -576,6 +624,42 @@ export default function ServiceDetailPage({ params }) {
     setCartOpen(true);
   };
 
+  if (loading) {
+    return (
+      <div className="services-root" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
+        <Navbar onCartOpen={() => setCartOpen(true)} />
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "120px 20px",
+          gap: "20px"
+        }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            border: "2px solid rgba(201, 168, 76, 0.15)",
+            borderTopColor: "var(--accent)",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }} />
+          <span style={{
+            fontFamily: "var(--font-typewriter)",
+            fontSize: "12px",
+            color: "var(--accent)",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase"
+          }}>
+            Preparing Studio Experience...
+          </span>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!service) {
     return (
       <div className="services-root" style={{ padding: "120px 40px", textAlign: "center" }}>
@@ -592,7 +676,7 @@ export default function ServiceDetailPage({ params }) {
     );
   }
 
-  const descText = service.detailedText || service.desc;
+  const descText = service?.detailedText || service?.desc || "Each piece is individually built by hand in our workshop using premium local materials and traditional craftsmanship.";
 
   return (
     <div className={`service-page-root ${(slug === "photo-restoration" || slug === "photo-editing") ? "photo-restoration-page" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-page" : ""} ${slug === "instagram-mirror-selfie" ? "instagram-mirror-selfie-page" : ""}`}>
@@ -1500,9 +1584,7 @@ export default function ServiceDetailPage({ params }) {
           position: absolute;
           inset: 0;
           z-index: 2;
-          background: rgba(12, 10, 8, 0.45);
-          backdrop-filter: blur(35px) saturate(140%);
-          -webkit-backdrop-filter: blur(35px) saturate(140%);
+          background: rgba(12, 10, 8, 0.65);
           border-top: 1px solid rgba(181, 139, 92, 0.15);
           border-bottom: 1px solid rgba(181, 139, 92, 0.15);
           box-shadow: inset 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 -20px 40px rgba(0, 0, 0, 0.5);
@@ -1512,44 +1594,45 @@ export default function ServiceDetailPage({ params }) {
           position: absolute;
           top: 0;
           left: 0;
-          width: 1000px;
-          height: 1000px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.3) 0%, rgba(139, 94, 60, 0.1) 50%, rgba(0, 0, 0, 0) 80%);
+          width: 800px;
+          height: 800px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.2) 0%, rgba(139, 94, 60, 0.05) 50%, transparent 75%);
           pointer-events: none;
           z-index: 1;
-          opacity: 1;
-          animation: catalog-glow-auto 10s infinite ease-in-out;
+          opacity: 0.8;
+          will-change: transform;
+          animation: catalog-glow-auto 16s infinite ease-in-out;
         }
         @keyframes catalog-glow-auto {
-          0% { transform: translate(-20%, -20%) scale(1); }
-          25% { transform: translate(100%, 10%) scale(1.2); }
-          50% { transform: translate(40%, 40%) scale(0.9); }
-          75% { transform: translate(-10%, 30%) scale(1.1); }
-          100% { transform: translate(-20%, -20%) scale(1); }
+          0% { transform: translate(-10%, -10%) scale(1); }
+          50% { transform: translate(30%, 20%) scale(1.1); }
+          100% { transform: translate(-10%, -10%) scale(1); }
         }
         .liquid-blob-1 {
           position: absolute;
           top: -10%;
           left: 10%;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, rgba(181, 139, 92, 0.28) 0%, rgba(139, 94, 60, 0) 70%);
+          width: 400px;
+          height: 400px;
+          background: radial-gradient(circle, rgba(181, 139, 92, 0.18) 0%, transparent 70%);
           border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
           animation: liquid-move-1 25s infinite alternate ease-in-out;
           pointer-events: none;
           z-index: 1;
+          will-change: transform;
         }
         .liquid-blob-2 {
           position: absolute;
           bottom: -15%;
           right: 5%;
-          width: 550px;
-          height: 550px;
-          background: radial-gradient(circle, rgba(139, 94, 60, 0.24) 0%, rgba(201, 168, 76, 0) 70%);
+          width: 420px;
+          height: 420px;
+          background: radial-gradient(circle, rgba(139, 94, 60, 0.16) 0%, transparent 70%);
           border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
           animation: liquid-move-2 30s infinite alternate ease-in-out;
           pointer-events: none;
           z-index: 1;
+          will-change: transform;
         }
         @keyframes liquid-move-1 {
           0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%; }
@@ -1792,17 +1875,50 @@ export default function ServiceDetailPage({ params }) {
           width: 100%;
         }
 
-        /* Shell around the frame — invisible to layout except on the restoration page,
-           where it anchors the swiper arrows outside the frame */
+        /* Shell around the frame — anchors swiper arrows to the left and right sides of the frame */
         .restoration-frame-shell {
-          display: contents;
-        }
-        .photo-restoration-page .restoration-frame-shell {
-          display: block;
+          display: flex;
           position: relative;
           width: 100%;
-          max-width: 480px;
-          margin: 30px 0 0 0;
+          justify-content: center;
+          align-items: center;
+        }
+
+        /* Dynamic CMS Studio Frame Orientation */
+        .exquisite-wood-frame.service-orientation-portrait {
+          transform: none !important;
+          aspect-ratio: 2 / 3 !important;
+          max-width: 320px !important;
+          width: 100% !important;
+          margin: 30px auto !important;
+        }
+        .exquisite-wood-frame.service-orientation-portrait .exquisite-inner-photo img {
+          position: absolute !important;
+          inset: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
+          transform: none !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
+
+        .exquisite-wood-frame.service-orientation-landscape {
+          transform: none !important;
+          aspect-ratio: 3 / 2 !important;
+          max-width: 480px !important;
+          width: 100% !important;
+          margin: 30px auto !important;
+        }
+        .exquisite-wood-frame.service-orientation-landscape .exquisite-inner-photo img {
+          position: absolute !important;
+          inset: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
+          transform: none !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
         }
 
         /* Prevent frame rotation and apply landscape proportions */
@@ -1866,13 +1982,13 @@ export default function ServiceDetailPage({ params }) {
           box-shadow: 0 12px 35px rgba(0,0,0,0.6);
         }
 
-        /* Instagram Mirror Selfie — upright portrait 9:16 ratio, frameless, full image */
+        /* Instagram Mirror Selfie — upright portrait 9:16 ratio, frameless, full image aligned with paper */
         .exquisite-wood-frame.instagram-mirror-frame {
           transform: none !important;
           aspect-ratio: 9 / 16 !important;
           max-width: 320px !important;
           width: 100% !important;
-          margin: 70px 0 60px 0 !important;
+          margin: 0 !important;
           background: transparent !important;
           border: none !important;
           border-image: none !important;
@@ -1899,10 +2015,15 @@ export default function ServiceDetailPage({ params }) {
           object-fit: contain !important;
         }
         .instagram-mirror-selfie-page .product-visual-pane {
-          padding-top: 60px;
+          padding-top: 0px !important;
+          align-items: center;
         }
         .instagram-mirror-selfie-page .exquisite-frame-component {
-          padding-top: 180px;
+          padding-top: 210px !important;
+        }
+        .instagram-mirror-selfie-page .product-config-column {
+          align-self: center;
+          margin-top: 30px;
         }
 
 
@@ -1931,19 +2052,27 @@ export default function ServiceDetailPage({ params }) {
           z-index: 2;
         }
 
-        /* Swiper Prev/Next Arrows */
-        .photo-restoration-page .swiper-arrow {
+        .restoration-slide img {
+          position: absolute !important;
+          inset: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          transform: none !important;
+        }
+
+        /* Swiper Prev/Next Arrows (Left and Right sides of the frame) */
+        .swiper-arrow {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: rgba(28, 15, 7, 0.85);
           border: 1px solid #dfc38a;
           color: #dfc38a;
-          font-size: 20px;
-          font-family: inherit;
+          font-size: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1952,36 +2081,44 @@ export default function ServiceDetailPage({ params }) {
           transition: all 0.2s ease;
           padding: 0;
           line-height: 1;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
         }
 
-        .photo-restoration-page .swiper-arrow:hover {
+        .swiper-arrow:hover {
           background: #dfc38a;
           color: #1c0f07;
-          box-shadow: 0 0 10px rgba(223, 195, 138, 0.4);
+          box-shadow: 0 0 14px rgba(223, 195, 138, 0.6);
         }
 
-        .photo-restoration-page .swiper-arrow-prev {
+        .swiper-arrow-prev {
           left: -48px;
         }
 
-        .photo-restoration-page .swiper-arrow-next {
+        .swiper-arrow-next {
           right: -48px;
+        }
+
+        .instagram-mirror-selfie-page .swiper-arrow-prev {
+          left: -54px;
+        }
+        .instagram-mirror-selfie-page .swiper-arrow-next {
+          right: -54px;
         }
 
         /* On narrow viewports there is no room beside the frame — tuck arrows inside */
         @media (max-width: 640px) {
-          .photo-restoration-page .swiper-arrow-prev {
-            left: 8px;
-            background: rgba(28, 15, 7, 0.7);
+          .swiper-arrow-prev {
+            left: 8px !important;
+            background: rgba(28, 15, 7, 0.75);
           }
-          .photo-restoration-page .swiper-arrow-next {
-            right: 8px;
-            background: rgba(28, 15, 7, 0.7);
+          .swiper-arrow-next {
+            right: 8px !important;
+            background: rgba(28, 15, 7, 0.75);
           }
         }
 
         /* Pagination Dots */
-        .photo-restoration-page .swiper-pagination {
+        .swiper-pagination {
           position: absolute;
           bottom: 14px;
           left: 50%;
@@ -2048,30 +2185,16 @@ export default function ServiceDetailPage({ params }) {
                 <LampParticles lightOn={lightOn} />
               </div>
 
-              {/* Landscape Picture Frame (shell lets swiper arrows sit outside the frame) */}
+              {/* Picture Frame Shell (Dynamic Portrait / Landscape Orientation from CMS) */}
               <div className="restoration-frame-shell">
-                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${(slug === "photo-restoration" || slug === "photo-editing") ? "restoration-frame" : ""} ${(slug === "photo-editing" || slug === "instagram-mirror-selfie") ? "no-frame-border" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-frame" : ""} ${slug === "instagram-mirror-selfie" ? "instagram-mirror-frame" : ""}`}>
+                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${service.orientation === "portrait" ? "service-orientation-portrait" : "service-orientation-landscape"} ${(slug === "photo-restoration" || slug === "photo-editing") ? "restoration-frame" : ""} ${(slug === "photo-editing" || slug === "instagram-mirror-selfie") ? "no-frame-border" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-frame" : ""} ${slug === "instagram-mirror-selfie" ? "instagram-mirror-frame" : ""}`}>
 
-                  {slug === "photo-editing" ? null : slug === "photo-restoration" ? (
+                  {slug === "photo-editing" || (slug === "instagram-mirror-selfie" && !selectedCustomFrame) ? null : (
                     <img
-                      src={selectedCustomFrame?.imageUrl || "/frames/landscape/frame-04-correct-size.webp"}
-                      alt={selectedCustomFrame?.name || "Landscape Oak Frame"}
+                      src={selectedCustomFrame?.imageUrl || (service.orientation === "landscape" ? "/frames/landscape/frame-04-correct-size.webp" : "/frames/portrait/frame-01-correct-size.webp")}
+                      alt={selectedCustomFrame?.name || "Handcrafted Wood Frame"}
                       className="wood-frame-overlay"
                     />
-                  ) : slug === "nikkahnama-framing" ? (
-                    <img
-                      src={selectedCustomFrame?.imageUrl || "/frames/portrait/frame-01-correct-size.webp"}
-                      alt={selectedCustomFrame?.name || "Portrait Oak Frame"}
-                      className="wood-frame-overlay"
-                    />
-                  ) : selectedCustomFrame?.imageUrl ? (
-                    <img
-                      src={selectedCustomFrame.imageUrl}
-                      alt={selectedCustomFrame.name}
-                      className="wood-frame-overlay"
-                    />
-                  ) : (
-                    <div className="default-frame-border" />
                   )}
 
                   {/* Photo opening */}
@@ -2126,6 +2249,34 @@ export default function ServiceDetailPage({ params }) {
                           })()}
                         </div>
                       </div>
+                    ) : service.enableMultipleImages !== false && Array.isArray(service.images) && service.images.length > 1 && !userUploadedImage ? (
+                      <div className="restoration-swiper-container">
+                        {service.images.map((imgUrl, idx) => (
+                          <div
+                            key={idx}
+                            className={`restoration-slide ${idx === activeSlide ? "active" : ""}`}
+                          >
+                            <img src={imgUrl} alt={`${service.title} - Photo ${idx + 1}`} />
+                          </div>
+                        ))}
+
+                        {/* Pagination indicators */}
+                        <div className="swiper-pagination">
+                          {service.images.map((_, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveSlide(idx);
+                                setSelectedGalleryPhoto(service.images[idx]);
+                              }}
+                              className={`swiper-dot ${idx === activeSlide ? "active" : ""}`}
+                              aria-label={`Go to photo ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     ) : (
                       <img src={currentPhoto} alt={`${service.title} preview`} />
                     )}
@@ -2133,22 +2284,27 @@ export default function ServiceDetailPage({ params }) {
                   </div>
                 </div>
 
-                {/* Swipe controls — outside the frame on either side.
-                    Centered on the photo opening (not the outer frame box):
-                    a frame's matting can be top/bottom-asymmetric (e.g. a
-                    heavier bottom mat), which shifts the visible photo's
-                    center away from the frame's raw 50% midpoint. */}
-                {(slug === "photo-restoration" || slug === "photo-editing") && !userUploadedImage && (
+                {/* Swipe controls — outside the frame on either side */}
+                {((slug === "photo-restoration" || slug === "photo-editing") || (service.enableMultipleImages !== false && Array.isArray(service.images) && service.images.length > 1)) && !userUploadedImage && (
                   <>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const items = slug === "photo-restoration"
-                          ? (service.colorPreviews || []).slice(0, 3)
-                          : (service.previews || []).slice(0, 3);
-                        const count = items.length;
-                        setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
+                        if (slug === "photo-restoration" || slug === "photo-editing") {
+                          const items = slug === "photo-restoration"
+                            ? (service.colorPreviews || []).slice(0, 3)
+                            : (service.previews || []).slice(0, 3);
+                          const count = items.length;
+                          setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
+                        } else {
+                          const count = service.images.length;
+                          setActiveSlide((prev) => {
+                            const nextIdx = prev === 0 ? count - 1 : prev - 1;
+                            setSelectedGalleryPhoto(service.images[nextIdx]);
+                            return nextIdx;
+                          });
+                        }
                       }}
                       className="swiper-arrow swiper-arrow-prev"
                       style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
@@ -2162,11 +2318,20 @@ export default function ServiceDetailPage({ params }) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const items = slug === "photo-restoration"
-                          ? (service.colorPreviews || []).slice(0, 3)
-                          : (service.previews || []).slice(0, 3);
-                        const count = items.length;
-                        setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
+                        if (slug === "photo-restoration" || slug === "photo-editing") {
+                          const items = slug === "photo-restoration"
+                            ? (service.colorPreviews || []).slice(0, 3)
+                            : (service.previews || []).slice(0, 3);
+                          const count = items.length;
+                          setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
+                        } else {
+                          const count = service.images.length;
+                          setActiveSlide((prev) => {
+                            const nextIdx = prev === count - 1 ? 0 : prev + 1;
+                            setSelectedGalleryPhoto(service.images[nextIdx]);
+                            return nextIdx;
+                          });
+                        }
                       }}
                       className="swiper-arrow swiper-arrow-next"
                       style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
@@ -2217,7 +2382,7 @@ export default function ServiceDetailPage({ params }) {
                 <p className={`product-desc-text ${isDescExpanded ? "" : "clamped"}`}>
                   {descText}
                 </p>
-                {descText.length > 120 && (
+                {descText && descText.length > 120 && (
                   <button
                     className="read-more-btn"
                     onClick={() => setIsDescExpanded(!isDescExpanded)}
@@ -2227,8 +2392,95 @@ export default function ServiceDetailPage({ params }) {
                 )}
               </div>
 
-              {/* Choose Frame */}
-              {slug !== "photo-editing" && (
+              {/* Frame Size Selector (Conditionally enabled by admin) */}
+              {service.enableSelectSize !== false && (
+                <div className="config-section" style={{ marginTop: "4px" }}>
+                  <span className="config-label">Choose Frame Size</span>
+                  <div style={{ position: "relative" }}>
+                    <select
+                      className="premium-select"
+                      value={selectedSize}
+                      onChange={(e) => setSelectedSize(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        fontFamily: "var(--font-typewriter)",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        color: "#2c1e11",
+                        background: "rgba(255, 255, 255, 0.5)",
+                        border: "1px dashed rgba(139, 94, 60, 0.6)",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        outline: "none"
+                      }}
+                    >
+                      {SERVICE_DEFAULT_SIZES.map((s) => {
+                        if (s.label === "custom") {
+                          return (
+                            <option key={s.label} value={s.label}>
+                              Custom Dimensions (Custom Quote)
+                            </option>
+                          );
+                        }
+                        const delta = parseInt(s.priceDelta) || 0;
+                        const calculatedTotal = servicePriceNum + delta;
+                        return (
+                          <option key={s.label} value={s.label}>
+                            {s.displayLabel} - {formatPrice(calculatedTotal)}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Custom Dimensions Form */}
+                  {selectedSize === "custom" && (
+                    <div style={{ marginTop: "12px", background: "rgba(255, 255, 255, 0.45)", border: "1px dashed rgba(139, 94, 60, 0.5)", borderRadius: "6px", padding: "12px" }}>
+                      <span style={{ display: "block", fontFamily: "var(--font-typewriter)", fontSize: "10px", fontWeight: "700", color: "#8b5e3c", textTransform: "uppercase", marginBottom: "8px" }}>
+                        Enter Custom Dimensions
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>Width</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 18"
+                            value={customWidth}
+                            onChange={(e) => setCustomWidth(e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>Height</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 28"
+                            value={customHeight}
+                            onChange={(e) => setCustomHeight(e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>Unit</label>
+                          <select
+                            value={customUnit}
+                            onChange={(e) => setCustomUnit(e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" }}
+                          >
+                            <option value="inches">Inches (in)</option>
+                            <option value="cm">Centimeters (cm)</option>
+                            <option value="feet">Feet (ft)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Choose Frame (Conditionally enabled by admin) */}
+              {service.enableChooseFrame !== false && (
                 <div className="config-section">
                   <span className="config-label">Choose Frame</span>
                   <button
@@ -2252,14 +2504,16 @@ export default function ServiceDetailPage({ params }) {
                 </div>
               )}
 
-              {/* CTA Actions */}
+              {/* CTA Actions (Add to Cart is always present) */}
               <div className="action-row">
                 <button className="btn-premium" onClick={handleAddToCart}>
                   Add to Cart
                 </button>
-                <button className="btn-premium-ghost" onClick={triggerFileUpload}>
-                  Upload Photo
-                </button>
+                {service.enableUploadPhoto !== false && (
+                  <button className="btn-premium-ghost" onClick={triggerFileUpload}>
+                    Upload Photo
+                  </button>
+                )}
                 {userUploadedImage && (
                   <button
                     onClick={removeCustomImage}
@@ -2354,6 +2608,169 @@ export default function ServiceDetailPage({ params }) {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* LUXURY THEATRICAL VIDEO SHOWCASE */}
+      {service.videoUrl && (
+        <section className="service-cinema-section" style={{
+          position: "relative",
+          width: "100%",
+          padding: "90px 24px 50px",
+          background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201, 168, 76, 0.08) 0%, #080605 70%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          overflow: "hidden",
+          borderTop: "1px solid rgba(201, 168, 76, 0.15)",
+        }}>
+          {/* Ambient Glow Background Accent */}
+          <div style={{
+            position: "absolute",
+            top: "20%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "800px",
+            height: "400px",
+            background: "radial-gradient(circle, rgba(201, 168, 76, 0.12) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            pointerEvents: "none",
+            zIndex: 1
+          }} />
+
+          {/* Section Header */}
+          <div style={{
+            position: "relative",
+            zIndex: 2,
+            textAlign: "center",
+            maxWidth: "700px",
+            marginBottom: "40px"
+          }}>
+            <h2 style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(26px, 3.5vw, 36px)",
+              color: "var(--text)",
+              margin: "0 0 10px 0",
+              letterSpacing: "0.02em"
+            }}>
+              {service.title} video
+            </h2>
+
+          </div>
+
+          {/* Theatrical Video Screen Frame */}
+          <div style={{
+            position: "relative",
+            zIndex: 2,
+            width: "100%",
+            maxWidth: "1160px",
+            margin: "0 auto",
+          }}>
+            {/* Outer Luxury Shadow & Border Card */}
+            <div style={{
+              position: "relative",
+              borderRadius: "18px",
+              padding: "10px",
+              background: "linear-gradient(145deg, rgba(45, 34, 20, 0.9) 0%, rgba(18, 14, 10, 0.95) 100%)",
+              border: "1.5px solid rgba(201, 168, 76, 0.4)",
+              boxShadow: "0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(201, 168, 76, 0.15), inset 0 1px 2px rgba(255, 235, 180, 0.25)",
+            }}>
+              {/* Inner Cinema Bevel */}
+              <div style={{
+                position: "relative",
+                borderRadius: "12px",
+                overflow: "hidden",
+                background: "#000",
+                border: "1px solid rgba(0, 0, 0, 0.8)",
+                boxShadow: "inset 0 4px 20px rgba(0, 0, 0, 0.8)",
+                aspectRatio: "16 / 9",
+              }}>
+
+                <video
+                  src={service.videoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    background: "#000",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* SERVICE PHOTOS GALLERY SECTION */}
+      {service.enableMultipleImages !== false && Array.isArray(service.images) && service.images.length > 0 && slug !== "photo-restoration" && slug !== "photo-editing" && (
+        <section className="services-section">
+          <div className="services-container">
+            <div className="service-gallery-section">
+              <h3 className="gallery-title">{service.title} Gallery & Craftsmanship</h3>
+              <p style={{ color: "var(--text2)", marginBottom: "32px", fontSize: "14px", fontFamily: "var(--font-serif)", lineHeight: "1.6" }}>
+                Explore authentic client showcases and craftsmanship details for our {service.title}. Click any photo to view in main studio frame.
+              </p>
+              <div className="previews-grid" style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "28px"
+              }}>
+                {service.images.map((imgUrl, idx) => {
+                  const isCover = (imgUrl === service.image);
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        setSelectedGalleryPhoto(imgUrl);
+                        setActiveSlide(idx);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="preview-card"
+                      style={{
+                        background: "var(--surface2)",
+                        borderRadius: "var(--radius)",
+                        border: `1.5px solid ${imgUrl === currentPhoto ? "var(--accent)" : "var(--border)"}`,
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "14px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                        cursor: "pointer",
+                        transition: "all 0.25s ease",
+                      }}
+                    >
+                      <div style={{ position: "relative", width: "100%", height: "280px", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
+                        <img
+                          src={imgUrl}
+                          alt={`${service.title} Photo ${idx + 1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
+                        {isCover && (
+                          <span style={{ position: "absolute", top: 10, right: 10, background: "var(--accent)", color: "#000", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em" }}>
+                            FEATURED COVER
+                          </span>
+                        )}
+                      </div>
+                      <div className="preview-info" style={{ textAlign: "left" }}>
+                        <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "15px", marginBottom: "4px", fontWeight: "600" }}>
+                          Showcase Photo #{idx + 1}
+                        </h4>
+                        <p className="preview-desc" style={{ fontSize: "12px", color: "var(--text2)", margin: 0, fontFamily: "var(--font-serif)" }}>
+                          Click to preview this piece on the top studio lamp stage.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

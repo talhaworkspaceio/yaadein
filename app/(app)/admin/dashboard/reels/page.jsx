@@ -70,7 +70,7 @@ export default function AdminReelsPage() {
         setTagline(val.tagline || "OUR WORK IN MOTION");
         setTitle(val.title || "Straight from our Instagram");
         setSubtitle(val.subtitle || "See how our customers style their spaces. Copy & paste any Instagram Reel link to show it live on your home page.");
-        
+
         if (val.reels !== undefined && val.reels !== null) {
           const rawList = Array.isArray(val.reels) ? val.reels : Object.values(val.reels);
           const cleanedReels = rawList.map(r => ({
@@ -179,28 +179,13 @@ export default function AdminReelsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
         <div>
           <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, color: "var(--text)" }}>
-            📸 <span>Instagram Reels Manager</span>
+            <span>Instagram Reels Manager</span>
           </h1>
           <p style={{ color: "var(--text2)", fontSize: 14, marginTop: 4 }}>
             Simply copy and paste any Instagram Reel link (e.g. <code>https://www.instagram.com/reel/DaiiHdCNkku/</code>) to render it live on your home page with full Instagram post UI.
           </p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={openAddModal}
-            style={{
-              background: "var(--surface2)",
-              color: "var(--accent)",
-              border: "1px solid var(--accent)",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            + Add Instagram Reel Link
-          </button>
-
           <button
             onClick={() => handleSaveAll(reels)}
             disabled={saving}
@@ -215,7 +200,7 @@ export default function AdminReelsPage() {
               boxShadow: "0 4px 15px rgba(201, 168, 76, 0.4)",
             }}
           >
-            {saving ? "Saving..." : "💾 Save All Changes"}
+            {saving ? "Saving..." : "Save All Changes"}
           </button>
         </div>
       </div>
@@ -267,79 +252,123 @@ export default function AdminReelsPage() {
         Active Instagram Reels ({reels.length})
       </h3>
 
-      {reels.length > 0 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
-          {reels.map((reel, idx) => {
-            const embed = getIgEmbedUrl(reel.instagramUrl);
-            return (
-              <div key={idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                
-                {/* Instagram Embed Live Preview */}
-                <div style={{ position: "relative", width: "100%", height: 620, background: "#000" }}>
-                  {embed ? (
-                    <iframe
-                      title={`Instagram Reel ${idx + 1}`}
-                      src={embed}
-                      style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
-                      allow="autoplay; encrypted-media; clipboard-write"
-                      allowFullScreen
-                      scrolling="no"
-                    />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 12 }}>
-                      Invalid Instagram URL
-                    </div>
-                  )}
-                  
-                  {reel.featured && (
-                    <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10 }}>
-                      ★ FEATURED REEL
-                    </div>
-                  )}
-                </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
+        {reels.map((reel, idx) => {
+          const embed = getIgEmbedUrl(reel.instagramUrl);
+          return (
+            <div key={idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
-                {/* Controls & Details */}
-                <div style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      {reel.label || "Studio Reel"}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#FFF", fontFamily: "monospace", margin: "4px 0 8px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                      🔗 {reel.instagramUrl}
-                    </div>
-                    {reel.caption && (
-                      <p style={{ fontSize: 13, color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
-                        {reel.caption}
-                      </p>
-                    )}
+              {/* Instagram Embed Live Preview */}
+              <div style={{ position: "relative", width: "100%", height: 620, background: "#000" }}>
+                {embed ? (
+                  <iframe
+                    title={`Instagram Reel ${idx + 1}`}
+                    src={embed}
+                    style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
+                    allow="autoplay; encrypted-media; clipboard-write"
+                    allowFullScreen
+                    scrolling="no"
+                  />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 12 }}>
+                    Invalid Instagram URL
                   </div>
+                )}
 
-                  <div style={{ display: "flex", gap: 10, marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-                    <button
-                      onClick={() => openEditModal(idx)}
-                      style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border2)", color: "#fff", padding: "8px 0", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
-                    >
-                      ✏️ Edit Link & Info
-                    </button>
-                    <button
-                      onClick={() => handleDeleteReel(idx)}
-                      style={{ background: "rgba(255, 62, 108, 0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
-                    >
-                      🗑️ Delete
-                    </button>
+                {reel.featured && (
+                  <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10 }}>
+                    ★ FEATURED REEL
                   </div>
-                </div>
-
+                )}
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div style={{ padding: "60px 20px", textAlign: "center", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: 16, color: "var(--text2)" }}>
-          <h3>No Instagram Reels Added Yet</h3>
-          <p style={{ fontSize: 13, marginTop: 6 }}>Click "+ Add Instagram Reel Link" to add your first reel.</p>
-        </div>
-      )}
+
+              {/* Controls & Details */}
+              <div style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {reel.label || "Studio Reel"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#FFF", fontFamily: "monospace", margin: "4px 0 8px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                    🔗 {reel.instagramUrl}
+                  </div>
+                  {reel.caption && (
+                    <p style={{ fontSize: 13, color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
+                      {reel.caption}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+                  <button
+                    onClick={() => openEditModal(idx)}
+                    style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border2)", color: "#fff", padding: "8px 0", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
+                  >
+                    ✏️ Edit Link & Info
+                  </button>
+                  <button
+                    onClick={() => handleDeleteReel(idx)}
+                    style={{ background: "rgba(255, 62, 108, 0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          );
+        })}
+
+        {/* Add New Reel — Dotted Card */}
+        <button
+          onClick={openAddModal}
+          style={{
+            background: "transparent",
+            border: "2px dashed var(--accent, #C9A84C)",
+            borderRadius: 16,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+            cursor: "pointer",
+            minHeight: reels.length > 0 ? undefined : 620,
+            padding: "40px 20px",
+            transition: "all 0.25s ease",
+            color: "var(--accent, #C9A84C)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(201, 168, 76, 0.08)";
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = "var(--accent, #C9A84C)";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          <span style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            border: "2px dashed var(--accent, #C9A84C)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 28,
+            fontWeight: 300,
+            color: "var(--accent, #C9A84C)",
+          }}>
+            +
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
+            Add Instagram Reel Link
+          </span>
+          <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 220, textAlign: "center", lineHeight: 1.4 }}>
+            Paste any Instagram Reel URL to embed it live on your home page
+          </span>
+        </button>
+      </div>
 
       {/* Modal for Add / Edit Reel */}
       {isModalOpen && (
@@ -350,7 +379,7 @@ export default function AdminReelsPage() {
             </h2>
 
             <form onSubmit={handleSaveReel} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              
+
               {/* PRIMARY INPUT: INSTAGRAM REEL URL */}
               <div style={{ background: "rgba(201, 168, 76, 0.12)", border: "1px solid var(--accent)", borderRadius: 10, padding: 16 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: "var(--accent)", marginBottom: 6 }}>

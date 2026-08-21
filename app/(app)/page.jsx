@@ -3927,7 +3927,7 @@ export default function HomePage() {
   const { data: homeCms } = useHomePageContent();
   const heroVideoRef = useRef(null);
 
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   const toggleMute = () => {
     if (heroVideoRef.current) {
@@ -7151,7 +7151,7 @@ export default function HomePage() {
           {/* Left Column: Content */}
           <div className="exquisite-content">
             <h2 className="exquisite-title">{homeCms?.memoriesSection?.title || "Where Memories Meet Nature's Light"}</h2>
-            
+
             {/* Light Switch button positioned on top above paragraph for consistency */}
             <button
               className="light-control-panel"

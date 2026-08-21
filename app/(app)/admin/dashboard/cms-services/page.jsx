@@ -14,6 +14,15 @@ export const INITIAL_DEFAULT_SERVICES = [
     detailedText: "Take your selfie game and interior decor to the next level with our handcrafted Instagram Mirror Selfie Frame. Designed to replicate an authentic Instagram Reel UI complete with your custom handle, blue verified checkmark, custom audio name, and engagement stats. Featuring a high-definition shatterproof mirror at its center, this frame turns everyday mirror selfies into viral social media moments. It is tailor-made for cafes, fashion boutiques, photo studios, and modern bedrooms looking to add a stylish, interactive aesthetic centerpiece.",
     priceInfo: "Custom mirror frames start from Rs. 4,999 depending on size and acrylic finishes.",
     imageUrl: "/images/instagram_mirror_selfie.jpg",
+    featuredImage: "/images/instagram_mirror_selfie.jpg",
+    images: ["/images/instagram_mirror_selfie.jpg"],
+    videoUrl: "",
+    orientation: "portrait",
+    enableUploadPhoto: false,
+    enableChooseFrame: false,
+    enableSelectSize: true,
+    enableMultipleImages: true,
+    enableNavigationButton: true,
     features: [
       "Custom engraved Instagram Reel UI (Username, verified badge & audio)",
       "High-definition shatterproof studio acrylic mirror",
@@ -21,8 +30,8 @@ export const INITIAL_DEFAULT_SERVICES = [
       "Perfect aesthetic focal point for cafés, boutiques, studios & bedrooms",
       "Includes solid wood back support and heavy-duty wall mounting hardware"
     ],
-    ctaText: "Customize & Order Mirror",
-    ctaLink: "/contact",
+    ctaText: "Explore Details",
+    ctaLink: "/services/instagram-mirror-selfie",
   },
   {
     id: "nikkahnama-framing",
@@ -33,6 +42,15 @@ export const INITIAL_DEFAULT_SERVICES = [
     detailedText: "Your Nikkah Nama is more than just a document — it is the celebration of a sacred vow. Our specialized Nikkah Nama framing service ensures this precious heirloom is protected from aging, moisture, and sunlight. We use 100% acid-free mats to prevent discoloration, and offer museum-grade conservation glass that blocks 99% of harmful UV rays. Each frame is custom-built by hand to perfectly match the size and aesthetic of your contract, completed with elegant gold accents and double matting for a truly royal look.",
     priceInfo: "Framing starts from Rs. 4,000 depending on dimensions and wood selection.",
     imageUrl: "/images/nikkahnama_images/sample1.jpeg",
+    featuredImage: "/images/nikkahnama_images/sample1.jpeg",
+    images: ["/images/nikkahnama_images/sample1.jpeg"],
+    videoUrl: "",
+    orientation: "portrait",
+    enableUploadPhoto: true,
+    enableChooseFrame: true,
+    enableSelectSize: true,
+    enableMultipleImages: true,
+    enableNavigationButton: true,
     features: [
       "Custom-fit double mounting with elegant gold borders",
       "99% UV-protection museum glass options",
@@ -40,8 +58,8 @@ export const INITIAL_DEFAULT_SERVICES = [
       "Dust and humidity-controlled rear framing seal",
       "Includes premium hanging hardware and mounting wire"
     ],
-    ctaText: "Upload & Frame Nikkah Nama",
-    ctaLink: "/contact",
+    ctaText: "Explore Details",
+    ctaLink: "/services/nikkahnama-framing",
   },
   {
     id: "photo-restoration",
@@ -52,6 +70,15 @@ export const INITIAL_DEFAULT_SERVICES = [
     detailedText: "Every photograph is a window to a moment in time, but physical prints degrade, fade, and tear. Our professional restoration service carefully reconstructs your cherished images pixel by pixel. We remove scratches, fix cracks, balance faded colors, and can even colorize monochrome photos to make them feel alive today. Combining state-of-the-art AI upscaling with meticulous digital painting, we ensure that the final result looks completely natural while retaining the vintage soul of the original capture.",
     priceInfo: "Restorations start from Rs. 1,499 per photo depending on level of damage.",
     imageUrl: "/images/photo_restoration.png",
+    featuredImage: "/images/photo_restoration.png",
+    images: ["/images/photo_restoration.png"],
+    videoUrl: "",
+    orientation: "landscape",
+    enableUploadPhoto: true,
+    enableChooseFrame: true,
+    enableSelectSize: true,
+    enableMultipleImages: true,
+    enableNavigationButton: true,
     features: [
       "Scratch, crease, and tear removal",
       "Advanced AI colorization of black & white photos",
@@ -59,8 +86,8 @@ export const INITIAL_DEFAULT_SERVICES = [
       "Digital delivery + premium printing options",
       "Water damage and stain reconstruction"
     ],
-    ctaText: "Upload Image for Quote",
-    ctaLink: "/contact",
+    ctaText: "Explore Details",
+    ctaLink: "/services/photo-restoration",
   },
   {
     id: "photo-editing",
@@ -71,6 +98,15 @@ export const INITIAL_DEFAULT_SERVICES = [
     detailedText: "Make every photo a masterpiece before it goes on your wall. Our professional digital editing service covers everything from subtle enhancements to major manipulations. Our skilled artists carefully adjust colors, exposure, and composition to give your photos a cinematic quality. We can remove distracting elements in the background, blend multiple photos, perform high-end skin and portrait retouching, and upscale lower resolution files so they print beautifully at larger sizes.",
     priceInfo: "Edits start from Rs. 1,000 per photo depending on level of retouching.",
     imageUrl: "/images/restoration/child_after.png",
+    featuredImage: "/images/restoration/child_after.png",
+    images: ["/images/restoration/child_after.png"],
+    videoUrl: "",
+    orientation: "landscape",
+    enableUploadPhoto: true,
+    enableChooseFrame: false,
+    enableSelectSize: true,
+    enableMultipleImages: true,
+    enableNavigationButton: true,
     features: [
       "Professional beauty retouching and skin correction",
       "Background replacement and unwanted object removal",
@@ -78,8 +114,8 @@ export const INITIAL_DEFAULT_SERVICES = [
       "High-resolution sharpening and upscaling",
       "Object manipulation and custom creative edits"
     ],
-    ctaText: "Upload Image for Editing",
-    ctaLink: "/contact",
+    ctaText: "Explore Details",
+    ctaLink: "/services/photo-editing",
   },
 ];
 
@@ -99,12 +135,95 @@ export default function AdminServicesPage() {
     detailedText: "",
     priceInfo: "",
     imageUrl: "",
+    featuredImage: "",
+    images: [],
+    videoUrl: "",
+    orientation: "portrait", // portrait | landscape
+    enableUploadPhoto: true,
+    enableChooseFrame: true,
+    enableSelectSize: true,
+    enableMultipleImages: true,
+    enableNavigationButton: true,
     features: [],
     ctaText: "Explore Details",
     ctaLink: "/contact",
   });
 
   const [featureInput, setFeatureInput] = useState("");
+
+  // Cloudinary credentials
+  const cloudinaryCloud = "hpikhwjw";
+  const cloudinaryPreset = "ml_default";
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  // Upload video file directly to Cloudinary so we store a lightweight CDN URL, not a 10MB+ base64 string
+  const handleVideoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    const dataUpload = new FormData();
+    dataUpload.append("file", file);
+    dataUpload.append("upload_preset", cloudinaryPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/video/upload`, {
+        method: "POST",
+        body: dataUpload,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || "Video upload failed");
+      }
+      const result = await res.json();
+      setServiceForm((prev) => ({
+        ...prev,
+        videoUrl: result.secure_url,
+      }));
+      setMessage("✅ Video uploaded successfully!");
+      setTimeout(() => setMessage(""), 4000);
+    } catch (err) {
+      alert(`Video upload failed: ${err.message}`);
+      e.target.value = "";
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  // Upload image files directly to Cloudinary
+  const handleImagesUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploadingImages(true);
+    for (const file of files) {
+      const dataUpload = new FormData();
+      dataUpload.append("file", file);
+      dataUpload.append("upload_preset", cloudinaryPreset);
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`, {
+          method: "POST",
+          body: dataUpload,
+        });
+        if (res.ok) {
+          const result = await res.json();
+          setServiceForm((prev) => {
+            const curr = prev.images || [];
+            return {
+              ...prev,
+              images: [...curr, result.secure_url],
+              featuredImage: prev.featuredImage || result.secure_url,
+              imageUrl: prev.featuredImage || result.secure_url,
+            };
+          });
+        }
+      } catch (err) {
+        console.error("Error uploading image to Cloudinary:", err);
+      }
+    }
+    setUploadingImages(false);
+  };
 
   useEffect(() => {
     const servicesRef = ref(db, "cms_services");
@@ -159,6 +278,9 @@ export default function AdminServicesPage() {
       detailedText: "",
       priceInfo: "",
       imageUrl: "/images/bespoke_framing.png",
+      featuredImage: "/images/bespoke_framing.png",
+      images: ["/images/bespoke_framing.png"],
+      videoUrl: "",
       features: [],
       ctaText: "Explore Details",
       ctaLink: "/contact",
@@ -170,6 +292,11 @@ export default function AdminServicesPage() {
   const openEditModal = (idx) => {
     setEditIndex(idx);
     const item = services[idx];
+    const initialImages = Array.isArray(item.images) && item.images.length > 0
+      ? item.images
+      : (item.imageUrl ? [item.imageUrl] : ["/images/bespoke_framing.png"]);
+    const initialFeatured = item.featuredImage || item.imageUrl || initialImages[0] || "/images/bespoke_framing.png";
+
     setServiceForm({
       title: item.title || "",
       slug: item.slug || "",
@@ -177,10 +304,19 @@ export default function AdminServicesPage() {
       shortDesc: item.shortDesc || "",
       detailedText: item.detailedText || "",
       priceInfo: item.priceInfo || "",
-      imageUrl: item.imageUrl || "/images/bespoke_framing.png",
+      imageUrl: initialFeatured,
+      featuredImage: initialFeatured,
+      images: initialImages,
+      videoUrl: item.videoUrl || "",
+      orientation: item.orientation || "portrait",
+      enableUploadPhoto: item.enableUploadPhoto !== undefined ? !!item.enableUploadPhoto : true,
+      enableChooseFrame: item.enableChooseFrame !== undefined ? !!item.enableChooseFrame : true,
+      enableSelectSize: item.enableSelectSize !== undefined ? !!item.enableSelectSize : true,
+      enableMultipleImages: item.enableMultipleImages !== undefined ? !!item.enableMultipleImages : true,
+      enableNavigationButton: item.enableNavigationButton !== undefined ? !!item.enableNavigationButton : true,
       features: Array.isArray(item.features) ? item.features : [],
       ctaText: item.ctaText || "Explore Details",
-      ctaLink: item.ctaLink || "/contact",
+      ctaLink: item.ctaLink || `/services/${item.slug || ""}`,
     });
     setFeatureInput("");
     setIsModalOpen(true);
@@ -206,13 +342,14 @@ export default function AdminServicesPage() {
     setServiceForm({ ...serviceForm, features: updated });
   };
 
-  const handleModalSave = (e) => {
+  const handleModalSave = async (e) => {
     e.preventDefault();
     const cleanSlug = serviceForm.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || serviceForm.title.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     const updatedItem = {
       ...serviceForm,
       id: cleanSlug,
       slug: cleanSlug,
+      imageUrl: serviceForm.featuredImage || serviceForm.imageUrl,
     };
 
     const updatedList = [...services];
@@ -224,6 +361,15 @@ export default function AdminServicesPage() {
 
     setServices(updatedList);
     setIsModalOpen(false);
+
+    try {
+      await set(ref(db, "cms_services"), updatedList);
+      setMessage("✅ Service saved and published to Firebase!");
+      setTimeout(() => setMessage(""), 4000);
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to save service.");
+    }
   };
 
   if (loading) {
@@ -370,29 +516,276 @@ export default function AdminServicesPage() {
                 />
               </div>
 
+              {/* Main Studio Image Orientation & Display Mode */}
+              <div style={{ background: "rgba(201, 168, 76, 0.05)", border: "1px solid rgba(201, 168, 76, 0.25)", borderRadius: 8, padding: 14 }}>
+                <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 6 }}>
+                  Main Studio Image Mode (Orientation)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      borderRadius: 6,
+                      background: serviceForm.orientation === "portrait" ? "rgba(201, 168, 76, 0.2)" : "var(--surface2)",
+                      border: `1.5px solid ${serviceForm.orientation === "portrait" ? "var(--accent)" : "var(--border)"}`,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      color: "#fff",
+                      fontWeight: serviceForm.orientation === "portrait" ? 700 : 400
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="orientation"
+                      value="portrait"
+                      checked={serviceForm.orientation === "portrait"}
+                      onChange={() => setServiceForm({ ...serviceForm, orientation: "portrait" })}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Portrait (Vertical)</div>
+                      <div style={{ fontSize: 10, color: "var(--text2)" }}>Tall ratio (e.g. Nikkahnama, Mirror)</div>
+                    </div>
+                  </label>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      borderRadius: 6,
+                      background: serviceForm.orientation === "landscape" ? "rgba(201, 168, 76, 0.2)" : "var(--surface2)",
+                      border: `1.5px solid ${serviceForm.orientation === "landscape" ? "var(--accent)" : "var(--border)"}`,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      color: "#fff",
+                      fontWeight: serviceForm.orientation === "landscape" ? 700 : 400
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="orientation"
+                      value="landscape"
+                      checked={serviceForm.orientation === "landscape"}
+                      onChange={() => setServiceForm({ ...serviceForm, orientation: "landscape" })}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Landscape (Horizontal)</div>
+                      <div style={{ fontSize: 10, color: "var(--text2)" }}>Wide ratio (e.g. Photo Restoration)</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Service Components Checklist (Check which options are needed) */}
+              <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>
+                  Interactive Service Page Components (Admin Checklist)
+                </label>
+                <p style={{ fontSize: 11, color: "var(--text2)", margin: "0 0 12px 0" }}>
+                  Select which interactive studio components are required for this service:
+                </p>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#fff", cursor: "pointer", background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <input
+                      type="checkbox"
+                      checked={serviceForm.enableUploadPhoto}
+                      onChange={(e) => setServiceForm({ ...serviceForm, enableUploadPhoto: e.target.checked })}
+                    />
+                    <span><strong>Upload Photo</strong> Button</span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#fff", cursor: "pointer", background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <input
+                      type="checkbox"
+                      checked={serviceForm.enableChooseFrame}
+                      onChange={(e) => setServiceForm({ ...serviceForm, enableChooseFrame: e.target.checked })}
+                    />
+                    <span><strong>Choose Frame</strong> Modal</span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#fff", cursor: "pointer", background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <input
+                      type="checkbox"
+                      checked={serviceForm.enableSelectSize}
+                      onChange={(e) => setServiceForm({ ...serviceForm, enableSelectSize: e.target.checked })}
+                    />
+                    <span><strong>Select Frame Size</strong> Dropdown</span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#fff", cursor: "pointer", background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <input
+                      type="checkbox"
+                      checked={serviceForm.enableMultipleImages}
+                      onChange={(e) => setServiceForm({ ...serviceForm, enableMultipleImages: e.target.checked })}
+                    />
+                    <span><strong>Multiple Photos & Gallery</strong></span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#fff", cursor: "pointer", background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.06)", gridColumn: "1 / -1" }}>
+                    <input
+                      type="checkbox"
+                      checked={serviceForm.enableNavigationButton}
+                      onChange={(e) => setServiceForm({ ...serviceForm, enableNavigationButton: e.target.checked })}
+                    />
+                    <span><strong>Navigation Button</strong> on /services page card (e.g. <em>Explore Details &rarr;</em>)</span>
+                  </label>
+                </div>
+                <div style={{ marginTop: 8, fontSize: 11, color: "var(--accent)", fontStyle: "italic" }}>
+                  * Note: "Add to Cart" button is standard and always included for all services.
+                </div>
+              </div>
+
+              {/* Multiple Photos & Featured Image Management */}
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 6 }}>Select Service Image (Local Computer Storage)</label>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 6 }}>
+                  Service Photos Gallery & Featured Image
+                </label>
+                
+                <div style={{ background: "var(--surface2)", border: "1px dashed var(--border)", borderRadius: 8, padding: 14, marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      disabled={uploadingImages}
+                      onChange={handleImagesUpload}
+                      style={{ background: "var(--surface3, #2A2620)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12, flex: 1 }}
+                    />
+                    {uploadingImages && (
+                      <span style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                        Uploading to Cloud...
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--text2)" }}>
+                    You can select multiple photos at once. Click on any photo to set it as the <strong>Featured Cover Image</strong>.
+                  </span>
+                </div>
+
+                {/* Uploaded Gallery Grid */}
+                {Array.isArray(serviceForm.images) && serviceForm.images.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 10, marginTop: 10 }}>
+                    {serviceForm.images.map((imgUrl, iIdx) => {
+                      const isFeatured = (serviceForm.featuredImage === imgUrl) || (!serviceForm.featuredImage && iIdx === 0);
+                      return (
+                        <div
+                          key={iIdx}
+                          onClick={() => setServiceForm({ ...serviceForm, featuredImage: imgUrl, imageUrl: imgUrl })}
+                          style={{
+                            position: "relative",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: `2px solid ${isFeatured ? "var(--accent)" : "rgba(255,255,255,0.12)"}`,
+                            height: 80,
+                            cursor: "pointer",
+                            boxShadow: isFeatured ? "0 0 10px rgba(201,168,76,0.4)" : "none",
+                            background: "#000",
+                          }}
+                        >
+                          <img src={imgUrl} alt={`Photo ${iIdx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          {isFeatured && (
+                            <span style={{ position: "absolute", top: 2, left: 2, background: "var(--accent)", color: "#000", fontSize: 8, fontWeight: 800, padding: "2px 4px", borderRadius: 4 }}>
+                              FEATURED
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newImages = serviceForm.images.filter((_, idx) => idx !== iIdx);
+                              const newFeatured = isFeatured ? (newImages[0] || "/images/bespoke_framing.png") : serviceForm.featuredImage;
+                              setServiceForm({
+                                ...serviceForm,
+                                images: newImages,
+                                featuredImage: newFeatured,
+                                imageUrl: newFeatured,
+                              });
+                            }}
+                            style={{
+                              position: "absolute",
+                              top: 2,
+                              right: 2,
+                              background: "rgba(255,62,108,0.85)",
+                              color: "#fff",
+                              border: "none",
+                              width: 18,
+                              height: 18,
+                              borderRadius: "50%",
+                              fontSize: 10,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Video Upload & Full Width Dimensions Indicator */}
+              <div style={{ marginTop: 6, background: "rgba(201, 168, 76, 0.05)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: 8, padding: 14 }}>
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>
+                  <span>Service Showcase Video (Playable Full-Width)</span>
+                  <span style={{ fontSize: 10, background: "rgba(201,168,76,0.2)", color: "#dfc38a", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                    Recommended: 1920 × 1080 (16:9) or 1080p MP4
+                  </span>
+                </label>
+                
+                <p style={{ fontSize: 11, color: "var(--text2)", margin: "0 0 10px 0" }}>
+                  Upload an MP4/WebM video or paste a video URL. Video is hosted on Cloudinary CDN for instant smooth streaming.
+                </p>
+
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (evt) => {
-                          setServiceForm({ ...serviceForm, imageUrl: evt.target.result });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    style={{ background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12, flex: 1 }}
+                    accept="video/mp4,video/webm,video/ogg"
+                    disabled={uploadingVideo}
+                    onChange={handleVideoFileChange}
+                    style={{ background: "var(--surface3, #2A2620)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12, flex: 1 }}
                   />
+                  {uploadingVideo && (
+                    <span style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>
+                      Uploading video...
+                    </span>
+                  )}
                 </div>
-                {serviceForm.imageUrl && (
-                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
-                    <img src={serviceForm.imageUrl} alt="Selected Preview" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--accent)" }} />
-                    <span style={{ fontSize: 12, color: "var(--accent)" }}>✓ Local File Selected</span>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Or paste video direct link (e.g. /videos/mirror-showcase.mp4 or https://...)"
+                    value={serviceForm.videoUrl}
+                    onChange={(e) => setServiceForm({ ...serviceForm, videoUrl: e.target.value })}
+                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12 }}
+                  />
+                  {serviceForm.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setServiceForm({ ...serviceForm, videoUrl: "" })}
+                      style={{ background: "rgba(255,62,108,0.2)", border: "1px solid rgba(255,62,108,0.4)", color: "#ff6b8b", padding: "8px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      Clear Video
+                    </button>
+                  )}
+                </div>
+
+                {serviceForm.videoUrl && (
+                  <div style={{ marginTop: 10, borderRadius: 6, overflow: "hidden", border: "1px solid var(--accent)", background: "#000" }}>
+                    <video
+                      src={serviceForm.videoUrl}
+                      controls
+                      style={{ width: "100%", maxHeight: 180, display: "block" }}
+                    />
                   </div>
                 )}
               </div>

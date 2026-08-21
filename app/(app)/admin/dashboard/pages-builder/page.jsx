@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, remove } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 
 export const FONT_FAMILIES = [
@@ -75,19 +75,19 @@ export const SAMPLE_TEMPLATES = [
 ];
 
 export const WIDGET_PALETTE = [
-  { id: "heading", name: "Heading Headline", category: "Typography", icon: "🔤", defaultData: { type: "heading", tag: "h2", text: "Luxury Framing Headline", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "36", fontWeight: "700", textAlign: "center", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.3", letterSpacing: "0", wordSpacing: "0", textShadow: "none", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "paragraph", name: "Text Paragraph", category: "Typography", icon: "📄", defaultData: { type: "paragraph", text: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", fontFamily: "'Inter', sans-serif", textColor: "#E0D7CD", fontSize: "16", fontWeight: "400", textAlign: "left", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.8", letterSpacing: "0", wordSpacing: "0", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "row-2col", name: "2-Column Side-by-Side Row (50/50)", category: "Side-by-Side Layout", icon: "↔️", defaultData: { type: "row-2col", isContainer: true, layout: "2col", colRatio: "1fr 1fr", col1Type: "text", col1Image: "/images/bespoke_framing.png", col1Title: "Left Paragraph Headline", col1Body: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", col2Type: "text", col2Title: "Right Paragraph Headline", col2Body: "Our master woodcraftsmen build every frame to millimeter precision in our studio.", col2ButtonText: "", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", verticalAlign: "center", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "row-3col", name: "3-Column Side-by-Side Row (33/33/33)", category: "Side-by-Side Layout", icon: "📊", defaultData: { type: "row-3col", isContainer: true, layout: "3col", col1Title: "Feature 1", col1Body: "100% Acid-Free Mats", col2Title: "Feature 2", col2Body: "99% UV Glass Protection", col3Title: "Feature 3", col3Body: "Solid Teak & Mahogany Wood", textColor: "#C9A84C", gap: "20", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "image", name: "Image / Photo", category: "Media", icon: "🖼️", defaultData: { type: "image", url: "/images/bespoke_framing.png", caption: "Bespoke Solid Wood Framing", width: "100%", aspectRatio: "auto", objectFit: "cover", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 10px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "video", name: "Video Player", category: "Media", icon: "🎥", defaultData: { type: "video", url: "/videos/reel1.mp4", caption: "Craftsmanship Video Reel", aspectRatio: "16/9", autoPlay: false, loop: false, controls: true, muted: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "12", shadow: "0 12px 30px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "button", name: "Action Button", category: "Interactive", icon: "🔘", defaultData: { type: "button", text: "Explore Collection", link: "/catalog", btnStyle: "solid", iconName: "arrow", iconPos: "right", isFullWidth: false, alignment: "center", fontFamily: "'Inter', sans-serif", fontSize: "14", fontWeight: "700", textColor: "#000000", btnColor: "#C9A84C", hoverBtnColor: "#FFD700", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "auto", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 4px 14px rgba(0,0,0,0.4)", opacity: "1", paddingTop: "14", paddingBottom: "14", paddingLeft: "32", paddingRight: "32", marginTop: "10", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "cta-banner", name: "CTA Callout Banner", category: "Sections", icon: "📢", defaultData: { type: "cta-banner", title: "Custom Framing Order", subtitle: "Speak directly with our studio artisans.", buttonText: "Get Free Quote", buttonLink: "/contact", textColor: "#FFD700", bgGradient: "linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(20,12,6,0.9) 100%)", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "50", paddingBottom: "50", paddingLeft: "10", paddingRight: "10", marginTop: "20", marginBottom: "40", marginLeft: "", marginRight: "" } },
-  { id: "testimonial", name: "Testimonial Card", category: "Social Proof", icon: "⭐", defaultData: { type: "testimonial", name: "Fatima Ali", rating: "5", quote: "The quality of the wood framing and museum glass exceeded all my expectations!", location: "Lahore", textColor: "#C9A84C", avatarUrl: "", avatarShape: "circle", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(28, 15, 7, 0.6)", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201, 168, 76, 0.2)", borderRadius: "12", shadow: "0 8px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "28", paddingBottom: "28", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "faq", name: "FAQ Accordion Item", category: "Information", icon: "❓", defaultData: { type: "faq", question: "Do you ship nationwide across Pakistan?", answer: "Yes! We provide insured nationwide shipping in custom wooden crates.", textColor: "#C9A84C", iconStyle: "plus-minus", initialOpen: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(20, 12, 6, 0.7)", borderStyle: "solid", borderWidth: "1", borderColor: "var(--border)", borderRadius: "8", shadow: "none", opacity: "1", paddingTop: "0", paddingBottom: "0", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "14", marginLeft: "", marginRight: "" } },
-  { id: "pricing", name: "Pricing Card", category: "E-Commerce", icon: "🏷️", defaultData: { type: "pricing", title: "Custom Archival Package", currency: "Rs.", price: "4,500", period: "per frame", ribbonBadge: "MOST POPULAR", buttonText: "Configure Frame", buttonLink: "/customize", textColor: "#C9A84C", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(201, 168, 76, 0.15)", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "32", paddingBottom: "32", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "divider", name: "Divider Line", category: "Layout", icon: "➖", defaultData: { type: "divider", color: "#C9A84C", width: "100%", height: "1", borderStyle: "solid", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "0", paddingRight: "0", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "spacer", name: "Vertical Spacer", category: "Layout", icon: "↕️", defaultData: { type: "spacer", height: "40", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxAlign: "center" } },
+  { id: "heading", name: "Heading Headline", category: "Typography", icon: "H", defaultData: { type: "heading", tag: "h2", text: "Luxury Framing Headline", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "36", fontWeight: "700", textAlign: "center", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.3", letterSpacing: "0", wordSpacing: "0", textShadow: "none", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "paragraph", name: "Text Paragraph", category: "Typography", icon: "¶", defaultData: { type: "paragraph", text: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", fontFamily: "'Inter', sans-serif", textColor: "#E0D7CD", fontSize: "16", fontWeight: "400", textAlign: "left", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.8", letterSpacing: "0", wordSpacing: "0", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "row-2col", name: "2-Column Side-by-Side Row (50/50)", category: "Side-by-Side Layout", icon: "⫽", defaultData: { type: "row-2col", isContainer: true, layout: "2col", colRatio: "1fr 1fr", col1Type: "text", col1Image: "/images/bespoke_framing.png", col1Title: "Left Paragraph Headline", col1Body: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", col2Type: "text", col2Title: "Right Paragraph Headline", col2Body: "Our master woodcraftsmen build every frame to millimeter precision in our studio.", col2ButtonText: "", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", verticalAlign: "center", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "row-3col", name: "3-Column Side-by-Side Row (33/33/33)", category: "Side-by-Side Layout", icon: "⫾", defaultData: { type: "row-3col", isContainer: true, layout: "3col", col1Title: "Feature 1", col1Body: "100% Acid-Free Mats", col2Title: "Feature 2", col2Body: "99% UV Glass Protection", col3Title: "Feature 3", col3Body: "Solid Teak & Mahogany Wood", textColor: "#C9A84C", gap: "20", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "image", name: "Image / Photo", category: "Media", icon: "▢", defaultData: { type: "image", url: "/images/bespoke_framing.png", caption: "Bespoke Solid Wood Framing", width: "100%", aspectRatio: "auto", objectFit: "cover", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 10px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
+  { id: "video", name: "Video Player", category: "Media", icon: "▶", defaultData: { type: "video", url: "/videos/reel1.mp4", caption: "Craftsmanship Video Reel", aspectRatio: "16/9", autoPlay: false, loop: false, controls: true, muted: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "12", shadow: "0 12px 30px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "video-reels", name: "Instagram Reels Gallery", category: "Media", icon: "❖", defaultData: { type: "video-reels", sectionTitle: "Our Work in Motion", sectionSubtitle: "See how our customers style their spaces.", layout: "carousel", columns: "2", textColor: "#C9A84C", reels: [{ id: "r_1", instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/", caption: "Behind the scenes at Yaadein Studio", featured: true }], positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "cta-banner", name: "CTA Callout Banner", category: "Sections", icon: "◈", defaultData: { type: "cta-banner", title: "Custom Framing Order", subtitle: "Speak directly with our studio artisans.", buttonText: "Get Free Quote", buttonLink: "/contact", textColor: "#FFD700", bgGradient: "linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(20,12,6,0.9) 100%)", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "50", paddingBottom: "50", paddingLeft: "10", paddingRight: "10", marginTop: "20", marginBottom: "40", marginLeft: "", marginRight: "" } },
+  { id: "testimonial", name: "Testimonial Card", category: "Social Proof", icon: "★", defaultData: { type: "testimonial", name: "Fatima Ali", rating: "5", quote: "The quality of the wood framing and museum glass exceeded all my expectations!", location: "Lahore", textColor: "#C9A84C", avatarUrl: "", avatarShape: "circle", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(28, 15, 7, 0.6)", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201, 168, 76, 0.2)", borderRadius: "12", shadow: "0 8px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "28", paddingBottom: "28", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "faq", name: "FAQ Accordion Item", category: "Information", icon: "❖", defaultData: { type: "faq", question: "Do you ship nationwide across Pakistan?", answer: "Yes! We provide insured nationwide shipping in custom wooden crates.", textColor: "#C9A84C", iconStyle: "plus-minus", initialOpen: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(20, 12, 6, 0.7)", borderStyle: "solid", borderWidth: "1", borderColor: "var(--border)", borderRadius: "8", shadow: "none", opacity: "1", paddingTop: "0", paddingBottom: "0", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "14", marginLeft: "", marginRight: "" } },
+  { id: "pricing", name: "Pricing Card", category: "E-Commerce", icon: "◇", defaultData: { type: "pricing", title: "Custom Archival Package", currency: "Rs.", price: "4,500", period: "per frame", ribbonBadge: "MOST POPULAR", buttonText: "Configure Frame", buttonLink: "/customize", textColor: "#C9A84C", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(201, 168, 76, 0.15)", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "32", paddingBottom: "32", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "divider", name: "Divider Line", category: "Layout", icon: "―", defaultData: { type: "divider", color: "#C9A84C", width: "100%", height: "1", borderStyle: "solid", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "0", paddingRight: "0", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
+  { id: "spacer", name: "Vertical Spacer", category: "Layout", icon: "↕", defaultData: { type: "spacer", height: "40", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxAlign: "center" } },
 ];
 
 export default function ElementorPageBuilder() {
@@ -124,7 +124,7 @@ export default function ElementorPageBuilder() {
   const [isMovingFree, setIsMovingFree] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0, initialWidth: 0, initialHeight: 0, initialX: 0, initialY: 0 });
 
-  // Sync sample templates & load pages from Firebase
+  // Load pages from Firebase
   useEffect(() => {
     const pagesRef = ref(db, "cms_pages");
     const unsub = onValue(pagesRef, (snapshot) => {
@@ -132,15 +132,6 @@ export default function ElementorPageBuilder() {
       if (val) {
         const list = Object.values(val);
         setPagesList(list);
-
-        let hasMergedMissing = false;
-        const currentSlugs = list.map(p => p.slug);
-        SAMPLE_TEMPLATES.forEach(tpl => {
-          if (!currentSlugs.includes(tpl.slug)) {
-            hasMergedMissing = true;
-            set(ref(db, `cms_pages/${tpl.slug}`), tpl).catch(console.error);
-          }
-        });
 
         const activePage = list.find(p => p.slug === selectedSlug);
         if (activePage) {
@@ -152,15 +143,79 @@ export default function ElementorPageBuilder() {
           setPageBlocks(Array.isArray(list[0].blocks) ? list[0].blocks : []);
         }
       } else {
-        SAMPLE_TEMPLATES.forEach(tpl => {
-          set(ref(db, `cms_pages/${tpl.slug}`), tpl).catch(console.error);
-        });
-        setPagesList(SAMPLE_TEMPLATES);
-        setPageBlocks(SAMPLE_TEMPLATES[0].blocks);
+        setPagesList([]);
+        setPageBlocks([]);
       }
     });
     return () => unsub();
   }, [selectedSlug]);
+
+  const [viewMode, setViewMode] = useState("list"); // "list" (Dashboard) or "editor"
+  const [pagesSearch, setPagesSearch] = useState("");
+  const [pageToDelete, setPageToDelete] = useState(null); // { slug, title }
+
+  const handleOpenEditor = (slug) => {
+    setSelectedSlug(slug);
+    const found = pagesList.find(p => p.slug === slug);
+    if (found) {
+      setPageTitle(found.title);
+      setPageBlocks(Array.isArray(found.blocks) ? found.blocks : []);
+    }
+    setSelectedIndex(null);
+    setViewMode("editor");
+  };
+
+  const handlePromptDelete = (slug, title, e) => {
+    if (e) e.stopPropagation();
+    setPageToDelete({ slug, title });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pageToDelete) return;
+    const { slug, title } = pageToDelete;
+    try {
+      setPagesList(prev => prev.filter(p => p.slug !== slug));
+      await remove(ref(db, `cms_pages/${slug}`));
+      setMessage(`Page "${title}" (/${slug}) deleted successfully.`);
+      setTimeout(() => setMessage(""), 3500);
+      if (selectedSlug === slug) {
+        const remaining = pagesList.filter(p => p.slug !== slug);
+        if (remaining.length > 0) {
+          setSelectedSlug(remaining[0].slug);
+          setPageTitle(remaining[0].title);
+          setPageBlocks(Array.isArray(remaining[0].blocks) ? remaining[0].blocks : []);
+        } else {
+          setSelectedSlug("");
+          setPageTitle("");
+          setPageBlocks([]);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to delete page.");
+    } finally {
+      setPageToDelete(null);
+    }
+  };
+
+  const handleDuplicatePage = async (page, e) => {
+    e.stopPropagation();
+    const newSlug = `${page.slug}-copy-${Date.now().toString().slice(-4)}`;
+    const newPageObj = {
+      title: `${page.title} (Copy)`,
+      slug: newSlug,
+      blocks: page.blocks || [],
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await set(ref(db, `cms_pages/${newSlug}`), newPageObj);
+      setMessage(`Duplicated to "/${newSlug}"`);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to duplicate page.");
+    }
+  };
 
   const handleSelectPage = (slug) => {
     setSelectedSlug(slug);
@@ -202,11 +257,12 @@ export default function ElementorPageBuilder() {
       setShowCreatePageModal(false);
       setNewPageTitle("");
       setNewPageSlug("");
-      setMessage(`✅ New Custom Page "/${cleanSlug}" created successfully!`);
+      setViewMode("editor");
+      setMessage(`New Custom Page "/${cleanSlug}" created!`);
       setTimeout(() => setMessage(""), 4000);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to create new page.");
+      setMessage("Failed to create new page.");
     }
   };
 
@@ -432,6 +488,380 @@ export default function ElementorPageBuilder() {
 
   const selectedBlock = selectedIndex !== null ? pageBlocks[selectedIndex] : null;
 
+  const filteredPages = pagesList.filter(p =>
+    (p.title || "").toLowerCase().includes(pagesSearch.toLowerCase()) ||
+    (p.slug || "").toLowerCase().includes(pagesSearch.toLowerCase())
+  );
+
+  if (viewMode === "list") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0F0D0B", color: "#F5F0E8", padding: "32px", fontFamily: "'DM Sans', sans-serif" }}>
+        {/* Header Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 24, color: "var(--accent)" }}>▤</span>
+              <h1 style={{ fontFamily: "var(--font-serif, 'DM Serif Display')", fontSize: 28, color: "#F5F0E8", margin: 0 }}>
+                Pages & CMS Builder
+              </h1>
+              <span style={{ background: "rgba(201, 168, 76, 0.15)", border: "1px solid var(--accent)", color: "var(--accent)", padding: "2px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                {pagesList.length} Pages
+              </span>
+            </div>
+            <p style={{ color: "var(--text2, #A8A08C)", fontSize: 14, margin: 0 }}>
+              Manage all custom dynamic pages. Click <strong>Edit in Builder</strong> to customize blocks, typography, layouts, and video reels.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                color: "#FFF",
+                padding: "10px 18px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>▤</span> Sample Templates
+            </button>
+
+            <button
+              onClick={() => setShowCreatePageModal(true)}
+              style={{
+                background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
+                color: "#000",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 22px",
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(201, 168, 76, 0.35)",
+              }}
+            >
+              + Create New Page
+            </button>
+          </div>
+        </div>
+
+        {message && (
+          <div style={{ background: "rgba(201, 168, 76, 0.15)", border: "1px solid var(--accent)", color: "var(--accent)", padding: "10px 20px", borderRadius: 8, marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
+            {message}
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div style={{ marginBottom: 24, maxWidth: 400 }}>
+          <input
+            type="text"
+            placeholder="Search pages by title or slug..."
+            value={pagesSearch}
+            onChange={(e) => setPagesSearch(e.target.value)}
+            style={{
+              width: "100%",
+              background: "var(--surface, #171512)",
+              border: "1px solid var(--border2, rgba(255,255,255,0.12))",
+              color: "#FFF",
+              padding: "10px 14px",
+              borderRadius: 8,
+              fontSize: 13,
+            }}
+          />
+        </div>
+
+        {/* Pages Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 20 }}>
+          {filteredPages.map((page) => {
+            const blocksCount = Array.isArray(page.blocks) ? page.blocks.length : (Array.isArray(page.layout) ? page.layout.length : 0);
+            return (
+              <div
+                key={page.slug}
+                style={{
+                  background: "var(--surface, #171512)",
+                  border: "1px solid var(--border, rgba(255,255,255,0.06))",
+                  borderRadius: 12,
+                  padding: 22,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  transition: "all 0.25s ease",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <h3 style={{ fontSize: 17, color: "#FFF", fontWeight: 700, margin: 0 }}>
+                      {page.title}
+                    </h3>
+                    <span style={{ fontSize: 11, background: "rgba(201,168,76,0.12)", color: "var(--accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 600 }}>
+                      {blocksCount} block{blocksCount !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
+                    <span style={{ fontSize: 12, color: "var(--text2, #A8A08C)", fontFamily: "monospace" }}>
+                      /{page.slug}
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: 12, color: "var(--text2, #A8A08C)", margin: "0 0 20px 0", lineHeight: 1.5 }}>
+                    {page.createdAt ? `Created ${new Date(page.createdAt).toLocaleDateString()}` : (page.updatedAt ? `Updated ${new Date(page.updatedAt).toLocaleDateString()}` : "Custom studio page template")}
+                  </p>
+                </div>
+
+                {/* Operations Footer */}
+                <div style={{ display: "flex", gap: 8, borderTop: "1px solid var(--border, rgba(255,255,255,0.06))", paddingTop: 14 }}>
+                  <button
+                    onClick={() => handleOpenEditor(page.slug)}
+                    style={{
+                      flex: 1,
+                      background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
+                      color: "#000",
+                      border: "none",
+                      padding: "8px 0",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Edit in Builder
+                  </button>
+
+                  <a
+                    href={`/${page.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      background: "var(--surface2, #211E1A)",
+                      border: "1px solid var(--border2, rgba(255,255,255,0.12))",
+                      color: "#FFF",
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    ↗ View
+                  </a>
+
+                  <button
+                    onClick={(e) => handleDuplicatePage(page, e)}
+                    title="Duplicate Page"
+                    style={{
+                      background: "var(--surface2, #211E1A)",
+                      border: "1px solid var(--border2, rgba(255,255,255,0.12))",
+                      color: "var(--text2)",
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ⎘
+                  </button>
+
+                  <button
+                    onClick={(e) => handlePromptDelete(page.slug, page.title, e)}
+                    title="Delete Page"
+                    style={{
+                      background: "rgba(255,62,108,0.12)",
+                      border: "1px solid #FF3E6C",
+                      color: "#FF3E6C",
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Custom Confirmation Modal for Deletion */}
+        {pageToDelete && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 4000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "#171512", border: "1px solid rgba(255,62,108,0.4)", borderRadius: 16, padding: "28px 32px", maxWidth: 440, width: "100%", textAlign: "center", boxShadow: "0 20px 50px rgba(0,0,0,0.9)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,62,108,0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 16px" }}>
+                ✕
+              </div>
+              
+              <h3 style={{ fontSize: 20, color: "#FFF", fontWeight: 700, margin: "0 0 8px 0" }}>
+                Delete Page?
+              </h3>
+              
+              <p style={{ fontSize: 14, color: "var(--text2, #A8A08C)", lineHeight: 1.5, margin: "0 0 24px 0" }}>
+                Are you sure you want to delete <strong style={{ color: "#FFF" }}>"{pageToDelete.title}"</strong> (<code style={{ color: "var(--accent)", fontSize: 12 }}>/{pageToDelete.slug}</code>)? This action cannot be undone.
+              </p>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button
+                  onClick={() => setPageToDelete(null)}
+                  style={{
+                    flex: 1,
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    color: "#FFF",
+                    padding: "10px 18px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleConfirmDelete}
+                  style={{
+                    flex: 1,
+                    background: "linear-gradient(135deg, #FF3E6C 0%, #E60039 100%)",
+                    border: "none",
+                    color: "#FFF",
+                    padding: "10px 18px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 14px rgba(255,62,108,0.4)",
+                  }}
+                >
+                  Yes, Delete Page
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Page Modal */}
+        {showCreatePageModal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "var(--surface, #171512)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 16, padding: 30, maxWidth: 500, width: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <h2 style={{ fontSize: 20, color: "var(--accent)", fontWeight: 700, margin: 0 }}>Create New Custom Page</h2>
+                <button onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
+              </div>
+
+              <form onSubmit={handleCreateNewPage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>Page Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Wedding Framing Guide"
+                    value={newPageTitle}
+                    onChange={(e) => {
+                      setNewPageTitle(e.target.value);
+                      if (!newPageSlug) {
+                        setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
+                      }
+                    }}
+                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>URL Slug (e.g. /wedding-framing-guide)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="wedding-framing-guide"
+                    value={newPageSlug}
+                    onChange={(e) => setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13, fontFamily: "monospace" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>Initial Preset Template</label>
+                  <select
+                    value={newPagePreset}
+                    onChange={(e) => setNewPagePreset(e.target.value)}
+                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
+                  >
+                    <option value="blank">Blank Canvas (Empty)</option>
+                    {SAMPLE_TEMPLATES.map(t => (
+                      <option key={t.id} value={t.id}>{t.title} ({t.category})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
+                  <button type="button" onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "var(--text2, #A8A08C)", padding: "10px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                  <button type="submit" style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    Create & Launch Editor
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Templates Importer Modal */}
+        {showTemplateModal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "var(--surface, #171512)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 16, padding: 30, maxWidth: 840, width: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ fontSize: 22, color: "var(--accent)", fontWeight: 700, margin: 0 }}>Load Sample Template</h2>
+                  <p style={{ fontSize: 13, color: "var(--text2, #A8A08C)", marginTop: 4 }}>Select a pre-designed luxury layout template to open in editor.</p>
+                </div>
+                <button onClick={() => setShowTemplateModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
+                {SAMPLE_TEMPLATES.map((tpl) => (
+                  <div key={tpl.id} style={{ background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 20 }}>▤</span>
+                        <div>
+                          <h3 style={{ fontSize: 16, color: "#fff", fontWeight: 700, margin: 0 }}>{tpl.title}</h3>
+                          <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>{tpl.category}</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--text2, #A8A08C)", margin: "10px 0 16px" }}>
+                        Includes {tpl.blocks.length} pre-formatted layout blocks.
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        handleImportTemplate(tpl);
+                        setViewMode("editor");
+                      }}
+                      style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}
+                    >
+                      Import & Edit Template
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       onMouseMove={handleMouseMoveGlobal}
@@ -455,25 +885,25 @@ export default function ElementorPageBuilder() {
       }}>
         {/* LEFT GROUP */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <a
-            href="/admin/dashboard"
+          <button
+            onClick={() => setViewMode("list")}
             style={{
-              color: "var(--text2)",
-              textDecoration: "none",
+              color: "var(--accent)",
+              border: "1px solid var(--accent)",
               fontSize: 13,
               display: "flex",
               alignItems: "center",
               gap: 6,
-              background: "rgba(255, 255, 255, 0.05)",
+              background: "rgba(201, 168, 76, 0.1)",
               padding: "8px 16px",
               borderRadius: "20px",
-              border: "1px solid var(--border)",
-              fontWeight: 600,
+              fontWeight: 700,
+              cursor: "pointer",
               transition: "all 0.2s ease"
             }}
           >
-            ← Admin
-          </a>
+            ← All Pages
+          </button>
 
           <button
             onClick={() => setLeftOpen(!leftOpen)}
@@ -492,7 +922,7 @@ export default function ElementorPageBuilder() {
               transition: "all 0.2s ease"
             }}
           >
-            <span>🎨</span> {leftOpen ? "Hide Palette" : "Show Palette"}
+            <span>❖</span> {leftOpen ? "Hide Palette" : "Show Palette"}
           </button>
         </div>
 
@@ -523,7 +953,7 @@ export default function ElementorPageBuilder() {
             }}
           >
             <option value="__create_new__" style={{ background: "#1C150C", color: "var(--accent)", fontWeight: 700 }}>
-              ➕ Create New Custom Page...
+              + Create New Custom Page...
             </option>
             {pagesList.map(p => (
               <option key={p.slug} value={p.slug} style={{ background: "#110D09", color: "#FFF" }}>
@@ -568,7 +998,7 @@ export default function ElementorPageBuilder() {
               gap: 6
             }}
           >
-            📚 Templates
+            <span>▤</span> Templates
           </button>
 
           <a
@@ -589,7 +1019,7 @@ export default function ElementorPageBuilder() {
               gap: 6
             }}
           >
-            👁️ Live Page
+            <span>↗</span> Live Page
           </a>
 
           <button
@@ -608,7 +1038,7 @@ export default function ElementorPageBuilder() {
               gap: 6
             }}
           >
-            ⚙️ {rightOpen ? "Hide Inspector" : "Inspector"}
+            <span>⚙</span> {rightOpen ? "Hide Inspector" : "Inspector"}
           </button>
 
           <button
@@ -627,7 +1057,7 @@ export default function ElementorPageBuilder() {
               letterSpacing: "0.03em"
             }}
           >
-            {saving ? "Publishing..." : "💾 Save Layout"}
+            {saving ? "Publishing..." : "Save Layout"}
           </button>
         </div>
       </header>
@@ -646,7 +1076,7 @@ export default function ElementorPageBuilder() {
           <aside style={{ width: "300px", minWidth: "300px", background: "#0A0805", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.3s ease" }}>
             <div style={{ padding: 16, borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--accent)", margin: 0, fontWeight: 700 }}>
-                🎥 Widgets Palette
+                Widgets Palette
               </h3>
               <button onClick={() => setLeftOpen(false)} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14 }}>◀</button>
             </div>
@@ -658,7 +1088,7 @@ export default function ElementorPageBuilder() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ width: "100%", background: "#14100B", border: "1px solid var(--border2)", color: "#FFF", padding: "8px 12px", borderRadius: 6, fontSize: 12 }}
               />
-              <span style={{ fontSize: 10, color: "var(--text2)", display: "block", marginTop: 4 }}>💡 Click or Drag & Drop widgets onto canvas</span>
+              <span style={{ fontSize: 10, color: "var(--text2)", display: "block", marginTop: 4 }}>Click or Drag & Drop widgets onto canvas</span>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -748,11 +1178,61 @@ export default function ElementorPageBuilder() {
               }
             ` }} />
 
-            {/* Signature Fixed Header Preview */}
-            <div style={{ borderBottom: "1px dashed var(--accent)", paddingBottom: 24, marginBottom: 40, textAlign: "center", opacity: 0.85, position: "relative", zIndex: 2 }}>
-              <span style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent)" }}>Yaadein Header Preview</span>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "#FFF", margin: "8px 0" }}>{pageTitle}</h2>
-              <span style={{ fontSize: 12, color: "var(--text2)" }}>💡 Studio Lamp Header Fixed Across All Pages</span>
+            {/* Authentic Yaadein Suspended Brass Picture Lamp Hero Banner Preview */}
+            <div style={{
+              position: "relative",
+              padding: "70px 20px 40px",
+              background: "linear-gradient(to bottom, #14110E 0%, #080605 100%)",
+              border: "1px solid var(--border)",
+              borderRadius: "14px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              marginBottom: 40,
+              overflow: "hidden",
+              zIndex: 2,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.6)"
+            }}>
+              {/* Suspended Lamp Graphics */}
+              <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", width: 240, marginBottom: 15, zIndex: 20 }}>
+                {/* Rod */}
+                <div style={{ width: 4, height: 60, background: "linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d)", boxShadow: "1px 0 3px rgba(0,0,0,0.4)" }} />
+                {/* Mount */}
+                <div style={{ width: 28, height: 14, background: "linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b)", border: "1px solid #1a1205", borderRadius: 2 }} />
+                {/* Arm */}
+                <div style={{ width: 5, height: 32, background: "linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d)" }} />
+                {/* Head */}
+                <div style={{ width: 280, height: 18, background: "linear-gradient(to bottom, #362710 0%, #8f723b 25%, #dfc38a 45%, #fae7b5 55%, #8f723b 75%, #362710 100%)", border: "1px solid #1a1205", borderRadius: 10, position: "relative", boxShadow: "0 6px 14px rgba(0,0,0,0.6)" }}>
+                  {/* Bulb */}
+                  <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 3, background: "#fff", borderRadius: 2, boxShadow: "0 0 10px 3px #fae7b5, 0 0 20px 6px #fae7b5" }} />
+                </div>
+                {/* Ambient Light Beam Glow */}
+                <div style={{ position: "absolute", top: 110, left: "50%", transform: "translateX(-50%)", width: 450, height: 300, background: "radial-gradient(ellipse at top, rgba(255, 238, 180, 0.28) 0%, rgba(255, 238, 180, 0.1) 40%, transparent 70%)", filter: "blur(20px)", pointerEvents: "none", zIndex: 5 }} />
+              </div>
+
+              <div style={{ position: "relative", zIndex: 10 }}>
+                <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent)", fontWeight: 700 }}>
+                  Yaadein Studio Page
+                </span>
+                <h1 style={{ fontFamily: "var(--font-display, 'Cinzel', serif)", fontSize: 36, color: "#FFF", margin: "8px 0 6px" }}>
+                  {pageTitle}
+                </h1>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--text2)", maxWidth: 550, margin: "0 auto", lineHeight: 1.6 }}>
+                  Custom page layout built inside Yaadein Elementor Studio.
+                </p>
+              </div>
+
+              {/* Studio Light Switch Pill */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(20, 15, 10, 0.85)", border: "1px solid rgba(201, 168, 76, 0.3)", padding: "6px 16px", borderRadius: 25, zIndex: 10 }}>
+                <span style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent)", textTransform: "uppercase", fontWeight: 700 }}>
+                  Studio Light
+                </span>
+                <div style={{ width: 36, height: 18, background: "var(--accent)", borderRadius: 10, position: "relative" }}>
+                  <div style={{ width: 14, height: 14, background: "#000", borderRadius: "50%", position: "absolute", top: 2, right: 2 }} />
+                </div>
+              </div>
             </div>
 
             {/* Dropped Layout Blocks */}
@@ -994,6 +1474,58 @@ export default function ElementorPageBuilder() {
                       </div>
                     )}
 
+                    {block.type === "video-reels" && (() => {
+                      const reelsList = Array.isArray(block.reels) ? block.reels : [];
+                      const isCarousel = block.layout === "carousel";
+                      const cols = parseInt(block.columns || "2");
+                      return (
+                        <div style={{ background: "rgba(20, 12, 6, 0.5)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
+                          <div style={{ textAlign: "center", marginBottom: 16 }}>
+                            <span style={{ fontSize: 10, color: textColor, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{block.sectionTitle || "Our Work in Motion"}</span>
+                            {block.sectionSubtitle && <p style={{ fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>{block.sectionSubtitle}</p>}
+                          </div>
+                          
+                          {isCarousel ? (
+                            <div style={{ display: "flex", gap: 12, overflow: "hidden", justifyContent: reelsList.length <= 3 ? "center" : "flex-start" }}>
+                              {reelsList.map((reel, rIdx) => (
+                                <div key={reel.id || rIdx} style={{ flex: "0 0 160px", background: "#000", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)", position: "relative", height: 220, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 8, textAlign: "center" }}>
+                                  <span style={{ fontSize: 18, color: "var(--accent)" }}>❖</span>
+                                  <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, marginTop: 4 }}>Instagram Reel</span>
+                                  <span style={{ fontSize: 9, color: "var(--text2)", maxWidth: "100%", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginTop: 2, display: "block" }}>{reel.instagramUrl || "No URL"}</span>
+                                  {reel.featured && (
+                                    <span style={{ position: "absolute", top: 6, right: 6, background: "var(--accent)", color: "#000", fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>FEATURED</span>
+                                  )}
+                                  {reel.caption && (
+                                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.85)", padding: "4px 6px", fontSize: 8, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{reel.caption}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, justifyContent: "center" }}>
+                              {reelsList.map((reel, rIdx) => (
+                                <div key={reel.id || rIdx} style={{ background: "#000", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)", position: "relative", minHeight: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 8, textAlign: "center" }}>
+                                  <span style={{ fontSize: 18, color: "var(--accent)" }}>❖</span>
+                                  <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, marginTop: 4 }}>Instagram Reel</span>
+                                  <span style={{ fontSize: 9, color: "var(--text2)", maxWidth: "90%", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginTop: 2, display: "block" }}>{reel.instagramUrl || "No URL"}</span>
+                                  {reel.featured && (
+                                    <span style={{ position: "absolute", top: 6, right: 6, background: "var(--accent)", color: "#000", fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>FEATURED</span>
+                                  )}
+                                  {reel.caption && (
+                                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.85)", padding: "4px 6px", fontSize: 8, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{reel.caption}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, color: "var(--accent)", fontWeight: 600 }}>
+                            {reelsList.length} Reel{reelsList.length !== 1 ? "s" : ""} • {isCarousel ? "Carousel (Horizontal Row with Arrow Navigation)" : `Grid Layout (${cols} Columns)`}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                   </div>
                 );
               })
@@ -1142,6 +1674,147 @@ export default function ElementorPageBuilder() {
                         </>
                       )}
 
+                      {selectedBlock.type === "video-reels" && (() => {
+                        const reelsList = Array.isArray(selectedBlock.reels) ? selectedBlock.reels : [];
+                        const isCarousel = (selectedBlock.layout || "carousel") === "carousel";
+
+                        const updateReelField = (rIdx, field, value) => {
+                          const updated = [...reelsList];
+                          updated[rIdx] = { ...updated[rIdx], [field]: value };
+                          handleUpdateSelectedBlock("reels", updated);
+                        };
+
+                        const addReel = () => {
+                          const updated = [...reelsList, { id: `r_${Date.now()}`, instagramUrl: "", caption: "", featured: false }];
+                          handleUpdateSelectedBlock("reels", updated);
+                        };
+
+                        const deleteReel = (rIdx) => {
+                          handleUpdateSelectedBlock("reels", reelsList.filter((_, i) => i !== rIdx));
+                        };
+
+                        const moveReel = (rIdx, delta) => {
+                          const tgt = rIdx + delta;
+                          if (tgt < 0 || tgt >= reelsList.length) return;
+                          const updated = [...reelsList];
+                          [updated[rIdx], updated[tgt]] = [updated[tgt], updated[rIdx]];
+                          handleUpdateSelectedBlock("reels", updated);
+                        };
+
+                        return (
+                          <>
+                            {/* Section Header */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Section Title</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.sectionTitle || ""}
+                                onChange={(e) => handleUpdateSelectedBlock("sectionTitle", e.target.value)}
+                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Section Subtitle</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.sectionSubtitle || ""}
+                                onChange={(e) => handleUpdateSelectedBlock("sectionSubtitle", e.target.value)}
+                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                              />
+                            </div>
+
+                            {/* Layout & Columns */}
+                            <div style={{ display: "grid", gridTemplateColumns: isCarousel ? "1fr" : "1fr 1fr", gap: 10 }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Layout Mode</label>
+                                <select
+                                  value={selectedBlock.layout || "carousel"}
+                                  onChange={(e) => handleUpdateSelectedBlock("layout", e.target.value)}
+                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                                >
+                                  <option value="carousel">Horizontal Carousel (Scroll Buttons)</option>
+                                  <option value="grid">Fixed Column Grid</option>
+                                </select>
+                              </div>
+                              {!isCarousel && (
+                                <div>
+                                  <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Grid Columns</label>
+                                  <select
+                                    value={selectedBlock.columns || "2"}
+                                    onChange={(e) => handleUpdateSelectedBlock("columns", e.target.value)}
+                                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
+                                  >
+                                    <option value="1">1 Column</option>
+                                    <option value="2">2 Columns</option>
+                                    <option value="3">3 Columns</option>
+                                    <option value="4">4 Columns</option>
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Reels CRUD List */}
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>Instagram Reels ({reelsList.length})</span>
+                                <button
+                                  onClick={addReel}
+                                  style={{ background: "var(--accent)", color: "#000", border: "none", padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                                >
+                                  + Add Reel
+                                </button>
+                              </div>
+
+                              {reelsList.map((reel, rIdx) => (
+                                <div key={reel.id || rIdx} style={{ background: "rgba(201,168,76,0.08)", border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                    <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>Reel #{rIdx + 1}</span>
+                                    <div style={{ display: "flex", gap: 4 }}>
+                                      <button onClick={() => moveReel(rIdx, -1)} disabled={rIdx === 0} style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "2px 6px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>▲</button>
+                                      <button onClick={() => moveReel(rIdx, 1)} disabled={rIdx === reelsList.length - 1} style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "2px 6px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>▼</button>
+                                      <button onClick={() => deleteReel(rIdx)} style={{ background: "rgba(255,62,108,0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "2px 8px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>✕</button>
+                                    </div>
+                                  </div>
+
+                                  {/* Link Input */}
+                                  <div style={{ marginBottom: 6 }}>
+                                    <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Instagram Reel URL</label>
+                                    <input
+                                      type="text"
+                                      placeholder="https://www.instagram.com/reel/..."
+                                      value={reel.instagramUrl || ""}
+                                      onChange={(e) => updateReelField(rIdx, "instagramUrl", e.target.value)}
+                                      style={{ width: "100%", background: "#0A0805", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11, fontFamily: "monospace" }}
+                                    />
+                                  </div>
+
+                                  {/* Caption */}
+                                  <div style={{ marginBottom: 6 }}>
+                                    <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Caption (Optional)</label>
+                                    <input
+                                      type="text"
+                                      placeholder="Behind the scenes at Yaadein Studio..."
+                                      value={reel.caption || ""}
+                                      onChange={(e) => updateReelField(rIdx, "caption", e.target.value)}
+                                      style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11 }}
+                                    />
+                                  </div>
+
+                                  {/* Featured Toggle */}
+                                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--accent)", fontWeight: 600, cursor: "pointer" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={!!reel.featured}
+                                      onChange={(e) => updateReelField(rIdx, "featured", e.target.checked)}
+                                    />
+                                    Mark as Featured
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
                       {selectedBlock.type === "button" && (
                         <>
                           <div>

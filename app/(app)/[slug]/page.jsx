@@ -6,6 +6,20 @@ import Footer from "../components/Footer";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../lib/firebase";
 
+const normalizeIgUrl = (u) => {
+  if (!u) return "";
+  let clean = u.trim();
+  if (!clean.endsWith("/")) clean += "/";
+  return clean;
+};
+
+const getIgEmbedUrl = (u) => {
+  if (!u) return "";
+  const norm = normalizeIgUrl(u);
+  if (norm.includes("/embed")) return norm;
+  return `${norm}embed/?cr=1&v=14&rd=`;
+};
+
 const SAMPLE_FALLBACK_PAGES = {
   "art-journal-gallery-walls": {
     title: "Editorial Blog & Art Journal Layout",
@@ -52,11 +66,6 @@ export default function CustomRootPage({ params }) {
           if (val) {
             setPageData(val);
             setNotFound(false);
-          } else if (SAMPLE_FALLBACK_PAGES[slug]) {
-            const fallbackItem = SAMPLE_FALLBACK_PAGES[slug];
-            setPageData(fallbackItem);
-            setNotFound(false);
-            set(ref(db, `cms_pages/${slug}`), fallbackItem).catch(console.error);
           } else {
             setNotFound(true);
           }
@@ -331,6 +340,34 @@ export default function CustomRootPage({ params }) {
         .light-switch-btn.on .light-switch-knob {
           transform: translateX(22px);
           background: #000;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .reel-nav-btn {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(20, 15, 10, 0.85);
+          border: 1px solid var(--accent, #C9A84C);
+          color: var(--accent, #C9A84C);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          font-size: 16px;
+        }
+        .reel-nav-btn:hover {
+          background: var(--accent, #C9A84C);
+          color: #000;
+          transform: scale(1.08);
         }
 
         @media (max-width: 768px) {
@@ -621,7 +658,200 @@ export default function CustomRootPage({ params }) {
               );
             }
 
-            // 12. DIVIDER LINE
+            // 12. VIDEO REELS GALLERY
+            if (bType === "video-reels" || bType === "reels") {
+              const reelsList = Array.isArray(block.reels) ? block.reels : [];
+              const cols = parseInt(block.columns || "2");
+              const isCarousel = (block.layout || "carousel") === "carousel";
+              const carouselContainerId = `reels-carousel-${idx}`;
+
+              const scrollLeft = () => {
+                const el = document.getElementById(carouselContainerId);
+                if (el) el.scrollBy({ left: -360, behavior: "smooth" });
+              };
+
+              const scrollRight = () => {
+                const el = document.getElementById(carouselContainerId);
+                if (el) el.scrollBy({ left: 360, behavior: "smooth" });
+              };
+
+              return (
+                <div key={idx} style={{ ...boxWrapperStyles, width: "100%", margin: `${mTop} auto ${mBottom}` }}>
+                  {(block.sectionTitle || block.sectionSubtitle) && (
+                    <div style={{ textAlign: "center", marginBottom: "32px" }}>
+                      {block.sectionTitle && (
+                        <h2 style={{ fontFamily, fontSize: `${block.fontSize || 32}px`, color: headingColor, fontWeight: block.fontWeight || "700", textTransform, letterSpacing, lineHeight, textShadow, margin: "0 0 10px 0" }}>
+                          {block.sectionTitle}
+                        </h2>
+                      )}
+                      {block.sectionSubtitle && (
+                        <p style={{ fontFamily: "var(--font-serif)", fontSize: "15px", color: "var(--text2)", maxWidth: "600px", margin: "0 auto" }}>
+                          {block.sectionSubtitle}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isCarousel ? (
+                    <div style={{ position: "relative" }}>
+                      <div
+                        id={carouselContainerId}
+                        className="no-scrollbar"
+                        style={{
+                          display: "flex",
+                          gap: "24px",
+                          overflowX: reelsList.length > 3 ? "auto" : "visible",
+                          justifyContent: reelsList.length <= 3 ? "center" : "flex-start",
+                          paddingBottom: "16px",
+                          scrollSnapType: reelsList.length > 3 ? "x mandatory" : "none",
+                          scrollBehavior: "smooth",
+                        }}
+                      >
+                        {reelsList.map((reel, rIdx) => {
+                          const embedUrl = getIgEmbedUrl(reel.instagramUrl);
+                          return (
+                            <div
+                              key={reel.id || rIdx}
+                              style={{
+                                flex: "0 0 320px",
+                                width: "320px",
+                                background: "var(--surface, #0D0A07)",
+                                border: "1px solid var(--border, rgba(201,168,76,0.2))",
+                                borderRadius: borderRadius || "16px",
+                                overflow: "hidden",
+                                display: "flex",
+                                flexDirection: "column",
+                                position: "relative",
+                                scrollSnapAlign: "start",
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                              }}
+                            >
+                              {/* Featured Badge */}
+                              {reel.featured && (
+                                <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent, #C9A84C)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10, letterSpacing: "0.05em" }}>
+                                  FEATURED
+                                </div>
+                              )}
+
+                              {/* Instagram Embed Live Preview */}
+                              <div style={{ position: "relative", width: "100%", height: 560, background: "#000" }}>
+                                {embedUrl ? (
+                                  <iframe
+                                    title={`Reel ${rIdx + 1}`}
+                                    src={embedUrl}
+                                    style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
+                                    allow="autoplay; encrypted-media; clipboard-write"
+                                    allowFullScreen
+                                    scrolling="no"
+                                  />
+                                ) : (
+                                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 13 }}>
+                                    Instagram Reel
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Caption footer */}
+                              {reel.caption && (
+                                <div style={{ padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(20,12,6,0.8)" }}>
+                                  <p style={{ fontSize: "13px", color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
+                                    {reel.caption}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Navigation Carousel Buttons Below (Shown only when more than 3 reels) */}
+                      {reelsList.length > 3 && (
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "24px" }}>
+                          <button
+                            onClick={scrollLeft}
+                            className="reel-nav-btn"
+                            aria-label="Scroll reels left"
+                          >
+                            ‹
+                          </button>
+                          <button
+                            onClick={scrollRight}
+                            className="reel-nav-btn"
+                            aria-label="Scroll reels right"
+                          >
+                            ›
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: `repeat(auto-fit, minmax(${cols >= 3 ? "280px" : "320px"}, 1fr))`,
+                        gap: "24px",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {reelsList.map((reel, rIdx) => {
+                        const embedUrl = getIgEmbedUrl(reel.instagramUrl);
+                        return (
+                          <div
+                            key={reel.id || rIdx}
+                            style={{
+                              background: "var(--surface, #0D0A07)",
+                              border: "1px solid var(--border, rgba(201,168,76,0.2))",
+                              borderRadius: borderRadius || "16px",
+                              overflow: "hidden",
+                              display: "flex",
+                              flexDirection: "column",
+                              position: "relative",
+                              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            {/* Featured Badge */}
+                            {reel.featured && (
+                              <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent, #C9A84C)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10, letterSpacing: "0.05em" }}>
+                                FEATURED
+                              </div>
+                            )}
+
+                            {/* Instagram Embed Live Preview */}
+                            <div style={{ position: "relative", width: "100%", height: 560, background: "#000" }}>
+                              {embedUrl ? (
+                                <iframe
+                                  title={`Reel ${rIdx + 1}`}
+                                  src={embedUrl}
+                                  style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
+                                  allow="autoplay; encrypted-media; clipboard-write"
+                                  allowFullScreen
+                                  scrolling="no"
+                                />
+                              ) : (
+                                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 13 }}>
+                                  Instagram Reel
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Caption footer */}
+                            {reel.caption && (
+                              <div style={{ padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(20,12,6,0.8)" }}>
+                                <p style={{ fontSize: "13px", color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
+                                  {reel.caption}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // 13. DIVIDER LINE
             if (bType === "divider") {
               return (
                 <div key={idx} style={{ padding: "10px 0", display: "flex", alignItems: "center", marginBottom: mBottom }}>
@@ -630,7 +860,7 @@ export default function CustomRootPage({ params }) {
               );
             }
 
-            // 13. VERTICAL SPACER GAP
+            // 14. VERTICAL SPACER GAP
             if (bType === "spacer") {
               return <div key={idx} style={{ height: parseInt(block.height || "50") }} />;
             }

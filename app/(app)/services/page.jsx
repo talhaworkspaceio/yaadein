@@ -106,7 +106,8 @@ const saveCart = (cart) => {
 export default function ServicesPage() {
   const { data: servicesCms } = useServicesPageContent();
   const [cartItems, setCartItems] = useState([]);
-  const [servicesList, setServicesList] = useState(INITIAL_DEFAULT_SERVICES);
+  const [servicesList, setServicesList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -131,6 +132,7 @@ export default function ServicesPage() {
 
         if (isMounted) {
           setServicesList(mergedList);
+          setLoading(false);
         }
         if (hasNewMerged) {
           set(ref(db, "cms_services"), mergedList).catch(console.error);
@@ -142,6 +144,10 @@ export default function ServicesPage() {
       };
     } catch (e) {
       console.warn("[Firebase Services] Error fetching services:", e);
+      if (isMounted) {
+        setServicesList(INITIAL_DEFAULT_SERVICES);
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -575,11 +581,38 @@ export default function ServicesPage() {
 
       <section className="services-section">
         <div className="services-container">
-          {servicesList && servicesList.length > 0 ? (
+          {loading ? (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "100px 20px",
+              gap: "20px"
+            }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                border: "2px solid rgba(201, 168, 76, 0.15)",
+                borderTopColor: "var(--accent)",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }} />
+              <span style={{
+                fontFamily: "var(--font-typewriter)",
+                fontSize: "12px",
+                color: "var(--accent)",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase"
+              }}>
+                Loading Studio Services...
+              </span>
+            </div>
+          ) : servicesList && servicesList.length > 0 ? (
             servicesList.map((srv, idx) => {
               const rawSlug = srv.slug || "";
               const cleanSlug = rawSlug.replace(/^\//, '');
-              const imgUrl = srv.imageUrl || srv.mainImage?.url || "/images/bespoke_framing.png";
+              const imgUrl = srv.featuredImage || srv.imageUrl || srv.mainImage?.url || "/images/bespoke_framing.png";
               const featBullets = (srv.features && srv.features.length > 0)
                 ? srv.features.map(f => typeof f === 'string' ? f : (f.featureText || f))
                 : [];
@@ -617,16 +650,18 @@ export default function ServicesPage() {
                         ))}
                       </ul>
                     )}
-                    <a href={`/services/${cleanSlug}`} className="btn-service">
-                      {(srv.ctaText ? srv.ctaText.replace(/Nikkah\s*Nama/gi, "Nikkahnama") : "Explore Details")} &rarr;
-                    </a>
+                    {srv.enableNavigationButton !== false && (
+                      <a href={`/services/${cleanSlug}`} className="btn-service">
+                        {(srv.ctaText ? srv.ctaText.replace(/Nikkah\s*Nama/gi, "Nikkahnama") : "Explore Details")} &rarr;
+                      </a>
+                    )}
                   </div>
                 </div>
               );
             })
           ) : (
             <div style={{ textAlign: "center", color: "var(--text2)", padding: "60px 0" }}>
-              Loading services...
+              No services found.
             </div>
           )}
         </div>
