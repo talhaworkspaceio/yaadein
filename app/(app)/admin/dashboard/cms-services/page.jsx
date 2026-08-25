@@ -138,6 +138,7 @@ export default function AdminServicesPage() {
     featuredImage: "",
     images: [],
     videoUrl: "",
+    videos: [],
     orientation: "portrait", // portrait | landscape
     enableUploadPhoto: true,
     enableChooseFrame: true,
@@ -150,6 +151,7 @@ export default function AdminServicesPage() {
   });
 
   const [featureInput, setFeatureInput] = useState("");
+  const [videoUrlInput, setVideoUrlInput] = useState("");
 
   // Cloudinary credentials
   const cloudinaryCloud = "hpikhwjw";
@@ -157,38 +159,74 @@ export default function AdminServicesPage() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  // Upload video file directly to Cloudinary so we store a lightweight CDN URL, not a 10MB+ base64 string
+  // Upload video files directly to Cloudinary so we store lightweight CDN URLs, not 10MB+ base64 strings
   const handleVideoFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     setUploadingVideo(true);
-    const dataUpload = new FormData();
-    dataUpload.append("file", file);
-    dataUpload.append("upload_preset", cloudinaryPreset);
+    let uploaded = 0;
 
-    try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/video/upload`, {
-        method: "POST",
-        body: dataUpload,
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || "Video upload failed");
+    for (const file of files) {
+      const dataUpload = new FormData();
+      dataUpload.append("file", file);
+      dataUpload.append("upload_preset", cloudinaryPreset);
+
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/video/upload`, {
+          method: "POST",
+          body: dataUpload,
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error?.message || "Video upload failed");
+        }
+        const result = await res.json();
+        setServiceForm((prev) => {
+          const nextVideos = [...(prev.videos || []), result.secure_url];
+          return { ...prev, videos: nextVideos, videoUrl: nextVideos[0] };
+        });
+        uploaded += 1;
+      } catch (err) {
+        alert(`Video upload failed for "${file.name}": ${err.message}`);
       }
-      const result = await res.json();
-      setServiceForm((prev) => ({
-        ...prev,
-        videoUrl: result.secure_url,
-      }));
-      setMessage("✅ Video uploaded successfully!");
-      setTimeout(() => setMessage(""), 4000);
-    } catch (err) {
-      alert(`Video upload failed: ${err.message}`);
-      e.target.value = "";
-    } finally {
-      setUploadingVideo(false);
     }
+
+    e.target.value = "";
+    setUploadingVideo(false);
+    if (uploaded > 0) {
+      setMessage(`✅ ${uploaded} video${uploaded > 1 ? "s" : ""} uploaded successfully!`);
+      setTimeout(() => setMessage(""), 4000);
+    }
+  };
+
+  // ----- Video list helpers (order here is the carousel order on the service page) -----
+  const addVideoUrl = () => {
+    const url = videoUrlInput.trim();
+    if (!url) return;
+    setServiceForm((prev) => {
+      if ((prev.videos || []).includes(url)) return prev;
+      const nextVideos = [...(prev.videos || []), url];
+      return { ...prev, videos: nextVideos, videoUrl: nextVideos[0] };
+    });
+    setVideoUrlInput("");
+  };
+
+  const removeVideo = (vIdx) => {
+    setServiceForm((prev) => {
+      const nextVideos = (prev.videos || []).filter((_, i) => i !== vIdx);
+      return { ...prev, videos: nextVideos, videoUrl: nextVideos[0] || "" };
+    });
+  };
+
+  const moveVideo = (vIdx, dir) => {
+    setServiceForm((prev) => {
+      const nextVideos = [...(prev.videos || [])];
+      const target = vIdx + dir;
+      if (target < 0 || target >= nextVideos.length) return prev;
+      [nextVideos[vIdx], nextVideos[target]] = [nextVideos[target], nextVideos[vIdx]];
+      return { ...prev, videos: nextVideos, videoUrl: nextVideos[0] || "" };
+    });
   };
 
   // Upload image files directly to Cloudinary
@@ -230,23 +268,13 @@ export default function AdminServicesPage() {
     const unsub = onValue(servicesRef, (snapshot) => {
       const val = snapshot.val();
       let list = [];
-      if (val) {
+      if (val !== null && val !== undefined) {
         list = Array.isArray(val) ? val : Object.values(val);
-      }
-
-      let hasNewMerged = false;
-      const mergedList = [...list];
-      INITIAL_DEFAULT_SERVICES.forEach(defSrv => {
-        const exists = mergedList.some(s => s.id === defSrv.id || s.slug === defSrv.slug);
-        if (!exists) {
-          mergedList.push(defSrv);
-          hasNewMerged = true;
-        }
-      });
-
-      setServices(mergedList);
-      if (hasNewMerged) {
-        set(ref(db, "cms_services"), mergedList).catch(console.error);
+        setServices(list);
+      } else {
+        // Only seed default services once if database node is completely empty
+        setServices(INITIAL_DEFAULT_SERVICES);
+        set(ref(db, "cms_services"), INITIAL_DEFAULT_SERVICES).catch(console.error);
       }
       setLoading(false);
     });
@@ -281,11 +309,13 @@ export default function AdminServicesPage() {
       featuredImage: "/images/bespoke_framing.png",
       images: ["/images/bespoke_framing.png"],
       videoUrl: "",
+      videos: [],
       features: [],
       ctaText: "Explore Details",
       ctaLink: "/contact",
     });
     setFeatureInput("");
+    setVideoUrlInput("");
     setIsModalOpen(true);
   };
 
@@ -296,6 +326,10 @@ export default function AdminServicesPage() {
       ? item.images
       : (item.imageUrl ? [item.imageUrl] : ["/images/bespoke_framing.png"]);
     const initialFeatured = item.featuredImage || item.imageUrl || initialImages[0] || "/images/bespoke_framing.png";
+    // Older services stored a single videoUrl; newer ones keep an ordered videos array.
+    const initialVideos = Array.isArray(item.videos) && item.videos.length > 0
+      ? item.videos.filter(Boolean)
+      : (item.videoUrl ? [item.videoUrl] : []);
 
     setServiceForm({
       title: item.title || "",
@@ -307,7 +341,8 @@ export default function AdminServicesPage() {
       imageUrl: initialFeatured,
       featuredImage: initialFeatured,
       images: initialImages,
-      videoUrl: item.videoUrl || "",
+      videoUrl: initialVideos[0] || "",
+      videos: initialVideos,
       orientation: item.orientation || "portrait",
       enableUploadPhoto: item.enableUploadPhoto !== undefined ? !!item.enableUploadPhoto : true,
       enableChooseFrame: item.enableChooseFrame !== undefined ? !!item.enableChooseFrame : true,
@@ -319,13 +354,26 @@ export default function AdminServicesPage() {
       ctaLink: item.ctaLink || `/services/${item.slug || ""}`,
     });
     setFeatureInput("");
+    setVideoUrlInput("");
     setIsModalOpen(true);
   };
 
-  const handleDelete = (idx) => {
-    if (!confirm("Are you sure you want to delete this service card?")) return;
+  const handleDelete = async (idx) => {
+    const targetService = services[idx];
+    if (!targetService) return;
+    if (!confirm(`Are you sure you want to delete "${targetService.title || 'this service'}"?`)) return;
+
     const updated = services.filter((_, i) => i !== idx);
     setServices(updated);
+
+    try {
+      await set(ref(db, "cms_services"), updated);
+      setMessage(`✅ Service "${targetService.title || 'Selected service'}" deleted successfully!`);
+      setTimeout(() => setMessage(""), 4000);
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to delete service.");
+    }
   };
 
   const handleAddFeature = () => {
@@ -345,11 +393,15 @@ export default function AdminServicesPage() {
   const handleModalSave = async (e) => {
     e.preventDefault();
     const cleanSlug = serviceForm.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || serviceForm.title.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const cleanVideos = (serviceForm.videos || []).filter(Boolean);
     const updatedItem = {
       ...serviceForm,
       id: cleanSlug,
       slug: cleanSlug,
       imageUrl: serviceForm.featuredImage || serviceForm.imageUrl,
+      videos: cleanVideos,
+      // Kept in sync so anything still reading the old single field keeps working.
+      videoUrl: cleanVideos[0] || "",
     };
 
     const updatedList = [...services];
@@ -732,23 +784,26 @@ export default function AdminServicesPage() {
                 )}
               </div>
 
-              {/* Video Upload & Full Width Dimensions Indicator */}
+              {/* Video Upload — one video plays full-width, several become a carousel */}
               <div style={{ marginTop: 6, background: "rgba(201, 168, 76, 0.05)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: 8, padding: 14 }}>
                 <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>
-                  <span>Service Showcase Video (Playable Full-Width)</span>
+                  <span>Service Showcase Videos (Playable Full-Width)</span>
                   <span style={{ fontSize: 10, background: "rgba(201,168,76,0.2)", color: "#dfc38a", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
-                    Recommended: 1920 × 1080 (16:9) or 1080p MP4
+                    Recommended: 1920 × 1080 (16:9) or 1080 × 1920 (9:16) MP4
                   </span>
                 </label>
-                
+
                 <p style={{ fontSize: 11, color: "var(--text2)", margin: "0 0 10px 0" }}>
-                  Upload an MP4/WebM video or paste a video URL. Video is hosted on Cloudinary CDN for instant smooth streaming.
+                  Upload MP4/WebM files or paste video URLs. Videos are hosted on Cloudinary CDN for instant smooth streaming.
+                  Add <strong>one</strong> video and the service page plays it full-width as before; add <strong>two or more</strong>
+                  {" "}and the page shows them in a carousel, in the order listed below.
                 </p>
 
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/ogg"
+                    multiple
                     disabled={uploadingVideo}
                     onChange={handleVideoFileChange}
                     style={{ background: "var(--surface3, #2A2620)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12, flex: 1 }}
@@ -764,28 +819,83 @@ export default function AdminServicesPage() {
                   <input
                     type="text"
                     placeholder="Or paste video direct link (e.g. /videos/mirror-showcase.mp4 or https://...)"
-                    value={serviceForm.videoUrl}
-                    onChange={(e) => setServiceForm({ ...serviceForm, videoUrl: e.target.value })}
+                    value={videoUrlInput}
+                    onChange={(e) => setVideoUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addVideoUrl();
+                      }
+                    }}
                     style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 8, borderRadius: 6, fontSize: 12 }}
                   />
-                  {serviceForm.videoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setServiceForm({ ...serviceForm, videoUrl: "" })}
-                      style={{ background: "rgba(255,62,108,0.2)", border: "1px solid rgba(255,62,108,0.4)", color: "#ff6b8b", padding: "8px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
-                    >
-                      Clear Video
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={addVideoUrl}
+                    disabled={!videoUrlInput.trim()}
+                    style={{ background: "rgba(201,168,76,0.2)", border: "1px solid var(--accent)", color: "var(--accent)", padding: "8px 14px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: videoUrlInput.trim() ? "pointer" : "not-allowed", opacity: videoUrlInput.trim() ? 1 : 0.5, whiteSpace: "nowrap" }}
+                  >
+                    + Add Video
+                  </button>
                 </div>
 
-                {serviceForm.videoUrl && (
-                  <div style={{ marginTop: 10, borderRadius: 6, overflow: "hidden", border: "1px solid var(--accent)", background: "#000" }}>
-                    <video
-                      src={serviceForm.videoUrl}
-                      controls
-                      style={{ width: "100%", maxHeight: 180, display: "block" }}
-                    />
+                {/* Added videos — this order is the carousel order */}
+                {Array.isArray(serviceForm.videos) && serviceForm.videos.length > 0 ? (
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span style={{ fontSize: 11, color: "var(--text2)" }}>
+                      {serviceForm.videos.length === 1
+                        ? "1 video — plays full-width on the service page."
+                        : `${serviceForm.videos.length} videos — shown as a carousel in this order.`}
+                    </span>
+
+                    {serviceForm.videos.map((vUrl, vIdx) => (
+                      <div
+                        key={`${vUrl}-${vIdx}`}
+                        style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}
+                      >
+                        <div style={{ position: "relative", width: 150, flexShrink: 0, borderRadius: 6, overflow: "hidden", background: "#000", border: "1px solid rgba(201,168,76,0.35)" }}>
+                          <video src={vUrl} controls preload="metadata" style={{ width: "100%", maxHeight: 90, display: "block" }} />
+                          <span style={{ position: "absolute", top: 3, left: 3, background: "var(--accent)", color: "#000", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 4 }}>
+                            #{vIdx + 1}
+                          </span>
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--text2)", wordBreak: "break-all", lineHeight: 1.4 }}>{vUrl}</span>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => moveVideo(vIdx, -1)}
+                              disabled={vIdx === 0}
+                              title="Move earlier in the carousel"
+                              style={{ background: "var(--surface3, #2A2620)", border: "1px solid var(--border)", color: "#fff", padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: vIdx === 0 ? "not-allowed" : "pointer", opacity: vIdx === 0 ? 0.4 : 1 }}
+                            >
+                              ↑ Up
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveVideo(vIdx, 1)}
+                              disabled={vIdx === serviceForm.videos.length - 1}
+                              title="Move later in the carousel"
+                              style={{ background: "var(--surface3, #2A2620)", border: "1px solid var(--border)", color: "#fff", padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: vIdx === serviceForm.videos.length - 1 ? "not-allowed" : "pointer", opacity: vIdx === serviceForm.videos.length - 1 ? 0.4 : 1 }}
+                            >
+                              ↓ Down
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeVideo(vIdx)}
+                              style={{ background: "rgba(255,62,108,0.2)", border: "1px solid rgba(255,62,108,0.4)", color: "#ff6b8b", padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer" }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12, fontSize: 11, color: "var(--text2)", fontStyle: "italic" }}>
+                    No videos added yet — the video section is hidden on the service page.
                   </div>
                 )}
               </div>

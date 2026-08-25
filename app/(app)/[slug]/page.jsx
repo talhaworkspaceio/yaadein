@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../lib/firebase";
+import BlockView from "../../lib/pageBuilder/BlockView";
+import { buildPageCss } from "../../lib/pageBuilder/styles";
 
 const normalizeIgUrl = (u) => {
   if (!u) return "";
@@ -18,6 +20,28 @@ const getIgEmbedUrl = (u) => {
   const norm = normalizeIgUrl(u);
   if (norm.includes("/embed")) return norm;
   return `${norm}embed/?cr=1&v=14&rd=`;
+};
+
+// Mirrors DEFAULT_PAGE_SETTINGS in the builder — pages saved before page settings
+// existed fall back to the original studio look.
+const PAGE_SETTINGS_FALLBACK = {
+  showHero: true,
+  showLamp: true,
+  showLightSwitch: true,
+  heading: "",
+  subtitle: "Custom page layout built inside Yaadein Elementor Studio.",
+  headingFontFamily: "var(--font-display)",
+  headingColor: "#FFFFFF",
+  headingFontSize: "52",
+  headingAlign: "center",
+  backdropType: "none",
+  backdropColor: "#050403",
+  backdropGradient: "",
+  backdropImage: "",
+  backdropParallax: true,
+  backdropOverlay: "rgba(5, 4, 3, 0.55)",
+  backdropBlur: "0",
+  showBlobs: true,
 };
 
 const SAMPLE_FALLBACK_PAGES = {
@@ -54,6 +78,7 @@ export default function CustomRootPage({ params }) {
   const [notFound, setNotFound] = useState(false);
   const [lightOn, setLightOn] = useState(true);
   const [expandedFaqs, setExpandedFaqs] = useState({});
+  const [faqsInitialised, setFaqsInitialised] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -94,6 +119,27 @@ export default function CustomRootPage({ params }) {
     setExpandedFaqs(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
+  // Single source of truth for the rendered blocks (older pages stored them as `layout`)
+  const rawBlocks = Array.isArray(pageData?.blocks)
+    ? pageData.blocks
+    : (Array.isArray(pageData?.layout) ? pageData.layout : []);
+
+  // FAQ items flagged "expanded by default" in the builder open on first paint
+  useEffect(() => {
+    if (faqsInitialised || !pageData) return;
+    const initial = {};
+    const visit = (list) => {
+      (list || []).forEach((b, i) => {
+        const t = b.type || b.blockType;
+        if ((t === "faq" || t === "faq-accordion") && b.initialOpen) initial[b.id || i] = true;
+        if (Array.isArray(b.children)) visit(b.children);
+      });
+    };
+    visit(rawBlocks);
+    setExpandedFaqs(initial);
+    setFaqsInitialised(true);
+  }, [pageData, rawBlocks, faqsInitialised]);
+
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-serif)" }}>
@@ -116,16 +162,79 @@ export default function CustomRootPage({ params }) {
     );
   }
 
-  const blocksList = Array.isArray(pageData.blocks)
-    ? pageData.blocks
-    : (Array.isArray(pageData.layout) ? pageData.layout : []);
+  const blocksList = rawBlocks;
+
+  // ----- Page settings (heading, studio chrome, parallax backdrop) -----
+  const settings = { ...PAGE_SETTINGS_FALLBACK, ...(pageData.settings || {}) };
+  const backdropType = settings.backdropType || "none";
+  const backdropBlur = parseFloat(settings.backdropBlur || 0) || 0;
+
+  // The backdrop sits on its own fixed layer so `parallax` can pin it while the
+  // page scrolls over the top.
+  const backdropLayerStyle = (() => {
+    if (backdropType === "color") return { background: settings.backdropColor || "#050403" };
+    if (backdropType === "gradient") return { background: settings.backdropGradient || "#050403" };
+    if (backdropType === "image" && settings.backdropImage) {
+      return {
+        backgroundColor: settings.backdropColor || "#050403",
+        backgroundImage: `url(${settings.backdropImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: settings.backdropParallax !== false ? "fixed" : "scroll",
+      };
+    }
+    return null;
+  })();
+
+  const heroHeading = settings.heading || pageData.title;
+  const heroAlign = settings.headingAlign || "center";
+
+  // One stylesheet for the whole tree, including the tablet/mobile media queries.
+  const blocksCss = buildPageCss(blocksList);
+
+  const blockCtx = {
+    isEditor: false,
+    lightOn,
+    setLightOn,
+    faqState: expandedFaqs,
+    toggleFaq,
+  };
 
   return (
-    <div className={`app-container ${lightOn ? 'light-on' : 'light-off'}`} style={{ minHeight: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-      
+    <div className={`app-container ${lightOn ? 'light-on' : 'light-off'}`} style={{ minHeight: "100vh", background: settings.backdropColor && backdropType === "color" ? settings.backdropColor : "#050403", color: "#E0D7CD", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+
+      {/* Parallax backdrop fill + readability overlay */}
+      {backdropLayerStyle && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: settings.backdropParallax !== false && backdropType === "image" ? "fixed" : "absolute",
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            ...backdropLayerStyle,
+          }}
+        />
+      )}
+      {backdropLayerStyle && settings.backdropOverlay && settings.backdropOverlay !== "transparent" && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: settings.backdropParallax !== false && backdropType === "image" ? "fixed" : "absolute",
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            background: settings.backdropOverlay,
+            backdropFilter: backdropBlur > 0 ? `blur(${backdropBlur}px)` : "none",
+            WebkitBackdropFilter: backdropBlur > 0 ? `blur(${backdropBlur}px)` : "none",
+          }}
+        />
+      )}
+
       {/* Signature Animated Ambient Background Color Blobs */}
-      <div className="liquid-blob-1" />
-      <div className="liquid-blob-2" />
+      {settings.showBlobs !== false && <div className="liquid-blob-1" />}
+      {settings.showBlobs !== false && <div className="liquid-blob-2" />}
 
       {/* Dynamic Style block for Suspended Lamp & Liquid Color Animation */}
       <style dangerouslySetInnerHTML={{
@@ -385,488 +494,60 @@ export default function CustomRootPage({ params }) {
       <Navbar />
 
       {/* Signature Yaadein Studio Suspended Brass Lamp Hero Banner */}
-      <div className="hero-banner">
-        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
-          <div className="lamp-rod" />
-          <div className="lamp-mount" />
-          <div className="lamp-arm" />
-          <div className="lamp-head">
-            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+      {settings.showHero !== false && (
+        <div className="hero-banner" style={backdropLayerStyle ? { background: "transparent", borderBottom: "none" } : undefined}>
+          {settings.showLamp !== false && (
+            <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
+              <div className="lamp-rod" />
+              <div className="lamp-mount" />
+              <div className="lamp-arm" />
+              <div className="lamp-head">
+                <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+              </div>
+              <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+            </div>
+          )}
+
+          <div style={{ width: "100%", textAlign: heroAlign }}>
+            <h1
+              className="hero-title"
+              style={{
+                fontFamily: settings.headingFontFamily || "var(--font-display)",
+                fontSize: `${parseInt(settings.headingFontSize || 52, 10) || 52}px`,
+                color: settings.headingColor || "var(--text)",
+              }}
+            >
+              {heroHeading}
+            </h1>
+            <p className="hero-desc" style={{ margin: heroAlign === "center" ? "16px auto 0" : "16px 0 0" }}>
+              {settings.subtitle || pageData.subtitle || ""}
+            </p>
           </div>
-          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+          {/* Centered Studio Light Switch Pill — identical component on every page */}
+          {settings.showLightSwitch !== false && (
+            <div className="light-control-panel">
+              <span className="light-control-label">Studio Light</span>
+              <button
+                className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+                onClick={() => setLightOn(!lightOn)}
+                aria-label="Toggle Studio Light"
+              >
+                <span className="light-switch-knob" />
+              </button>
+            </div>
+          )}
         </div>
+      )}
 
-        <h1 className="hero-title">{pageData.title}</h1>
-        <p className="hero-desc">
-          {pageData.subtitle || "Custom page layout built inside Yaadein Elementor Studio."}
-        </p>
-
-        {/* Centered Studio Light Switch Pill */}
-        <div className="light-control-panel">
-          <span className="light-control-label">Studio Light</span>
-          <button
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
-            onClick={() => setLightOn(!lightOn)}
-            aria-label="Toggle Studio Light"
-          >
-            <span className="light-switch-knob" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Blocks Content Container */}
-      <main style={{ flex: 1, padding: "40px 20px 80px", maxWidth: "1200px", width: "100%", margin: "0 auto", position: "relative", zIndex: 10 }}>
+      {/* Main Blocks Content — rendered by the shared page-builder engine, so the
+          published layout and the editor canvas come from one code path. */}
+      <style dangerouslySetInnerHTML={{ __html: blocksCss }} />
+      <main style={{ flex: 1, padding: "40px 20px 80px", maxWidth: settings.contentMaxWidth || "1200px", width: "100%", margin: "0 auto", position: "relative", zIndex: 10 }}>
         {blocksList.length > 0 ? (
-          blocksList.map((block, idx) => {
-            const bType = block.type || block.blockType;
-            const headingColor = block.textColor || "var(--accent)";
-            const fontFamily = block.fontFamily || "inherit";
-            const fontStyle = block.fontStyle || "normal";
-            const textDecoration = block.textDecoration || "none";
-            const textTransform = block.textTransform || "none";
-            const letterSpacing = block.letterSpacing ? `${block.letterSpacing}px` : "normal";
-            const lineHeight = block.lineHeight || "1.4";
-            const textShadow = block.textShadow || "none";
-
-            const pTop = block.paddingTop ? `${block.paddingTop}px` : "0";
-            const pBottom = block.paddingBottom ? `${block.paddingBottom}px` : "0";
-            const pLeft = block.paddingLeft ? `${block.paddingLeft}px` : "0";
-            const pRight = block.paddingRight ? `${block.paddingRight}px` : "0";
-
-            const mTop = block.marginTop ? `${block.marginTop}px` : "0";
-            const mBottom = block.marginBottom ? `${block.marginBottom}px` : "40px";
-
-            const isAbsolute = block.positionMode === "absolute";
-            const displayMode = block.displayMode || "block";
-            const isInline = displayMode === "inline-50" || displayMode === "inline-33" || (block.boxWidth && block.boxWidth !== "100%" && block.boxWidth !== "auto");
-
-            const boxWidth = block.boxWidth || (displayMode === "inline-50" ? "46%" : displayMode === "inline-33" ? "30%" : "100%");
-            const boxHeight = block.boxHeight || "auto";
-
-            const mLeft = block.marginLeft !== undefined && block.marginLeft !== "" ? `${block.marginLeft}px` : (block.boxAlign === "center" ? "auto" : block.boxAlign === "right" ? "auto" : "0");
-            const mRight = block.marginRight !== undefined && block.marginRight !== "" ? `${block.marginRight}px` : (displayMode === "inline-50" ? "4%" : (block.boxAlign === "center" ? "auto" : block.boxAlign === "left" ? "auto" : "0"));
-
-            const borderStyle = block.borderStyle || "none";
-            const borderWidth = block.borderWidth ? `${block.borderWidth}px` : "0";
-            const borderColor = block.borderColor || "transparent";
-            const borderRadius = block.borderRadius ? `${block.borderRadius}px` : "0";
-            const boxShadow = block.shadow || "none";
-            const bgColor = block.bgColor === "transparent" ? "transparent" : (block.bgColor || (block.bgGradient ? block.bgGradient : "transparent"));
-
-            const boxWrapperStyles = {
-              position: isAbsolute ? "absolute" : "relative",
-              left: isAbsolute ? `${block.posX || 0}px` : "auto",
-              top: isAbsolute ? `${block.posY || 0}px` : "auto",
-              display: isAbsolute ? "block" : (isInline ? "inline-block" : "block"),
-              verticalAlign: "top",
-              boxSizing: "border-box",
-              width: boxWidth,
-              height: boxHeight,
-              paddingTop: pTop,
-              paddingBottom: pBottom,
-              paddingLeft: pLeft,
-              paddingRight: pRight,
-              marginTop: isAbsolute ? 0 : mTop,
-              marginBottom: isAbsolute ? 0 : mBottom,
-              marginLeft: isAbsolute ? 0 : mLeft,
-              marginRight: isAbsolute ? 0 : mRight,
-              background: bgColor,
-              backdropFilter: block.backdropBlur ? `blur(${block.backdropBlur}px)` : "none",
-              borderStyle,
-              borderWidth,
-              borderColor,
-              borderRadius,
-              boxShadow,
-              opacity: block.opacity ? parseFloat(block.opacity) : 1,
-            };
-
-            // 1. HEADING
-            if (bType === "heading") {
-              const TagName = block.tag || "h2";
-              return (
-                <div key={idx} style={boxWrapperStyles}>
-                  <TagName style={{ fontFamily, fontSize: `${block.fontSize || 36}px`, color: headingColor, textAlign: block.textAlign || "center", fontWeight: block.fontWeight || "700", fontStyle, textDecoration, textTransform, letterSpacing, lineHeight, textShadow, margin: 0 }}>
-                    {block.text}
-                  </TagName>
-                </div>
-              );
-            }
-
-            // 2. PARAGRAPH
-            if (bType === "paragraph" || bType === "rich-text") {
-              return (
-                <div key={idx} style={boxWrapperStyles}>
-                  <p style={{ fontFamily, fontSize: `${block.fontSize || 16}px`, color: headingColor, textAlign: block.textAlign || "left", fontWeight: block.fontWeight || "400", fontStyle, textDecoration, textTransform, letterSpacing, lineHeight: lineHeight || "1.8", textShadow, margin: 0 }}>
-                    {block.text || block.body}
-                  </p>
-                </div>
-              );
-            }
-
-            // 3. IMAGE
-            if (bType === "image") {
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, textAlign: "center" }}>
-                  <img src={block.url || block.image} alt={block.caption || "Page Graphic"} style={{ maxWidth: block.width || "100%", borderRadius, border: `${borderWidth} ${borderStyle} ${borderColor}`, boxShadow, objectFit: block.objectFit || "cover" }} />
-                  {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>{block.caption}</p>}
-                </div>
-              );
-            }
-
-            // 4. VIDEO
-            if (bType === "video" || bType === "video-player") {
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, textAlign: "center" }}>
-                  <div style={{ maxWidth: 800, margin: "0 auto", borderRadius, overflow: "hidden", border: `1px solid ${headingColor}`, boxShadow, background: "#000" }}>
-                    <video src={block.url || block.videoUrl || "/videos/reel1.mp4"} controls autoPlay={block.autoPlay} loop={block.loop} muted={block.muted} playsInline style={{ width: "100%", maxHeight: 450, objectFit: "cover" }} />
-                  </div>
-                  {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 10 }}>{block.caption}</p>}
-                </div>
-              );
-            }
-
-            // 5. BUTTON
-            if (bType === "button") {
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, textAlign: block.alignment || "center" }}>
-                  <a href={block.link || block.buttonLink || "/customize"} style={{ display: "inline-block", background: block.btnColor || headingColor, color: block.textColor || "#000", fontFamily, fontWeight: block.fontWeight || "700", fontSize: `${block.fontSize || 14}px`, padding: `${block.paddingTop || 14}px ${block.paddingRight || 32}px`, borderRadius: `${block.borderRadius || 8}px`, textDecoration: "none", boxShadow }}>
-                    {block.text || block.buttonText} {block.iconName === "arrow" ? "→" : block.iconName === "star" ? "✦" : ""}
-                  </a>
-                </div>
-              );
-            }
-
-            // 6. 2-COLUMN SIDE-BY-SIDE ROW
-            if (bType === "row-2col") {
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, display: "grid", gridTemplateColumns: block.colRatio || "repeat(auto-fit, minmax(320px, 1fr))", gap: `${block.gap || 24}px`, alignItems: block.verticalAlign || "center" }}>
-                  {/* Left Column */}
-                  <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 24, borderRadius: 12, border: "1px solid var(--border)" }}>
-                    {block.col1Type === "image" ? (
-                      <div>
-                        <img src={block.col1Image || "/images/bespoke_framing.png"} alt={block.col1Title || "Media"} style={{ width: "100%", borderRadius: 10, maxHeight: 320, objectFit: "cover" }} />
-                        {block.col1Title && <h3 style={{ fontFamily, fontSize: 20, color: headingColor, marginTop: 12, marginBottom: 4 }}>{block.col1Title}</h3>}
-                        {block.col1Body && <p style={{ color: "var(--text2)", fontSize: 14, margin: 0 }}>{block.col1Body}</p>}
-                      </div>
-                    ) : (
-                      <div>
-                        {block.col1Title && <h3 style={{ fontFamily, fontSize: 22, color: headingColor, marginBottom: 10 }}>{block.col1Title}</h3>}
-                        {block.col1Body && <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--text2)", lineHeight: 1.7, margin: 0 }}>{block.col1Body}</p>}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column */}
-                  <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 24, borderRadius: 12, border: "1px solid var(--border)" }}>
-                    {block.col2Type === "image" ? (
-                      <div>
-                        <img src={block.col2Image || "/images/bespoke_framing.png"} alt={block.col2Title || "Media"} style={{ width: "100%", borderRadius: 10, maxHeight: 320, objectFit: "cover" }} />
-                        {block.col2Title && <h3 style={{ fontFamily, fontSize: 20, color: headingColor, marginTop: 12, marginBottom: 4 }}>{block.col2Title}</h3>}
-                        {block.col2Body && <p style={{ color: "var(--text2)", fontSize: 14, margin: 0 }}>{block.col2Body}</p>}
-                      </div>
-                    ) : (
-                      <div>
-                        {block.col2Title && <h3 style={{ fontFamily, fontSize: 22, color: headingColor, marginBottom: 10 }}>{block.col2Title}</h3>}
-                        {block.col2Body && <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--text2)", lineHeight: 1.7, marginBottom: 16 }}>{block.col2Body}</p>}
-                        {block.col2ButtonText && (
-                          <a href={block.col2ButtonLink || "/catalog"} style={{ display: "inline-block", background: headingColor, color: "#000", fontWeight: 700, padding: "10px 24px", borderRadius: 6, textDecoration: "none" }}>
-                            {block.col2ButtonText}
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-
-            // 7. 3-COLUMN SIDE-BY-SIDE ROW
-            if (bType === "row-3col") {
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: `${block.gap || 20}px` }}>
-                  <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 12, border: "1px solid var(--border)", textAlign: "center" }}>
-                    <h4 style={{ fontFamily, fontSize: 18, color: headingColor, marginBottom: 8 }}>{block.col1Title || "Column 1"}</h4>
-                    <p style={{ fontSize: 14, color: "var(--text2)", margin: 0 }}>{block.col1Body}</p>
-                  </div>
-                  <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 12, border: "1px solid var(--border)", textAlign: "center" }}>
-                    <h4 style={{ fontFamily, fontSize: 18, color: headingColor, marginBottom: 8 }}>{block.col2Title || "Column 2"}</h4>
-                    <p style={{ fontSize: 14, color: "var(--text2)", margin: 0 }}>{block.col2Body}</p>
-                  </div>
-                  <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 12, border: "1px solid var(--border)", textAlign: "center" }}>
-                    <h4 style={{ fontFamily, fontSize: 18, color: headingColor, marginBottom: 8 }}>{block.col3Title || "Column 3"}</h4>
-                    <p style={{ fontSize: 14, color: "var(--text2)", margin: 0 }}>{block.col3Body}</p>
-                  </div>
-                </div>
-              );
-            }
-
-            // 8. CALLOUT BANNER
-            if (bType === "cta-banner" || bType === "ctaBlock") {
-              return (
-                <div key={idx} style={{ background: block.bgGradient || "linear-gradient(135deg, rgba(201, 168, 76, 0.2) 0%, rgba(20, 12, 6, 0.9) 100%)", border: `1px solid ${headingColor}`, borderRadius: borderRadius || "16px", padding: "50px 30px", textAlign: "center", marginBottom: mBottom, marginTop: mTop }}>
-                  <h2 style={{ fontFamily, fontSize: "34px", color: headingColor, marginBottom: 12 }}>{block.title || block.heading}</h2>
-                  {(block.subtitle || block.description) && <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--text2)", maxWidth: 600, margin: "0 auto 24px" }}>{block.subtitle || block.description}</p>}
-                  {block.buttonText && (
-                    <a href={block.buttonLink || "/catalog"} style={{ background: headingColor, color: "#000", fontWeight: 700, padding: "12px 28px", borderRadius: 8, textDecoration: "none" }}>
-                      {block.buttonText}
-                    </a>
-                  )}
-                </div>
-              );
-            }
-
-            // 9. TESTIMONIAL
-            if (bType === "testimonial" || bType === "testimonials") {
-              return (
-                <div key={idx} style={{ background: "rgba(28, 15, 7, 0.6)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: borderRadius || "12px", padding: 28, marginBottom: mBottom, marginTop: mTop }}>
-                  <div style={{ color: headingColor, fontSize: 18, marginBottom: 10 }}>{"★".repeat(parseInt(block.rating || "5"))}</div>
-                  <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "#fff", fontStyle: "italic", marginBottom: 16, lineHeight: 1.6 }}>"{block.quote}"</p>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: headingColor }}>{block.name}</div>
-                  {block.location && <div style={{ fontSize: 12, color: "var(--text2)" }}>{block.location}</div>}
-                </div>
-              );
-            }
-
-            // 10. FAQ ACCORDION ITEM
-            if (bType === "faq" || bType === "faq-accordion") {
-              const isOpen = expandedFaqs[idx];
-              return (
-                <div key={idx} style={{ background: "rgba(20, 12, 6, 0.7)", border: "1px solid var(--border)", borderRadius: borderRadius || "8px", overflow: "hidden", marginBottom: 14, marginTop: mTop }}>
-                  <button onClick={() => toggleFaq(idx)} style={{ width: "100%", background: "none", border: "none", color: headingColor, padding: 18, textAlign: "left", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>{block.question}</span>
-                    <span>{isOpen ? "−" : "+"}</span>
-                  </button>
-                  {isOpen && (
-                    <div style={{ padding: "0 18px 18px", color: "var(--text2)", fontSize: 14, lineHeight: 1.6, borderTop: "1px solid var(--border)" }}>
-                      {block.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            // 11. PRICING CARD
-            if (bType === "pricing" || bType === "pricing-matrix") {
-              return (
-                <div key={idx} style={{ background: "rgba(201, 168, 76, 0.15)", border: `1px solid ${headingColor}`, borderRadius: borderRadius || "16px", padding: 32, textAlign: "center", marginBottom: mBottom, marginTop: mTop }}>
-                  {block.ribbonBadge && <span style={{ background: headingColor, color: "#000", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>{block.ribbonBadge}</span>}
-                  <h3 style={{ fontFamily, fontSize: 24, color: "#fff", marginBottom: 8 }}>{block.title}</h3>
-                  <div style={{ fontSize: 36, fontWeight: 700, color: headingColor, marginBottom: 4 }}>{block.currency || "Rs."} {block.price}</div>
-                  <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>{block.period}</div>
-                  <a href={block.buttonLink || "/customize"} style={{ display: "inline-block", background: headingColor, color: "#000", fontWeight: 700, padding: "12px 32px", borderRadius: 8, textDecoration: "none" }}>{block.buttonText || "Order Now"}</a>
-                </div>
-              );
-            }
-
-            // 12. VIDEO REELS GALLERY
-            if (bType === "video-reels" || bType === "reels") {
-              const reelsList = Array.isArray(block.reels) ? block.reels : [];
-              const cols = parseInt(block.columns || "2");
-              const isCarousel = (block.layout || "carousel") === "carousel";
-              const carouselContainerId = `reels-carousel-${idx}`;
-
-              const scrollLeft = () => {
-                const el = document.getElementById(carouselContainerId);
-                if (el) el.scrollBy({ left: -360, behavior: "smooth" });
-              };
-
-              const scrollRight = () => {
-                const el = document.getElementById(carouselContainerId);
-                if (el) el.scrollBy({ left: 360, behavior: "smooth" });
-              };
-
-              return (
-                <div key={idx} style={{ ...boxWrapperStyles, width: "100%", margin: `${mTop} auto ${mBottom}` }}>
-                  {(block.sectionTitle || block.sectionSubtitle) && (
-                    <div style={{ textAlign: "center", marginBottom: "32px" }}>
-                      {block.sectionTitle && (
-                        <h2 style={{ fontFamily, fontSize: `${block.fontSize || 32}px`, color: headingColor, fontWeight: block.fontWeight || "700", textTransform, letterSpacing, lineHeight, textShadow, margin: "0 0 10px 0" }}>
-                          {block.sectionTitle}
-                        </h2>
-                      )}
-                      {block.sectionSubtitle && (
-                        <p style={{ fontFamily: "var(--font-serif)", fontSize: "15px", color: "var(--text2)", maxWidth: "600px", margin: "0 auto" }}>
-                          {block.sectionSubtitle}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {isCarousel ? (
-                    <div style={{ position: "relative" }}>
-                      <div
-                        id={carouselContainerId}
-                        className="no-scrollbar"
-                        style={{
-                          display: "flex",
-                          gap: "24px",
-                          overflowX: reelsList.length > 3 ? "auto" : "visible",
-                          justifyContent: reelsList.length <= 3 ? "center" : "flex-start",
-                          paddingBottom: "16px",
-                          scrollSnapType: reelsList.length > 3 ? "x mandatory" : "none",
-                          scrollBehavior: "smooth",
-                        }}
-                      >
-                        {reelsList.map((reel, rIdx) => {
-                          const embedUrl = getIgEmbedUrl(reel.instagramUrl);
-                          return (
-                            <div
-                              key={reel.id || rIdx}
-                              style={{
-                                flex: "0 0 320px",
-                                width: "320px",
-                                background: "var(--surface, #0D0A07)",
-                                border: "1px solid var(--border, rgba(201,168,76,0.2))",
-                                borderRadius: borderRadius || "16px",
-                                overflow: "hidden",
-                                display: "flex",
-                                flexDirection: "column",
-                                position: "relative",
-                                scrollSnapAlign: "start",
-                                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                              }}
-                            >
-                              {/* Featured Badge */}
-                              {reel.featured && (
-                                <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent, #C9A84C)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10, letterSpacing: "0.05em" }}>
-                                  FEATURED
-                                </div>
-                              )}
-
-                              {/* Instagram Embed Live Preview */}
-                              <div style={{ position: "relative", width: "100%", height: 560, background: "#000" }}>
-                                {embedUrl ? (
-                                  <iframe
-                                    title={`Reel ${rIdx + 1}`}
-                                    src={embedUrl}
-                                    style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
-                                    allow="autoplay; encrypted-media; clipboard-write"
-                                    allowFullScreen
-                                    scrolling="no"
-                                  />
-                                ) : (
-                                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 13 }}>
-                                    Instagram Reel
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Caption footer */}
-                              {reel.caption && (
-                                <div style={{ padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(20,12,6,0.8)" }}>
-                                  <p style={{ fontSize: "13px", color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
-                                    {reel.caption}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Navigation Carousel Buttons Below (Shown only when more than 3 reels) */}
-                      {reelsList.length > 3 && (
-                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "24px" }}>
-                          <button
-                            onClick={scrollLeft}
-                            className="reel-nav-btn"
-                            aria-label="Scroll reels left"
-                          >
-                            ‹
-                          </button>
-                          <button
-                            onClick={scrollRight}
-                            className="reel-nav-btn"
-                            aria-label="Scroll reels right"
-                          >
-                            ›
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: `repeat(auto-fit, minmax(${cols >= 3 ? "280px" : "320px"}, 1fr))`,
-                        gap: "24px",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {reelsList.map((reel, rIdx) => {
-                        const embedUrl = getIgEmbedUrl(reel.instagramUrl);
-                        return (
-                          <div
-                            key={reel.id || rIdx}
-                            style={{
-                              background: "var(--surface, #0D0A07)",
-                              border: "1px solid var(--border, rgba(201,168,76,0.2))",
-                              borderRadius: borderRadius || "16px",
-                              overflow: "hidden",
-                              display: "flex",
-                              flexDirection: "column",
-                              position: "relative",
-                              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                            }}
-                          >
-                            {/* Featured Badge */}
-                            {reel.featured && (
-                              <div style={{ position: "absolute", top: 12, right: 12, background: "var(--accent, #C9A84C)", color: "#000", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, zIndex: 10, letterSpacing: "0.05em" }}>
-                                FEATURED
-                              </div>
-                            )}
-
-                            {/* Instagram Embed Live Preview */}
-                            <div style={{ position: "relative", width: "100%", height: 560, background: "#000" }}>
-                              {embedUrl ? (
-                                <iframe
-                                  title={`Reel ${rIdx + 1}`}
-                                  src={embedUrl}
-                                  style={{ border: 0, width: "100%", height: "100%", background: "#000" }}
-                                  allow="autoplay; encrypted-media; clipboard-write"
-                                  allowFullScreen
-                                  scrolling="no"
-                                />
-                              ) : (
-                                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", fontSize: 13 }}>
-                                  Instagram Reel
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Caption footer */}
-                            {reel.caption && (
-                              <div style={{ padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(20,12,6,0.8)" }}>
-                                <p style={{ fontSize: "13px", color: "var(--text2)", margin: 0, lineHeight: 1.4 }}>
-                                  {reel.caption}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            // 13. DIVIDER LINE
-            if (bType === "divider") {
-              return (
-                <div key={idx} style={{ padding: "10px 0", display: "flex", alignItems: "center", marginBottom: mBottom }}>
-                  <div style={{ width: "100%", height: parseInt(block.height || "1"), background: headingColor }} />
-                </div>
-              );
-            }
-
-            // 14. VERTICAL SPACER GAP
-            if (bType === "spacer") {
-              return <div key={idx} style={{ height: parseInt(block.height || "50") }} />;
-            }
-
-            return null;
-          })
+          blocksList.map((block, idx) => (
+            <BlockView key={block.id || idx} block={block} device="desktop" ctx={blockCtx} index={idx} />
+          ))
         ) : (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
             <h2>{pageData.title}</h2>

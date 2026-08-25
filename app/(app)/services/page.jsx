@@ -116,26 +116,17 @@ export default function ServicesPage() {
       const unsub = onValue(servicesRef, (snapshot) => {
         const val = snapshot.val();
         let list = [];
-        if (val) {
+        if (val !== null && val !== undefined) {
           list = Array.isArray(val) ? val : Object.values(val);
-        }
-
-        let hasNewMerged = false;
-        const mergedList = [...list];
-        INITIAL_DEFAULT_SERVICES.forEach(defSrv => {
-          const exists = mergedList.some(s => s.id === defSrv.id || s.slug === defSrv.slug);
-          if (!exists) {
-            mergedList.push(defSrv);
-            hasNewMerged = true;
+          if (isMounted) {
+            setServicesList(list);
+            setLoading(false);
           }
-        });
-
-        if (isMounted) {
-          setServicesList(mergedList);
-          setLoading(false);
-        }
-        if (hasNewMerged) {
-          set(ref(db, "cms_services"), mergedList).catch(console.error);
+        } else {
+          if (isMounted) {
+            setServicesList(INITIAL_DEFAULT_SERVICES);
+            setLoading(false);
+          }
         }
       });
       return () => {

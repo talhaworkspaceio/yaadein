@@ -393,12 +393,11 @@ function ProductDetailContent({ params }) {
   const calculatedPriceStr = formatPrice(calculatedPriceNum);
   const isGame = selectedFrame && isBoardGame(selectedFrame);
 
-  // Dynamic dummy photo loader
+  // Dynamic inner photo loader: uses custom uploaded thumbnail photo if present, otherwise alternating orientation artwork
   const getDummyPhoto = () => {
-    const name = (selectedFrame?.name || "").toLowerCase();
-    if (name.includes("ludo")) return "/images/ludo.png";
-    if (name.includes("chess")) return "/images/Chess.jpeg";
-    if (name.includes("monopoly")) return "/images/monopoly.png";
+    if (selectedFrame?.thumbnailUrl) {
+      return selectedFrame.thumbnailUrl;
+    }
     if (orientation === "landscape") {
       return "/images/nature.jpg";
     }
@@ -2652,8 +2651,8 @@ function ProductDetailContent({ params }) {
                           onClick={() => handleFrameChange(f.id)}
                         >
                           <div className="thumb-image-wrapper">
-                            {f.imageUrl ? (
-                              <img src={f.imageUrl} alt={f.name} />
+                            {(f.thumbnailUrl || f.imageUrl) ? (
+                              <img src={f.thumbnailUrl || f.imageUrl} alt={f.name} />
                             ) : (
                               <div className="cart-item-thumb-placeholder">Y</div>
                             )}

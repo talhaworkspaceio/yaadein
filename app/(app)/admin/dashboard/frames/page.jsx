@@ -23,7 +23,7 @@ const DEFAULT_SIZES = [
 
 const INITIAL_FORM = {
   id: "", name: "", price: "Rs. ", category: "", color: "#8B5E3C", desc: "", tag: "",
-  orientation: "portrait", imageUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 1.0,
+  orientation: "portrait", imageUrl: "", thumbnailUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 1.0,
   stock: 10,
   sizes: [...DEFAULT_SIZES],
 };
@@ -58,6 +58,15 @@ export default function FramesPage() {
   const cloudinaryCloud = "hpikhwjw";
   const cloudinaryPreset = "ml_default";
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
+  const resetForm = () => {
+    setFormData(INITIAL_FORM);
+    setIsEditing(false);
+    setEditId(null);
+    setSelectedTemplate("");
+    setFormOpen(false);
+  };
 
   useEffect(() => {
     const unsubFrames = onValue(ref(db, "frames"), (snap) => {
@@ -86,12 +95,35 @@ export default function FramesPage() {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`, { method: "POST", body: dataUpload });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "Upload failed"); }
       const result = await res.json();
-      setFormData(prev => ({ ...prev, imageUrl: result.secure_url }));
-      alert("Image uploaded successfully!");
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: result.secure_url,
+        thumbnailUrl: prev.thumbnailUrl || result.secure_url
+      }));
+      alert("Frame overlay image uploaded successfully!");
     } catch (err) {
       alert(`Upload failed: ${err.message}`);
       e.target.value = "";
     } finally { setUploadingImage(false); }
+  };
+
+  const handleThumbnailFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumbnail(true);
+    const dataUpload = new FormData();
+    dataUpload.append("file", file);
+    dataUpload.append("upload_preset", cloudinaryPreset);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`, { method: "POST", body: dataUpload });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "Thumbnail upload failed"); }
+      const result = await res.json();
+      setFormData(prev => ({ ...prev, thumbnailUrl: result.secure_url }));
+      alert("Frame thumbnail uploaded successfully!");
+    } catch (err) {
+      alert(`Thumbnail upload failed: ${err.message}`);
+      e.target.value = "";
+    } finally { setUploadingThumbnail(false); }
   };
 
   const handleSelectTemplate = (e) => {
@@ -164,14 +196,6 @@ export default function FramesPage() {
     const match = AVAILABLE_FRAME_IMAGES.find(img => img.value === f.imageUrl);
     setSelectedTemplate(match ? match.value : "");
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const resetForm = () => {
-    setFormData(INITIAL_FORM);
-    setIsEditing(false);
-    setEditId(null);
-    setSelectedTemplate("");
-    setFormOpen(false);
   };
 
   // CSV
@@ -649,9 +673,9 @@ export default function FramesPage() {
                 </div>
               </div>
 
-              {/* Image */}
+              {/* Image & Thumbnail */}
               <div className="fp-section">
-                <div className="fp-section-label"><IconImage /> Image & Upload</div>
+                <div className="fp-section-label"><IconImage /> Frame Picture & Thumbnail</div>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Image Template (Prefills Margins)</label>
@@ -661,20 +685,38 @@ export default function FramesPage() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Upload to Cloudinary</label>
+                    <label>Frame Overlay Picture (Main Full Frame)</label>
                     <input type="file" accept="image/*" className="form-control" onChange={handleFileChange} disabled={uploadingImage} />
-                    {uploadingImage && <div style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}><IconLoader /> Uploading...</div>}
+                    {uploadingImage && <div style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}><IconLoader /> Uploading Frame Overlay...</div>}
                   </div>
                 </div>
                 {formData.imageUrl && (
-                  <div className="fp-img-preview">
-                    <div className="fp-img-preview-label"><IconCheck /> Uploaded Preview</div>
-                    <div className="fp-img-container"><img src={formData.imageUrl} alt="Preview" /></div>
-                    <button type="button" className="fp-img-remove" onClick={() => setFormData(p => ({ ...p, imageUrl: "" }))}><IconX /> Remove</button>
+                  <div className="fp-img-preview" style={{ marginBottom: "14px" }}>
+                    <div className="fp-img-preview-label"><IconCheck /> Frame Overlay Preview</div>
+                    <div className="fp-img-container"><img src={formData.imageUrl} alt="Frame Overlay Preview" /></div>
+                    <button type="button" className="fp-img-remove" onClick={() => setFormData(p => ({ ...p, imageUrl: "" }))}><IconX /> Remove Overlay</button>
                   </div>
                 )}
+
+                {/* Dedicated Frame Thumbnail Upload */}
+                <div className="form-row" style={{ marginTop: "10px" }}>
+                  <div className="form-group">
+                    <label>Frame Thumbnail Photo (Catalog & Card Thumbnails)</label>
+                    <input type="file" accept="image/*" className="form-control" onChange={handleThumbnailFileChange} disabled={uploadingThumbnail} />
+                    {uploadingThumbnail && <div style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}><IconLoader /> Uploading Thumbnail...</div>}
+                  </div>
+                </div>
+                {formData.thumbnailUrl && (
+                  <div className="fp-img-preview">
+                    <div className="fp-img-preview-label"><IconCheck /> Thumbnail Preview</div>
+                    <div className="fp-img-container" style={{ maxHeight: "100px" }}><img src={formData.thumbnailUrl} alt="Thumbnail Preview" style={{ maxHeight: "100px" }} /></div>
+                    <button type="button" className="fp-img-remove" onClick={() => setFormData(p => ({ ...p, thumbnailUrl: "" }))}><IconX /> Remove Thumbnail</button>
+                  </div>
+                )}
+
                 <div className="form-row" style={{ marginTop: "16px" }}>
-                  <div className="form-group"><label>Cloudinary URL</label><input readOnly className="form-control url-readonly" value={formData.imageUrl || "No image uploaded"} /></div>
+                  <div className="form-group"><label>Cloudinary Frame URL</label><input readOnly className="form-control url-readonly" value={formData.imageUrl || "No overlay uploaded"} /></div>
+                  <div className="form-group"><label>Cloudinary Thumbnail URL</label><input readOnly className="form-control url-readonly" value={formData.thumbnailUrl || (formData.imageUrl || "No thumbnail uploaded")} /></div>
                 </div>
               </div>
 
@@ -759,7 +801,7 @@ export default function FramesPage() {
               return (
                 <div key={f.docId} className="fp-item">
                   <div className="fp-item-thumb">
-                    {f.imageUrl ? <img src={f.imageUrl} alt={f.name} /> : <div style={{ color: "var(--text2)", opacity: 0.3 }}><IconImage /></div>}
+                    {(f.thumbnailUrl || f.imageUrl) ? <img src={f.thumbnailUrl || f.imageUrl} alt={f.name} /> : <div style={{ color: "var(--text2)", opacity: 0.3 }}><IconImage /></div>}
                   </div>
                   <div className="fp-item-info">
                     <div className="fp-item-name">{f.name}</div>

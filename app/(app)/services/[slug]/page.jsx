@@ -343,6 +343,7 @@ const LampParticles = ({ lightOn }) => (
 );
 
 const SERVICE_DEFAULT_SIZES = [
+  { label: "digital_only", displayLabel: "Digital Copy Only (Digital Delivery)", priceDelta: 0 },
   { label: "12x18", displayLabel: '12" x 18" (Standard)', priceDelta: 0 },
   { label: "16x24", displayLabel: '16" x 24"', priceDelta: 1500 },
   { label: "20x30", displayLabel: '20" x 30" (Large)', priceDelta: 3500 },
@@ -418,6 +419,13 @@ export default function ServiceDetailPage({ params }) {
     ctaText: cmsService?.ctaText || fallbackService?.ctaText || "Order Service",
     ctaLink: cmsService?.ctaLink || fallbackService?.ctaLink || "/contact",
     videoUrl: cmsService?.videoUrl || fallbackService?.videoUrl || "",
+    // Newer services store an ordered videos array; older ones a single videoUrl.
+    videos: (() => {
+      const list = (Array.isArray(cmsService?.videos) ? cmsService.videos : []).filter(Boolean);
+      if (list.length > 0) return list;
+      const single = cmsService?.videoUrl || fallbackService?.videoUrl || "";
+      return single ? [single] : [];
+    })(),
     orientation: cmsService?.orientation || (slug === "nikkahnama-framing" || slug === "instagram-mirror-selfie" ? "portrait" : "landscape"),
     enableUploadPhoto: cmsService?.enableUploadPhoto !== undefined ? cmsService.enableUploadPhoto : (slug !== "instagram-mirror-selfie"),
     enableChooseFrame: cmsService?.enableChooseFrame !== undefined ? cmsService.enableChooseFrame : (slug !== "photo-editing" && slug !== "instagram-mirror-selfie"),
@@ -457,6 +465,17 @@ export default function ServiceDetailPage({ params }) {
   // Active slide index for restoration swiper
   const [activeSlide, setActiveSlide] = useState(0);
 
+  // Frame currently shown on the studio stage. On framed services the swiper
+  // arrows walk this through every available frame while the photo stays put.
+  // Purely visual — pricing still follows the "Choose Frame" picker below.
+  const [displayFrameId, setDisplayFrameId] = useState("__default__");
+
+  // Natural pixel size of each showcase video (set once its metadata loads) — drives
+  // both the 16:9 / 9:16 stage and the cap that stops the clip being upscaled.
+  const [videoDimsMap, setVideoDimsMap] = useState({});
+  const [activeVideo, setActiveVideo] = useState(0);
+  const videoRefs = useRef([]);
+
   // Lock background page scroll while a modal (frame picker or cart drawer) is open.
   // The page scrolls via <html>, not <body>, so both must be locked.
   useEffect(() => {
@@ -485,7 +504,27 @@ export default function ServiceDetailPage({ params }) {
           docId: key,
           ...val
         }));
-        setFrames(framesList.filter((f) => f.category !== "Board Games"));
+        // Filter out Board Games (Ludo, Chess, Monopoly, etc.) from frame picker
+        const isBoardGame = (f) => {
+          const name = (f.name || "").toLowerCase();
+          const cat = (f.category || "").toLowerCase();
+          const sub = (f.subCategory || "").toLowerCase();
+          const desc = (f.description || "").toLowerCase();
+          return (
+            cat.includes("board") ||
+            cat.includes("game") ||
+            sub.includes("board") ||
+            sub.includes("game") ||
+            name.includes("ludo") ||
+            name.includes("chess") ||
+            name.includes("monopoly") ||
+            name.includes("carrom") ||
+            name.includes("scrabble") ||
+            name.includes("board game") ||
+            desc.includes("board game")
+          );
+        };
+        setFrames(framesList.filter((f) => !isBoardGame(f)));
       } else {
         setFrames([]);
       }
@@ -542,20 +581,91 @@ export default function ServiceDetailPage({ params }) {
   // ----- Photo & Frame preview -----
   const currentPhoto = userUploadedImage || selectedGalleryPhoto || service?.image;
 
-  const getPaddings = () => {
-    if (slug === "photo-restoration" && !selectedCustomFrame) {
-      return { top: 7.22, left: 6.04, bottom: 7.06, right: 6.07 };
-    }
-    if (!selectedCustomFrame) return { top: 7, left: 7, bottom: 7, right: 7 };
-    const p = selectedCustomFrame;
-    return {
-      top: Number(p.paddingTop) || 0,
-      left: Number(p.paddingLeft) || 0,
-      bottom: Number(p.paddingBottom) || 0,
-      right: Number(p.paddingRight) || 0
-    };
+  // Photo Editing and the Instagram Mirror are presented without a wooden frame,
+  // so their arrows keep swiping through the photos themselves.
+  const isFramelessService = slug === "photo-editing" || slug === "instagram-mirror-selfie";
+  const isFramedService = !isFramelessService;
+
+  const frameOrientation = service?.orientation === "landscape" ? "landscape" : "portrait";
+
+  const defaultFrameVariant = {
+    id: "__default__",
+    name: "Standard Studio Frame",
+    imageUrl: frameOrientation === "landscape"
+      ? "/frames/landscape/frame-04-correct-size.webp"
+      : "/frames/portrait/frame-01-correct-size.webp",
+    paddingTop: slug === "photo-restoration" ? 7.22 : 7,
+    paddingLeft: slug === "photo-restoration" ? 6.04 : 7,
+    paddingBottom: slug === "photo-restoration" ? 7.06 : 7,
+    paddingRight: slug === "photo-restoration" ? 6.07 : 7
   };
+
+  // Every frame this service can be shown in — the studio default plus each
+  // catalogue frame matching the service orientation.
+  const frameVariants = (() => {
+    if (!isFramedService) return [defaultFrameVariant];
+    const matching = frames.filter(
+      (f) => (f.orientation || "portrait") === frameOrientation && f.imageUrl
+    );
+    const list = [defaultFrameVariant, ...matching];
+    // A frame picked from the modal may fall outside this orientation — keep it visible.
+    if (selectedCustomFrame && !list.some((v) => String(v.id) === String(selectedCustomFrame.id))) {
+      list.push(selectedCustomFrame);
+    }
+    return list;
+  })();
+
+  const displayFrameIndex = Math.max(
+    0,
+    frameVariants.findIndex((v) => String(v.id) === String(displayFrameId))
+  );
+  const displayFrame = frameVariants[displayFrameIndex] || defaultFrameVariant;
+
+  const getPaddings = () => ({
+    top: Number(displayFrame.paddingTop) || 0,
+    left: Number(displayFrame.paddingLeft) || 0,
+    bottom: Number(displayFrame.paddingBottom) || 0,
+    right: Number(displayFrame.paddingRight) || 0
+  });
   const paddings = getPaddings();
+
+  // ----- Swiper stepping -----
+  const stepFrameVariant = (dir) => {
+    const len = frameVariants.length;
+    if (len < 2) return;
+    // Resolve from the live state so rapid clicks don't all read the same index.
+    setDisplayFrameId((prevId) => {
+      const idx = Math.max(0, frameVariants.findIndex((v) => String(v.id) === String(prevId)));
+      return frameVariants[(idx + dir + len) % len].id;
+    });
+  };
+
+  const stepImageSlide = (dir) => {
+    if (!service) return;
+    if (slug === "photo-restoration" || slug === "photo-editing") {
+      const items = slug === "photo-restoration"
+        ? (service.colorPreviews || []).slice(0, 3)
+        : (service.previews || []).slice(0, 3);
+      const count = items.length;
+      if (count < 1) return;
+      setActiveSlide((prev) => (prev + dir + count) % count);
+      return;
+    }
+    const count = (service.images || []).length;
+    if (count < 1) return;
+    setActiveSlide((prev) => {
+      const nextIdx = (prev + dir + count) % count;
+      setSelectedGalleryPhoto(service.images[nextIdx]);
+      return nextIdx;
+    });
+  };
+
+  // On a framed service the arrows walk the frame variations; if the frame
+  // catalogue is unavailable they fall back to swiping the photos as before.
+  const framesCyclable = isFramedService && frameVariants.length > 1;
+  const photosCyclable =
+    (slug === "photo-restoration" || slug === "photo-editing") ||
+    (service?.enableMultipleImages !== false && Array.isArray(service?.images) && service.images.length > 1);
 
   // ----- Upload handlers -----
   const handleImageUpload = (e) => {
@@ -574,11 +684,13 @@ export default function ServiceDetailPage({ params }) {
   // ----- Frame picker -----
   const handleSelectFrame = (frame) => {
     setSelectedCustomFrame(frame);
+    setDisplayFrameId(frame.id);
     setFrameModalOpen(false);
   };
 
   const clearSelectedFrame = () => {
     setSelectedCustomFrame(null);
+    setDisplayFrameId("__default__");
     setFrameModalOpen(false);
   };
 
@@ -595,16 +707,22 @@ export default function ServiceDetailPage({ params }) {
       }
     }
 
-    const sizeDisplay = selectedSize === "custom"
+    const sizeDisplay = selectedSize === "digital_only"
+      ? "Digital Copy Only (Digital Delivery)"
+      : selectedSize === "custom"
       ? `Custom Size (${customWidth || "0"} x ${customHeight || "0"} ${customUnit})`
       : (sizeObj?.displayLabel || selectedSize);
+
+    const frameDisplay = selectedCustomFrame
+      ? selectedCustomFrame.name
+      : (selectedSize === "digital_only" ? "No Physical Frame (Digital Delivery)" : "Standard Studio Frame");
 
     const item = {
       id: `service-${slug}${selectedCustomFrame ? `-${selectedCustomFrame.id}` : ""}-${selectedSize}`,
       frameName: service.title,
       frameColor: selectedCustomFrame?.color || "",
       price: totalPriceStr,
-      size: slug === "instagram-mirror-selfie" ? sizeDisplay : (selectedCustomFrame ? selectedCustomFrame.name : sizeDisplay),
+      size: `${sizeDisplay} • ${frameDisplay}`,
       orientation: "portrait",
       rotation: 0,
       image: finalImage
@@ -623,6 +741,45 @@ export default function ServiceDetailPage({ params }) {
     saveCart(cart);
     setCartOpen(true);
   };
+
+  // ----- Showcase video stage (16:9 landscape / 9:16 portrait, never upscaled) -----
+  // The stage is sized once for the whole carousel so it never resizes between
+  // clips: the orientation comes from the first video, the width from the
+  // narrowest one so no clip is ever blown up past its own pixels.
+  const serviceVideos = service?.videos || [];
+  const currentVideoIndex = serviceVideos.length > 0
+    ? Math.min(activeVideo, serviceVideos.length - 1)
+    : 0;
+
+  const knownVideoDims = serviceVideos.map((_, i) => videoDimsMap[i]).filter(Boolean);
+  const allVideoDimsKnown = serviceVideos.length > 0 && knownVideoDims.length === serviceVideos.length;
+  const firstVideoDims = videoDimsMap[0];
+  const isPortraitVideo = !!firstVideoDims && firstVideoDims.h > firstVideoDims.w;
+  const narrowestVideoWidth = allVideoDimsKnown
+    ? Math.min(...knownVideoDims.map((d) => d.w))
+    : null;
+  const videoStageMaxWidth = isPortraitVideo
+    ? Math.min(narrowestVideoWidth || 420, 420)
+    : Math.min(Math.max(narrowestVideoWidth || 1160, 720), 1160);
+
+  const stepVideo = (dir) => {
+    const count = serviceVideos.length;
+    if (count < 2) return;
+    setActiveVideo((prev) => (prev + dir + count) % count);
+  };
+
+  // Only the visible clip plays; the rest stay parked at their first frame.
+  useEffect(() => {
+    videoRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      if (idx === currentVideoIndex) {
+        const playback = el.play();
+        if (playback && typeof playback.catch === "function") playback.catch(() => {});
+      } else {
+        el.pause();
+      }
+    });
+  }, [currentVideoIndex, serviceVideos.length]);
 
   if (loading) {
     return (
@@ -1863,14 +2020,14 @@ export default function ServiceDetailPage({ params }) {
           .exquisite-wood-frame { max-width: 230px; }
         }
 
-        /* PHOTO RESTORATION CUSTOM LAYOUT & NEUTRAL LIGHTING */
+        /* PHOTO RESTORATION & PHOTO EDITING CUSTOM LAYOUT & LAMP SPACING */
         .photo-restoration-page .product-visual-pane {
-          padding-top: 20px;
+          padding-top: 10px;
           align-items: center;
         }
 
         .photo-restoration-page .exquisite-frame-component {
-          padding-top: 130px;
+          padding-top: 210px;
           max-width: 520px;
           width: 100%;
         }
@@ -1927,7 +2084,7 @@ export default function ServiceDetailPage({ params }) {
           aspect-ratio: 1.5 !important;
           max-width: 480px !important;
           width: 100% !important;
-          margin: 0 !important;
+          margin: 30px auto 0 !important;
           box-shadow: 0 20px 45px rgba(0,0,0,0.85);
         }
 
@@ -1972,6 +2129,7 @@ export default function ServiceDetailPage({ params }) {
           border: none !important;
           box-shadow: none !important;
           padding: 0 !important;
+          margin-top: 20px !important;
         }
         .exquisite-wood-frame.no-frame-border::after {
           display: none !important;
@@ -2059,6 +2217,109 @@ export default function ServiceDetailPage({ params }) {
           height: 100% !important;
           object-fit: cover !important;
           transform: none !important;
+        }
+
+        /* Frame variation caption under the studio stage */
+        .frame-variant-caption {
+          position: absolute;
+          left: 50%;
+          bottom: -6px;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 5px 14px;
+          border-radius: 30px;
+          background: rgba(28, 15, 7, 0.85);
+          border: 1px solid rgba(223, 195, 138, 0.45);
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #dfc38a;
+          white-space: nowrap;
+          z-index: 30;
+          pointer-events: none;
+        }
+        .frame-variant-caption .fv-count {
+          color: rgba(223, 195, 138, 0.6);
+        }
+
+        /* Cinema stage clips — "contain" keeps the source pixels 1:1 inside the
+           fixed 16:9 / 9:16 stage; "cover" was upscaling and cropping them. */
+        .cinema-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+          background: #000;
+          opacity: 0;
+          transition: opacity 0.35s ease;
+          pointer-events: none;
+        }
+        .cinema-video.active {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        /* Video carousel controls */
+        .video-carousel-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(28, 15, 7, 0.88);
+          border: 1px solid #dfc38a;
+          color: #dfc38a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 5;
+          padding: 0;
+          transition: all 0.2s ease;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.7);
+        }
+        .video-carousel-arrow:hover {
+          background: #dfc38a;
+          color: #1c0f07;
+          box-shadow: 0 0 16px rgba(223, 195, 138, 0.6);
+        }
+        .video-carousel-arrow.prev { left: -62px; }
+        .video-carousel-arrow.next { right: -62px; }
+
+        @media (max-width: 1320px) {
+          .video-carousel-arrow.prev { left: 10px; }
+          .video-carousel-arrow.next { right: 10px; }
+        }
+
+        .video-carousel-dots {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          margin-top: 26px;
+        }
+        .video-carousel-dot {
+          width: 9px;
+          height: 9px;
+          padding: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(223, 195, 138, 0.6);
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .video-carousel-dot:hover { background: rgba(223, 195, 138, 0.45); }
+        .video-carousel-dot.active {
+          background: #dfc38a;
+          border-color: #dfc38a;
+          transform: scale(1.25);
         }
 
         /* Swiper Prev/Next Arrows (Left and Right sides of the frame) */
@@ -2191,8 +2452,9 @@ export default function ServiceDetailPage({ params }) {
 
                   {slug === "photo-editing" || (slug === "instagram-mirror-selfie" && !selectedCustomFrame) ? null : (
                     <img
-                      src={selectedCustomFrame?.imageUrl || (service.orientation === "landscape" ? "/frames/landscape/frame-04-correct-size.webp" : "/frames/portrait/frame-01-correct-size.webp")}
-                      alt={selectedCustomFrame?.name || "Handcrafted Wood Frame"}
+                      key={displayFrame.id}
+                      src={displayFrame.imageUrl}
+                      alt={displayFrame.name || "Handcrafted Wood Frame"}
                       className="wood-frame-overlay"
                     />
                   )}
@@ -2284,31 +2546,21 @@ export default function ServiceDetailPage({ params }) {
                   </div>
                 </div>
 
-                {/* Swipe controls — outside the frame on either side */}
-                {((slug === "photo-restoration" || slug === "photo-editing") || (service.enableMultipleImages !== false && Array.isArray(service.images) && service.images.length > 1)) && !userUploadedImage && (
+                {/* Swipe controls — outside the frame on either side.
+                    Framed services step through frame variations (the photo stays put);
+                    frameless ones keep stepping through the photos themselves. */}
+                {(framesCyclable || (photosCyclable && !userUploadedImage)) && (
                   <>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (slug === "photo-restoration" || slug === "photo-editing") {
-                          const items = slug === "photo-restoration"
-                            ? (service.colorPreviews || []).slice(0, 3)
-                            : (service.previews || []).slice(0, 3);
-                          const count = items.length;
-                          setActiveSlide((prev) => (prev === 0 ? count - 1 : prev - 1));
-                        } else {
-                          const count = service.images.length;
-                          setActiveSlide((prev) => {
-                            const nextIdx = prev === 0 ? count - 1 : prev - 1;
-                            setSelectedGalleryPhoto(service.images[nextIdx]);
-                            return nextIdx;
-                          });
-                        }
+                        if (framesCyclable) stepFrameVariant(-1);
+                        else stepImageSlide(-1);
                       }}
                       className="swiper-arrow swiper-arrow-prev"
                       style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
-                      aria-label="Previous image"
+                      aria-label={framesCyclable ? "Previous frame" : "Previous image"}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
                         <polyline points="15 18 9 12 15 6" />
@@ -2318,30 +2570,26 @@ export default function ServiceDetailPage({ params }) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (slug === "photo-restoration" || slug === "photo-editing") {
-                          const items = slug === "photo-restoration"
-                            ? (service.colorPreviews || []).slice(0, 3)
-                            : (service.previews || []).slice(0, 3);
-                          const count = items.length;
-                          setActiveSlide((prev) => (prev === count - 1 ? 0 : prev + 1));
-                        } else {
-                          const count = service.images.length;
-                          setActiveSlide((prev) => {
-                            const nextIdx = prev === count - 1 ? 0 : prev + 1;
-                            setSelectedGalleryPhoto(service.images[nextIdx]);
-                            return nextIdx;
-                          });
-                        }
+                        if (framesCyclable) stepFrameVariant(1);
+                        else stepImageSlide(1);
                       }}
                       className="swiper-arrow swiper-arrow-next"
                       style={{ top: `${50 + (paddings.top - paddings.bottom) / 2}%` }}
-                      aria-label="Next image"
+                      aria-label={framesCyclable ? "Next frame" : "Next image"}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
                         <polyline points="9 18 15 12 9 6" />
                       </svg>
                     </button>
                   </>
+                )}
+
+                {/* Which frame the photo is currently sitting in */}
+                {framesCyclable && (
+                  <span className="frame-variant-caption">
+                    {displayFrame.name}
+                    <span className="fv-count">{displayFrameIndex + 1} / {frameVariants.length}</span>
+                  </span>
                 )}
               </div>
             </div>
@@ -2614,8 +2862,8 @@ export default function ServiceDetailPage({ params }) {
         </section>
       )}
 
-      {/* LUXURY THEATRICAL VIDEO SHOWCASE */}
-      {service.videoUrl && (
+      {/* LUXURY THEATRICAL VIDEO SHOWCASE — single video plays full-width, several become a carousel */}
+      {serviceVideos.length > 0 && (
         <section className="service-cinema-section" style={{
           position: "relative",
           width: "100%",
@@ -2656,17 +2904,29 @@ export default function ServiceDetailPage({ params }) {
               margin: "0 0 10px 0",
               letterSpacing: "0.02em"
             }}>
-              {service.title} video
+              {service.title} {serviceVideos.length > 1 ? "videos" : "video"}
             </h2>
-
+            {serviceVideos.length > 1 && (
+              <p style={{
+                fontFamily: "var(--font-typewriter)",
+                fontSize: "11px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                margin: 0
+              }}>
+                {currentVideoIndex + 1} / {serviceVideos.length}
+              </p>
+            )}
           </div>
 
-          {/* Theatrical Video Screen Frame */}
+          {/* Theatrical Video Screen Frame — snaps to 16:9 or 9:16 from the source video,
+              and never renders wider than the clip's own pixels so it stays sharp. */}
           <div style={{
             position: "relative",
             zIndex: 2,
             width: "100%",
-            maxWidth: "1160px",
+            maxWidth: `${videoStageMaxWidth}px`,
             margin: "0 auto",
           }}>
             {/* Outer Luxury Shadow & Border Card */}
@@ -2686,27 +2946,77 @@ export default function ServiceDetailPage({ params }) {
                 background: "#000",
                 border: "1px solid rgba(0, 0, 0, 0.8)",
                 boxShadow: "inset 0 4px 20px rgba(0, 0, 0, 0.8)",
-                aspectRatio: "16 / 9",
+                aspectRatio: isPortraitVideo ? "9 / 16" : "16 / 9",
               }}>
 
-                <video
-                  src={service.videoUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    background: "#000",
-                  }}
-                />
+                {/* Every clip is mounted so its dimensions are known up front and the
+                    stage size never changes; only the active one is visible and playing. */}
+                {serviceVideos.map((videoSrc, idx) => (
+                  <video
+                    key={`${videoSrc}-${idx}`}
+                    ref={(el) => { videoRefs.current[idx] = el; }}
+                    src={videoSrc}
+                    autoPlay={idx === currentVideoIndex}
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    disablePictureInPicture
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      if (v.videoWidth && v.videoHeight) {
+                        setVideoDimsMap((prev) => (
+                          prev[idx] ? prev : { ...prev, [idx]: { w: v.videoWidth, h: v.videoHeight } }
+                        ));
+                      }
+                    }}
+                    className={`cinema-video ${idx === currentVideoIndex ? "active" : ""}`}
+                  />
+                ))}
               </div>
             </div>
+
+            {/* Carousel controls — only once there is more than one clip */}
+            {serviceVideos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => stepVideo(-1)}
+                  className="video-carousel-arrow prev"
+                  aria-label="Previous video"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepVideo(1)}
+                  className="video-carousel-arrow next"
+                  aria-label="Next video"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
+
+          {/* Carousel dots */}
+          {serviceVideos.length > 1 && (
+            <div className="video-carousel-dots">
+              {serviceVideos.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveVideo(idx)}
+                  className={`video-carousel-dot ${idx === currentVideoIndex ? "active" : ""}`}
+                  aria-label={`Play video ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -2804,8 +3114,8 @@ export default function ServiceDetailPage({ params }) {
                     onClick={() => handleSelectFrame(f)}
                   >
                     <div className="frame-option-thumb">
-                      {f.imageUrl ? (
-                        <img src={f.imageUrl} alt={f.name} />
+                      {(f.thumbnailUrl || f.imageUrl) ? (
+                        <img src={f.thumbnailUrl || f.imageUrl} alt={f.name} />
                       ) : (
                         <span className="frame-option-thumb-placeholder">Y</span>
                       )}

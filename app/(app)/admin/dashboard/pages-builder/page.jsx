@@ -1,859 +1,630 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ref, onValue, set, remove } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 
-export const FONT_FAMILIES = [
-  { name: "Default (Inherit)", val: "inherit" },
-  { name: "Cinzel (Luxury Serif)", val: "'Cinzel', serif" },
-  { name: "Playfair Display (Editorial)", val: "'Playfair Display', serif" },
-  { name: "Inter (Modern Sans)", val: "'Inter', sans-serif" },
-  { name: "Montserrat (Bold Clean)", val: "'Montserrat', sans-serif" },
-  { name: "Lora (Classic Serif)", val: "'Lora', serif" },
-  { name: "Outfit (Contemporary)", val: "'Outfit', sans-serif" },
-  { name: "Monospace", val: "monospace" },
+import {
+  COMPONENTS,
+  CATEGORIES,
+  BREAKPOINTS,
+  FONT_FAMILIES,
+  GRADIENT_PRESETS,
+  createBlock,
+  getComponent,
+  isContainerBlock,
+  newBlockId,
+} from "../../../../../lib/pageBuilder/schema";
+import {
+  buildPageCss,
+  updateBlockById,
+  findBlockById,
+  findParentOf,
+  removeBlockById,
+  insertBlock,
+  moveBlock,
+  duplicateBlockTree,
+  flattenBlocks,
+  containsBlock,
+} from "../../../../../lib/pageBuilder/styles";
+import BlockView from "../../../../../lib/pageBuilder/BlockView";
+import Inspector from "../../../../../lib/pageBuilder/Inspector";
+
+export const DEFAULT_PAGE_SETTINGS = {
+  showHero: true,
+  showLamp: true,
+  showLightSwitch: true,
+  heading: "",
+  subtitle: "Custom page layout built inside Yaadein Elementor Studio.",
+  headingFontFamily: "var(--font-display)",
+  headingColor: "#FFFFFF",
+  headingFontSize: "52",
+  headingAlign: "center",
+  backdropType: "none",
+  backdropColor: "#050403",
+  backdropGradient: GRADIENT_PRESETS[0].val,
+  backdropImage: "",
+  backdropParallax: true,
+  backdropOverlay: "rgba(5, 4, 3, 0.55)",
+  backdropBlur: "0",
+  showBlobs: true,
+  contentMaxWidth: "1200px",
+};
+
+// Starter layouts — each is a nested tree, so they double as worked examples.
+const STARTER_LAYOUTS = [
+  { id: "blank", label: "Blank canvas", desc: "Start from nothing." },
+  { id: "hero-features", label: "Hero + 3 features", desc: "Headline, sub-copy, buttons, then a 3-column icon row." },
+  { id: "split", label: "Split image / text", desc: "A 50/50 row that stacks on mobile." },
+  { id: "pricing", label: "Pricing trio", desc: "Three pricing cards in a responsive grid." },
 ];
 
-export const FONT_COLORS = [
-  { name: "Gold (Accent) (#C9A84C)", hex: "#C9A84C" },
-  { name: "Pure White (#FFFFFF)", hex: "#FFFFFF" },
-  { name: "Soft Cream (#E0D7CD)", hex: "#E0D7CD" },
-  { name: "Vibrant Gold (#FFD700)", hex: "#FFD700" },
-  { name: "Coral Pink (#FF5A5F)", hex: "#FF5A5F" },
-  { name: "Emerald Green (#2ECC71)", hex: "#2ECC71" },
-  { name: "Sky Blue (#3498DB)", hex: "#3498DB" },
-  { name: "Warm Amber (#E67E22)", hex: "#E67E22" },
-  { name: "Muted Steel (#A0A0A0)", hex: "#A0A0A0" },
-  { name: "Dark Charcoal (#1A1A1A)", hex: "#1A1A1A" },
-];
+function buildStarter(id) {
+  const mk = (componentId, patch = {}, children = null) => {
+    const b = createBlock(componentId);
+    Object.assign(b, patch);
+    if (children) b.children = children;
+    return b;
+  };
 
-export const BORDER_STYLES = [
-  { name: "None", val: "none" },
-  { name: "Solid Line", val: "solid" },
-  { name: "Dashed Line", val: "dashed" },
-  { name: "Dotted Line", val: "dotted" },
-  { name: "Double Line", val: "double" },
-];
-
-export const SHADOW_PRESETS = [
-  { name: "None", val: "none" },
-  { name: "Subtle Soft Shadow", val: "0 4px 12px rgba(0,0,0,0.4)" },
-  { name: "Gold Ambient Glow", val: "0 0 20px rgba(201, 168, 76, 0.35)" },
-  { name: "Deep Elevated 3D", val: "0 12px 32px rgba(0,0,0,0.8)" },
-  { name: "Inverted Inner Shadow", val: "inset 0 2px 8px rgba(0,0,0,0.6)" },
-];
-
-export const SAMPLE_TEMPLATES = [
-  {
-    id: "blog-layout",
-    title: "Editorial Blog & Art Journal Layout",
-    category: "Blog & Editorial",
-    icon: "📰",
-    slug: "art-journal-gallery-walls",
-    blocks: [
-      { id: "b1", type: "heading", tag: "h1", text: "The Art of Gallery Walls: 7 Secrets from Master Curators", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "38", fontWeight: "700", textAlign: "center", paddingTop: "20", paddingBottom: "10" },
-      { id: "b2", type: "paragraph", text: "Published by @yaadein.pk • 5 Min Read • Interior Art Curation Series", fontFamily: "'Inter', sans-serif", textColor: "#A0A0A0", fontSize: "14", fontWeight: "400", textAlign: "center", paddingTop: "0", paddingBottom: "20" },
-      { id: "b3", type: "row-2col", colRatio: "1fr 1fr", col1Type: "image", col1Image: "/images/bespoke_framing.png", col1Title: "Precision Spacing & Sightlines", col1Body: "A gallery wall should feel balanced, not cluttered.", col2Type: "text", col2Title: "1. Match Frame Profiles to Art Style", col2Body: "Pair ornate gilded frames with classical portraiture, and sleek matte black frames with modern line art.", col2ButtonText: "Explore Frame Profiles", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", paddingTop: "20", paddingBottom: "20" },
-      { id: "b4", type: "testimonial", name: "Sarah Khan", rating: "5", quote: "Following this gallery wall guide transformed our living room wall into a museum exhibit!", location: "Islamabad", textColor: "#C9A84C" },
-      { id: "b5", type: "cta-banner", title: "Want a Custom Gallery Wall Set?", subtitle: "Consult directly with our master framing artisans today.", buttonText: "Request Consultation", buttonLink: "/contact", textColor: "#FFD700" }
-    ]
-  },
-  {
-    id: "contact-layout",
-    title: "Studio Consultation & Contact Layout",
-    category: "Contact & Inquiry",
-    icon: "📞",
-    slug: "studio-consultation",
-    blocks: [
-      { id: "b1", type: "heading", tag: "h1", text: "Request a Free Studio Framing Consultation", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "40", fontWeight: "700", textAlign: "center", paddingTop: "20", paddingBottom: "10" },
-      { id: "b2", type: "row-2col", colRatio: "1fr 1fr", col1Type: "text", col1Title: "Yaadein Main Framing Studio", col1Body: "Visit our workshop or contact our framing advisors online.\n\n📍 Studio Address: Main Boulevard, Gulberg III, Lahore, Pakistan\n📞 Direct Line: +92 (300) 123-4567\n✉️ Email: concierge@yaadein.pk", col2Type: "text", col2Title: "Studio Operating Hours", col2Body: "Monday - Saturday: 11:00 AM - 9:00 PM\nSunday: By Appointment Only\n\nWe offer nationwide insured shipping across Pakistan.", col2ButtonText: "Call Concierge", col2ButtonLink: "tel:+923001234567", textColor: "#C9A84C", gap: "24", paddingTop: "20", paddingBottom: "20" },
-      { id: "b3", type: "faq", question: "How long does custom framing take?", answer: "Standard orders take 3-5 business days. Express 24-hour framing is available upon request.", textColor: "#C9A84C" },
-      { id: "b4", type: "faq", question: "Do you offer glass replacement?", answer: "Yes! We fit 99% UV-protective museum glass or non-reflective optical acrylic.", textColor: "#C9A84C" }
-    ]
+  if (id === "hero-features") {
+    return [
+      mk("section", { paddingTop: 70, paddingBottom: 50, alignItems: "center", gap: 18 }, [
+        mk("heading", { text: "Framing that outlives the memory", fontSize: 46, mobile: { fontSize: 30 } }),
+        mk("paragraph", { text: "Hand-built in our Lahore studio using archival materials and century-tested joinery.", textAlign: "center", maxWidth: "620px", fontSize: 17 }),
+        mk("button-group", {}),
+      ]),
+      mk("columns-3", { paddingTop: 20, paddingBottom: 60 }, [
+        mk("icon-box", { icon: "shield", title: "Museum Materials", text: "Acid-free mats and 99% UV conservation glass." }),
+        mk("icon-box", { icon: "scissors", title: "Hand-Cut Mouldings", text: "Solid teak, walnut and mahogany, cured against warping." }),
+        mk("icon-box", { icon: "truck", title: "Insured Delivery", text: "Crated and shipped nationwide with full cover." }),
+      ]),
+    ];
   }
-];
+  if (id === "split") {
+    return [
+      mk("columns-2", { paddingTop: 50, paddingBottom: 50, alignItems: "center", gap: 40 }, [
+        mk("image", { url: "/images/bespoke_framing.png", imageRatio: "4/3" }),
+        mk("section", { layoutMode: "stack", gap: 16, paddingTop: 0, paddingBottom: 0 }, [
+          mk("badge", { text: "BESPOKE" }),
+          mk("heading", { text: "Built around your piece, not the other way round", fontSize: 34, textAlign: "left" }),
+          mk("paragraph", { text: "We measure, mount and finish every commission by hand." }),
+          mk("button", { text: "Start a commission", boxAlign: "left" }),
+        ]),
+      ]),
+    ];
+  }
+  if (id === "pricing") {
+    return [
+      mk("section", { paddingTop: 60, paddingBottom: 20, alignItems: "center" }, [
+        mk("heading", { text: "Studio Pricing", fontSize: 40 }),
+        mk("paragraph", { text: "Transparent pricing, no hidden framing costs.", textAlign: "center" }),
+      ]),
+      mk("columns-3", { paddingBottom: 70, alignItems: "stretch" }, [
+        mk("pricing", { title: "Essential", price: "2,500", ribbonBadge: "", features: ["Solid pine moulding", "Standard glass", "3-5 day turnaround"] }),
+        mk("pricing", { title: "Archival", price: "4,500", features: ["99% UV museum glass", "Acid-free double mount", "Insured delivery"] }),
+        mk("pricing", { title: "Heirloom", price: "8,000", ribbonBadge: "", features: ["Hand-gilded moulding", "Conservation mounting", "Studio consultation"] }),
+      ]),
+    ];
+  }
+  return [];
+}
 
-export const WIDGET_PALETTE = [
-  { id: "heading", name: "Heading Headline", category: "Typography", icon: "H", defaultData: { type: "heading", tag: "h2", text: "Luxury Framing Headline", fontFamily: "'Cinzel', serif", textColor: "#C9A84C", fontSize: "36", fontWeight: "700", textAlign: "center", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.3", letterSpacing: "0", wordSpacing: "0", textShadow: "none", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "paragraph", name: "Text Paragraph", category: "Typography", icon: "¶", defaultData: { type: "paragraph", text: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", fontFamily: "'Inter', sans-serif", textColor: "#E0D7CD", fontSize: "16", fontWeight: "400", textAlign: "left", textTransform: "none", fontStyle: "normal", textDecoration: "none", lineHeight: "1.8", letterSpacing: "0", wordSpacing: "0", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "row-2col", name: "2-Column Side-by-Side Row (50/50)", category: "Side-by-Side Layout", icon: "⫽", defaultData: { type: "row-2col", isContainer: true, layout: "2col", colRatio: "1fr 1fr", col1Type: "text", col1Image: "/images/bespoke_framing.png", col1Title: "Left Paragraph Headline", col1Body: "Our handcrafted solid wood picture frames are built using century-tested joinery techniques in our studio.", col2Type: "text", col2Title: "Right Paragraph Headline", col2Body: "Our master woodcraftsmen build every frame to millimeter precision in our studio.", col2ButtonText: "", col2ButtonLink: "/catalog", textColor: "#C9A84C", gap: "24", verticalAlign: "center", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "row-3col", name: "3-Column Side-by-Side Row (33/33/33)", category: "Side-by-Side Layout", icon: "⫾", defaultData: { type: "row-3col", isContainer: true, layout: "3col", col1Title: "Feature 1", col1Body: "100% Acid-Free Mats", col2Title: "Feature 2", col2Body: "99% UV Glass Protection", col3Title: "Feature 3", col3Body: "Solid Teak & Mahogany Wood", textColor: "#C9A84C", gap: "20", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "image", name: "Image / Photo", category: "Media", icon: "▢", defaultData: { type: "image", url: "/images/bespoke_framing.png", caption: "Bespoke Solid Wood Framing", width: "100%", aspectRatio: "auto", objectFit: "cover", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "8", shadow: "0 10px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "20", marginLeft: "", marginRight: "" } },
-  { id: "video", name: "Video Player", category: "Media", icon: "▶", defaultData: { type: "video", url: "/videos/reel1.mp4", caption: "Craftsmanship Video Reel", aspectRatio: "16/9", autoPlay: false, loop: false, controls: true, muted: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "12", shadow: "0 12px 30px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "video-reels", name: "Instagram Reels Gallery", category: "Media", icon: "❖", defaultData: { type: "video-reels", sectionTitle: "Our Work in Motion", sectionSubtitle: "See how our customers style their spaces.", layout: "carousel", columns: "2", textColor: "#C9A84C", reels: [{ id: "r_1", instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/", caption: "Behind the scenes at Yaadein Studio", featured: true }], positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "none", borderWidth: "1", borderColor: "rgba(201,168,76,0.3)", borderRadius: "0", shadow: "none", opacity: "1", paddingTop: "20", paddingBottom: "20", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "cta-banner", name: "CTA Callout Banner", category: "Sections", icon: "◈", defaultData: { type: "cta-banner", title: "Custom Framing Order", subtitle: "Speak directly with our studio artisans.", buttonText: "Get Free Quote", buttonLink: "/contact", textColor: "#FFD700", bgGradient: "linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(20,12,6,0.9) 100%)", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "50", paddingBottom: "50", paddingLeft: "10", paddingRight: "10", marginTop: "20", marginBottom: "40", marginLeft: "", marginRight: "" } },
-  { id: "testimonial", name: "Testimonial Card", category: "Social Proof", icon: "★", defaultData: { type: "testimonial", name: "Fatima Ali", rating: "5", quote: "The quality of the wood framing and museum glass exceeded all my expectations!", location: "Lahore", textColor: "#C9A84C", avatarUrl: "", avatarShape: "circle", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(28, 15, 7, 0.6)", borderStyle: "solid", borderWidth: "1", borderColor: "rgba(201, 168, 76, 0.2)", borderRadius: "12", shadow: "0 8px 24px rgba(0,0,0,0.6)", opacity: "1", paddingTop: "28", paddingBottom: "28", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "faq", name: "FAQ Accordion Item", category: "Information", icon: "❖", defaultData: { type: "faq", question: "Do you ship nationwide across Pakistan?", answer: "Yes! We provide insured nationwide shipping in custom wooden crates.", textColor: "#C9A84C", iconStyle: "plus-minus", initialOpen: false, positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(20, 12, 6, 0.7)", borderStyle: "solid", borderWidth: "1", borderColor: "var(--border)", borderRadius: "8", shadow: "none", opacity: "1", paddingTop: "0", paddingBottom: "0", paddingLeft: "10", paddingRight: "10", marginTop: "0", marginBottom: "14", marginLeft: "", marginRight: "" } },
-  { id: "pricing", name: "Pricing Card", category: "E-Commerce", icon: "◇", defaultData: { type: "pricing", title: "Custom Archival Package", currency: "Rs.", price: "4,500", period: "per frame", ribbonBadge: "MOST POPULAR", buttonText: "Configure Frame", buttonLink: "/customize", textColor: "#C9A84C", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "rgba(201, 168, 76, 0.15)", borderStyle: "solid", borderWidth: "1", borderColor: "#C9A84C", borderRadius: "16", shadow: "0 12px 32px rgba(0,0,0,0.8)", opacity: "1", paddingTop: "32", paddingBottom: "32", paddingLeft: "10", paddingRight: "10", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "divider", name: "Divider Line", category: "Layout", icon: "―", defaultData: { type: "divider", color: "#C9A84C", width: "100%", height: "1", borderStyle: "solid", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxHeight: "auto", boxAlign: "center", bgColor: "transparent", opacity: "1", paddingTop: "10", paddingBottom: "10", paddingLeft: "0", paddingRight: "0", marginTop: "10", marginBottom: "30", marginLeft: "", marginRight: "" } },
-  { id: "spacer", name: "Vertical Spacer", category: "Layout", icon: "↕", defaultData: { type: "spacer", height: "40", positionMode: "relative", posX: 0, posY: 0, displayMode: "block", boxWidth: "100%", boxAlign: "center" } },
-];
+// ---------------------------------------------------------------------------
 
-export default function ElementorPageBuilder() {
+export default function PageBuilder() {
+  // ---- page data
   const [pagesList, setPagesList] = useState([]);
-  const [selectedSlug, setSelectedSlug] = useState("art-journal-gallery-walls");
-  const [pageTitle, setPageTitle] = useState("Editorial Blog & Art Journal Layout");
+  const [selectedSlug, setSelectedSlug] = useState("");
+  const [pageTitle, setPageTitle] = useState("");
   const [pageBlocks, setPageBlocks] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [pageSettings, setPageSettings] = useState({ ...DEFAULT_PAGE_SETTINGS });
 
-  const [activeInspectorTab, setActiveInspectorTab] = useState("content");
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-
-  // Create New Page Modal State
-  const [showCreatePageModal, setShowCreatePageModal] = useState(false);
-  const [newPageTitle, setNewPageTitle] = useState("");
-  const [newPageSlug, setNewPageSlug] = useState("");
-  const [newPagePreset, setNewPagePreset] = useState("blank");
-
-  // Collapsible Sidebars State
+  // ---- editor state
+  const [viewMode, setViewMode] = useState("list");
+  const [selectedId, setSelectedId] = useState(null);
+  const [device, setDevice] = useState("desktop");
+  const [leftTab, setLeftTab] = useState("widgets");
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [previewLightOn, setPreviewLightOn] = useState(true);
+  const [dropTarget, setDropTarget] = useState(null); // { id, mode }
+  const [collapsedLayers, setCollapsedLayers] = useState({});
+  const [previewMode, setPreviewMode] = useState(false);
+  const [openCategories, setOpenCategories] = useState({});
+  const [previewFaqs, setPreviewFaqs] = useState({});
 
-  // Drag and Drop States
-  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
-  const [draggedBlockIndex, setDraggedBlockIndex] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  // ---- modals
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageSlug, setNewPageSlug] = useState("");
+  const [newPagePreset, setNewPagePreset] = useState("hero-features");
+  const [pageToDelete, setPageToDelete] = useState(null);
+  const [pagesSearch, setPagesSearch] = useState("");
 
-  // Interactive Resizing & Moving Ref States
-  const canvasRef = useRef(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isMovingFree, setIsMovingFree] = useState(false);
-  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0, initialWidth: 0, initialHeight: 0, initialX: 0, initialY: 0 });
+  // ---- history
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const skipHistoryRef = useRef(false);
+  const hydratedSlugRef = useRef(null);
+  const dragPayloadRef = useRef(null);
 
-  // Load pages from Firebase
+  const flash = (text, ms = 2500) => {
+    setMessage(text);
+    setTimeout(() => setMessage(""), ms);
+  };
+
+  // ------------------------------------------------------------------ loading
   useEffect(() => {
     const pagesRef = ref(db, "cms_pages");
     const unsub = onValue(pagesRef, (snapshot) => {
       const val = snapshot.val();
-      if (val) {
-        const list = Object.values(val);
-        setPagesList(list);
-
-        const activePage = list.find(p => p.slug === selectedSlug);
-        if (activePage) {
-          setPageTitle(activePage.title);
-          setPageBlocks(Array.isArray(activePage.blocks) ? activePage.blocks : []);
-        } else if (!selectedSlug && list.length > 0) {
-          setSelectedSlug(list[0].slug);
-          setPageTitle(list[0].title);
-          setPageBlocks(Array.isArray(list[0].blocks) ? list[0].blocks : []);
-        }
-      } else {
-        setPagesList([]);
-        setPageBlocks([]);
+      const list = val ? Object.values(val) : [];
+      setPagesList(list);
+      const active = list.find((p) => p.slug === selectedSlug);
+      if (active && hydratedSlugRef.current !== selectedSlug) {
+        hydratedSlugRef.current = selectedSlug;
+        setPageTitle(active.title || "");
+        setPageBlocks(Array.isArray(active.blocks) ? active.blocks : []);
+        setPageSettings({ ...DEFAULT_PAGE_SETTINGS, ...(active.settings || {}) });
       }
     });
     return () => unsub();
   }, [selectedSlug]);
 
-  const [viewMode, setViewMode] = useState("list"); // "list" (Dashboard) or "editor"
-  const [pagesSearch, setPagesSearch] = useState("");
-  const [pageToDelete, setPageToDelete] = useState(null); // { slug, title }
+  const loadPage = (slug) => {
+    const found = pagesList.find((p) => p.slug === slug);
+    hydratedSlugRef.current = slug;
+    setPageTitle(found?.title || "");
+    setPageBlocks(Array.isArray(found?.blocks) ? found.blocks : []);
+    setPageSettings({ ...DEFAULT_PAGE_SETTINGS, ...(found?.settings || {}) });
+    setHistory([]);
+    setHistoryIndex(-1);
+    setSelectedId(null);
+  };
 
-  const handleOpenEditor = (slug) => {
+  const openEditor = (slug) => {
     setSelectedSlug(slug);
-    const found = pagesList.find(p => p.slug === slug);
-    if (found) {
-      setPageTitle(found.title);
-      setPageBlocks(Array.isArray(found.blocks) ? found.blocks : []);
-    }
-    setSelectedIndex(null);
+    loadPage(slug);
     setViewMode("editor");
   };
 
-  const handlePromptDelete = (slug, title, e) => {
-    if (e) e.stopPropagation();
-    setPageToDelete({ slug, title });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!pageToDelete) return;
-    const { slug, title } = pageToDelete;
-    try {
-      setPagesList(prev => prev.filter(p => p.slug !== slug));
-      await remove(ref(db, `cms_pages/${slug}`));
-      setMessage(`Page "${title}" (/${slug}) deleted successfully.`);
-      setTimeout(() => setMessage(""), 3500);
-      if (selectedSlug === slug) {
-        const remaining = pagesList.filter(p => p.slug !== slug);
-        if (remaining.length > 0) {
-          setSelectedSlug(remaining[0].slug);
-          setPageTitle(remaining[0].title);
-          setPageBlocks(Array.isArray(remaining[0].blocks) ? remaining[0].blocks : []);
-        } else {
-          setSelectedSlug("");
-          setPageTitle("");
-          setPageBlocks([]);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Failed to delete page.");
-    } finally {
-      setPageToDelete(null);
+  // ------------------------------------------------------------------ history
+  useEffect(() => {
+    if (skipHistoryRef.current) {
+      skipHistoryRef.current = false;
+      return;
     }
+    const snapshot = JSON.stringify({ blocks: pageBlocks, settings: pageSettings, title: pageTitle });
+    const timer = setTimeout(() => {
+      if (history[historyIndex] === snapshot) return;
+      const next = [...history.slice(0, historyIndex + 1), snapshot].slice(-80);
+      setHistory(next);
+      setHistoryIndex(next.length - 1);
+    }, 260);
+    return () => clearTimeout(timer);
+  }, [pageBlocks, pageSettings, pageTitle, history, historyIndex]);
+
+  const applySnapshot = (idx) => {
+    const snap = history[idx];
+    if (!snap) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(snap);
+    } catch {
+      return;
+    }
+    skipHistoryRef.current = true;
+    setPageBlocks(parsed.blocks || []);
+    setPageSettings({ ...DEFAULT_PAGE_SETTINGS, ...(parsed.settings || {}) });
+    setPageTitle(parsed.title || "");
+    setHistoryIndex(idx);
   };
 
-  const handleDuplicatePage = async (page, e) => {
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex >= 0 && historyIndex < history.length - 1;
+  const undo = () => canUndo && applySnapshot(historyIndex - 1);
+  const redo = () => canRedo && applySnapshot(historyIndex + 1);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || e.target?.isContentEditable) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (mod && ((e.key.toLowerCase() === "z" && e.shiftKey) || e.key.toLowerCase() === "y")) {
+        e.preventDefault();
+        redo();
+      } else if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+        e.preventDefault();
+        deleteBlock(selectedId);
+      } else if (mod && e.key.toLowerCase() === "d" && selectedId) {
+        e.preventDefault();
+        duplicateBlock(selectedId);
+      } else if (e.key === "Escape") {
+        if (previewMode) setPreviewMode(false);
+        else setSelectedId(null);
+      } else if (!mod && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        setPreviewMode((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [history, historyIndex, selectedId, pageBlocks, previewMode]);
+
+  // ------------------------------------------------------------- block ops
+  const selectedBlock = selectedId ? findBlockById(pageBlocks, selectedId) : null;
+  const selectedParent = selectedId ? findParentOf(pageBlocks, selectedId) : null;
+
+  const siblingsOf = (id) => {
+    const parent = findParentOf(pageBlocks, id);
+    return parent ? parent.children || [] : pageBlocks;
+  };
+
+  const updateField = (key, value, dev = "desktop") => {
+    if (!selectedId) return;
+    setPageBlocks((prev) =>
+      updateBlockById(prev, selectedId, (b) => {
+        if (dev === "desktop") return { ...b, [key]: value };
+        const layer = { ...(b[dev] || {}) };
+        if (value === "" || value === undefined) delete layer[key];
+        else layer[key] = value;
+        return { ...b, [dev]: layer };
+      })
+    );
+  };
+
+  const clearDeviceOverride = (key, dev) => {
+    if (!selectedId || dev === "desktop") return;
+    setPageBlocks((prev) =>
+      updateBlockById(prev, selectedId, (b) => {
+        const layer = { ...(b[dev] || {}) };
+        delete layer[key];
+        return { ...b, [dev]: layer };
+      })
+    );
+  };
+
+  const resetBlockSize = () => {
+    if (!selectedId) return;
+    setPageBlocks((prev) =>
+      updateBlockById(prev, selectedId, (b) => ({
+        ...b,
+        boxWidth: "100%",
+        boxHeight: "auto",
+        maxWidth: "",
+        minWidth: "",
+        minHeight: "",
+        maxHeight: "",
+        positionMode: "relative",
+        posX: 0,
+        posY: 0,
+        rotate: "",
+        scale: "",
+        translateX: "",
+        translateY: "",
+      }))
+    );
+    flash("↺ Size and position reset.");
+  };
+
+  const addBlock = (componentId, parentId = null, index = null) => {
+    const block = createBlock(componentId);
+    if (!block) return;
+    // Clicking a widget drops it inside the selected container, else at page end.
+    let targetParent = parentId;
+    if (targetParent === null && selectedBlock) {
+      targetParent = isContainerBlock(selectedBlock) ? selectedBlock.id : selectedParent?.id || null;
+    }
+    setPageBlocks((prev) => insertBlock(prev, block, targetParent, index));
+    setSelectedId(block.id);
+    flash(`✨ Added ${getComponent(block.type)?.name || componentId}`);
+  };
+
+  const deleteBlock = (id) => {
+    setPageBlocks((prev) => removeBlockById(prev, id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const duplicateBlock = (id) => {
+    const block = findBlockById(pageBlocks, id);
+    if (!block) return;
+    const clone = duplicateBlockTree(block, newBlockId);
+    const parent = findParentOf(pageBlocks, id);
+    const sibs = parent ? parent.children || [] : pageBlocks;
+    const idx = sibs.findIndex((b) => b.id === id);
+    setPageBlocks((prev) => insertBlock(prev, clone, parent?.id || null, idx + 1));
+    setSelectedId(clone.id);
+  };
+
+  const nudgeBlock = (id, delta) => {
+    const parent = findParentOf(pageBlocks, id);
+    const sibs = parent ? parent.children || [] : pageBlocks;
+    const idx = sibs.findIndex((b) => b.id === id);
+    const target = idx + delta;
+    if (target < 0 || target >= sibs.length) return;
+    setPageBlocks((prev) => moveBlock(prev, id, parent?.id || null, target));
+  };
+
+  // ------------------------------------------------------------- drag & drop
+  const onPaletteDragStart = (componentId) => (e) => {
+    dragPayloadRef.current = { kind: "new", componentId };
+    e.dataTransfer.effectAllowed = "copy";
+    try {
+      e.dataTransfer.setData("text/plain", componentId);
+    } catch {}
+  };
+
+  const onBlockDragStart = (block) => (e) => {
     e.stopPropagation();
-    const newSlug = `${page.slug}-copy-${Date.now().toString().slice(-4)}`;
-    const newPageObj = {
-      title: `${page.title} (Copy)`,
-      slug: newSlug,
-      blocks: page.blocks || [],
-      createdAt: new Date().toISOString(),
-    };
+    dragPayloadRef.current = { kind: "move", id: block.id };
+    e.dataTransfer.effectAllowed = "move";
     try {
-      await set(ref(db, `cms_pages/${newSlug}`), newPageObj);
-      setMessage(`Duplicated to "/${newSlug}"`);
-      setTimeout(() => setMessage(""), 3000);
-    } catch (err) {
-      console.error(err);
-      setMessage("Failed to duplicate page.");
-    }
+      e.dataTransfer.setData("text/plain", block.id);
+    } catch {}
   };
 
-  const handleSelectPage = (slug) => {
-    setSelectedSlug(slug);
-    const found = pagesList.find(p => p.slug === slug);
-    if (found) {
-      setPageTitle(found.title);
-      setPageBlocks(Array.isArray(found.blocks) ? found.blocks : []);
-    }
-    setSelectedIndex(null);
-  };
-
-  const handleCreateNewPage = async (e) => {
+  const onBlockDragOver = (block) => (e) => {
+    const payload = dragPayloadRef.current;
+    if (!payload) return;
     e.preventDefault();
-    if (!newPageTitle.trim()) return;
-    const cleanSlug = newPageSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || newPageTitle.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
-    if (!cleanSlug) return;
+    e.stopPropagation();
+    const container = isContainerBlock(block);
+    // Inside a container unless the pointer is near its top/bottom edge.
+    let mode = "after";
+    if (container) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const edge = Math.min(28, rect.height * 0.18);
+      if (e.clientY > rect.top + edge && e.clientY < rect.bottom - edge) mode = "inside";
+      else mode = e.clientY <= rect.top + edge ? "before" : "after";
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      mode = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    }
+    setDropTarget({ id: block.id, mode });
+  };
 
-    let initialBlocks = [];
-    if (newPagePreset !== "blank") {
-      const foundTpl = SAMPLE_TEMPLATES.find(t => t.id === newPagePreset);
-      if (foundTpl) {
-        initialBlocks = JSON.parse(JSON.stringify(foundTpl.blocks));
-      }
+  const performDrop = (targetId, mode) => {
+    const payload = dragPayloadRef.current;
+    dragPayloadRef.current = null;
+    setDropTarget(null);
+    if (!payload) return;
+
+    let parentId = null;
+    let index = null;
+
+    if (targetId === "__root__") {
+      parentId = null;
+      index = null;
+    } else if (mode === "inside") {
+      parentId = targetId;
+      index = null;
+    } else {
+      const parent = findParentOf(pageBlocks, targetId);
+      parentId = parent?.id || null;
+      const sibs = parent ? parent.children || [] : pageBlocks;
+      const idx = sibs.findIndex((b) => b.id === targetId);
+      index = mode === "before" ? idx : idx + 1;
     }
 
-    const newPageObj = {
-      title: newPageTitle.trim(),
-      slug: cleanSlug,
-      blocks: initialBlocks,
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      await set(ref(db, `cms_pages/${cleanSlug}`), newPageObj);
-      setSelectedSlug(cleanSlug);
-      setPageTitle(newPageTitle.trim());
-      setPageBlocks(initialBlocks);
-      setSelectedIndex(null);
-      setShowCreatePageModal(false);
-      setNewPageTitle("");
-      setNewPageSlug("");
-      setViewMode("editor");
-      setMessage(`New Custom Page "/${cleanSlug}" created!`);
-      setTimeout(() => setMessage(""), 4000);
-    } catch (err) {
-      console.error(err);
-      setMessage("Failed to create new page.");
+    if (payload.kind === "new") {
+      const block = createBlock(payload.componentId);
+      if (!block) return;
+      setPageBlocks((prev) => insertBlock(prev, block, parentId, index));
+      setSelectedId(block.id);
+      flash(`✨ Dropped ${getComponent(block.type)?.name || payload.componentId}`);
+    } else if (payload.kind === "move") {
+      if (parentId && containsBlock(pageBlocks, payload.id, parentId)) {
+        flash("A block can't be dropped inside itself.");
+        return;
+      }
+      setPageBlocks((prev) => moveBlock(prev, payload.id, parentId, index));
+      setSelectedId(payload.id);
     }
   };
 
-  const handleSavePage = async () => {
+  const onBlockDrop = (block) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    performDrop(block.id, dropTarget?.id === block.id ? dropTarget.mode : "after");
+  };
+
+  // ------------------------------------------------------------------- save
+  const savePage = async () => {
     if (!selectedSlug) return;
     setSaving(true);
-    setMessage("");
     try {
-      const pageRef = ref(db, `cms_pages/${selectedSlug}`);
-      await set(pageRef, {
+      await set(ref(db, `cms_pages/${selectedSlug}`), {
         title: pageTitle,
         slug: selectedSlug,
         blocks: pageBlocks,
+        settings: pageSettings,
         updatedAt: new Date().toISOString(),
       });
-      setMessage("✅ Page layout saved successfully to Firebase!");
-      setTimeout(() => setMessage(""), 4000);
+      flash("✅ Page published to Firebase.", 3500);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to save page layout.");
+      flash("❌ Failed to save page.", 4000);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddWidget = (widget, targetIdx = null) => {
-    const newBlock = {
-      id: "b_" + Date.now(),
-      ...JSON.parse(JSON.stringify(widget.defaultData)),
-    };
-    const updated = [...pageBlocks];
-    if (targetIdx !== null) {
-      updated.splice(targetIdx, 0, newBlock);
-      setSelectedIndex(targetIdx);
-    } else {
-      updated.push(newBlock);
-      setSelectedIndex(updated.length - 1);
-    }
-    setPageBlocks(updated);
-  };
-
-  const handleCanvasDrop = (e, targetIdx = null) => {
+  const createPage = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragOverIndex(null);
-    const widgetId = e.dataTransfer.getData("widgetId") || draggedWidgetId;
-    const blockIdxStr = e.dataTransfer.getData("blockIndex");
-
-    if (widgetId) {
-      const widget = WIDGET_PALETTE.find(w => w.id === widgetId);
-      if (widget) {
-        handleAddWidget(widget, targetIdx);
-        setMessage(`✨ Dropped new ${widget.name} widget onto canvas!`);
-        setTimeout(() => setMessage(""), 3000);
-      }
-      setDraggedWidgetId(null);
-    } else if (blockIdxStr !== "" && blockIdxStr !== null) {
-      const fromIdx = parseInt(blockIdxStr, 10);
-      if (!isNaN(fromIdx) && targetIdx !== null && fromIdx !== targetIdx) {
-        const updated = [...pageBlocks];
-        const [moved] = updated.splice(fromIdx, 1);
-        updated.splice(targetIdx, 0, moved);
-        setPageBlocks(updated);
-        setSelectedIndex(targetIdx);
-        setMessage(`🔄 Reordered block #${fromIdx + 1} to position #${targetIdx + 1}!`);
-        setTimeout(() => setMessage(""), 3000);
-      }
-      setDraggedBlockIndex(null);
+    if (!newPageTitle.trim()) return;
+    const slug = (newPageSlug.trim() || newPageTitle.trim()).toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+    if (!slug) return;
+    const blocks = buildStarter(newPagePreset);
+    const settings = { ...DEFAULT_PAGE_SETTINGS, heading: newPageTitle.trim() };
+    try {
+      await set(ref(db, `cms_pages/${slug}`), { title: newPageTitle.trim(), slug, blocks, settings, createdAt: new Date().toISOString() });
+      hydratedSlugRef.current = slug;
+      setSelectedSlug(slug);
+      setPageTitle(newPageTitle.trim());
+      setPageBlocks(blocks);
+      setPageSettings(settings);
+      setHistory([]);
+      setHistoryIndex(-1);
+      setSelectedId(null);
+      setShowCreateModal(false);
+      setNewPageTitle("");
+      setNewPageSlug("");
+      setViewMode("editor");
+      flash(`New page /${slug} created.`);
+    } catch (err) {
+      console.error(err);
+      flash("Failed to create page.");
     }
   };
 
-  const handleMoveBlock = (index, delta) => {
-    const targetIndex = index + delta;
-    if (targetIndex < 0 || targetIndex >= pageBlocks.length) return;
-    const updated = [...pageBlocks];
-    const temp = updated[index];
-    updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
-    setPageBlocks(updated);
-    setSelectedIndex(targetIndex);
+  const deletePage = async () => {
+    if (!pageToDelete) return;
+    try {
+      setPagesList((prev) => prev.filter((p) => p.slug !== pageToDelete.slug));
+      await remove(ref(db, `cms_pages/${pageToDelete.slug}`));
+      flash(`Deleted /${pageToDelete.slug}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPageToDelete(null);
+    }
   };
 
-  const handleDuplicateBlock = (index) => {
-    const original = pageBlocks[index];
-    const duplicate = {
-      ...JSON.parse(JSON.stringify(original)),
-      id: "b_" + Date.now(),
-    };
-    const updated = [...pageBlocks];
-    updated.splice(index + 1, 0, duplicate);
-    setPageBlocks(updated);
-    setSelectedIndex(index + 1);
-  };
-
-  const handleDeleteBlock = (index) => {
-    const updated = pageBlocks.filter((_, i) => i !== index);
-    setPageBlocks(updated);
-    if (selectedIndex === index) setSelectedIndex(null);
-    else if (selectedIndex > index) setSelectedIndex(selectedIndex - 1);
-  };
-
-  const handleUpdateSelectedBlock = (key, value) => {
-    if (selectedIndex === null) return;
-    const updated = [...pageBlocks];
-    updated[selectedIndex] = {
-      ...updated[selectedIndex],
-      [key]: value,
-    };
-    setPageBlocks(updated);
-  };
-
-  // Freeform Mouse Dragging & Resizing Logic
-  const handleMouseDownMove = (e, idx) => {
+  const duplicatePage = async (page, e) => {
     e.stopPropagation();
-    setSelectedIndex(idx);
-    const targetBlock = pageBlocks[idx];
-    if (targetBlock.positionMode !== "absolute") return;
-
-    setIsMovingFree(true);
-    setDragStartPos({
-      x: e.clientX,
-      y: e.clientY,
-      initialX: parseFloat(targetBlock.posX || 0),
-      initialY: parseFloat(targetBlock.posY || 0),
-    });
+    const slug = `${page.slug}-copy-${Date.now().toString().slice(-4)}`;
+    try {
+      await set(ref(db, `cms_pages/${slug}`), { ...page, title: `${page.title} (Copy)`, slug, createdAt: new Date().toISOString() });
+      flash(`Duplicated to /${slug}`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleMouseDownResize = (e, idx) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setSelectedIndex(idx);
-    const targetBlock = pageBlocks[idx];
-    const el = e.currentTarget.parentElement;
-    const currentW = el ? el.offsetWidth : 300;
-    const currentH = el ? el.offsetHeight : 150;
+  // ------------------------------------------------------------------ canvas
+  const canvasCss = useMemo(() => buildPageCss(pageBlocks, { device, scope: ".pb-canvas" }), [pageBlocks, device]);
+  const previewCss = useMemo(() => buildPageCss(pageBlocks, { device, scope: ".pb-preview-frame" }), [pageBlocks, device]);
+  const deviceMeta = BREAKPOINTS.find((b) => b.id === device) || BREAKPOINTS[0];
 
-    setIsResizing(true);
-    setDragStartPos({
-      x: e.clientX,
-      y: e.clientY,
-      initialWidth: currentW,
-      initialHeight: currentH,
-    });
+  // Preview runs the blocks exactly as a visitor sees them — no selection chrome,
+  // interactive widgets live.
+  const previewCtx = {
+    isEditor: false,
+    lightOn: previewLightOn,
+    setLightOn: setPreviewLightOn,
+    faqState: previewFaqs,
+    toggleFaq: (key) => setPreviewFaqs((p) => ({ ...p, [key]: !p[key] })),
   };
 
-  const handleMouseMoveGlobal = (e) => {
-    if (selectedIndex === null) return;
-
-    if (isMovingFree) {
-      const deltaX = e.clientX - dragStartPos.x;
-      const deltaY = e.clientY - dragStartPos.y;
-      const newX = Math.max(0, dragStartPos.initialX + deltaX);
-      const newY = Math.max(0, dragStartPos.initialY + deltaY);
-
-      const updated = [...pageBlocks];
-      updated[selectedIndex] = {
-        ...updated[selectedIndex],
-        posX: Math.round(newX),
-        posY: Math.round(newY),
+  const editorCtx = {
+    isEditor: true,
+    lightOn: previewLightOn,
+    setLightOn: setPreviewLightOn,
+    faqState: {},
+    toggleFaq: () => {},
+    blockProps: (block) => {
+      const isSel = block.id === selectedId;
+      const isDrop = dropTarget?.id === block.id;
+      return {
+        className: [
+          "pb-editable",
+          isSel ? "pb-selected" : "",
+          isDrop ? `pb-drop-${dropTarget.mode}` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        draggable: true,
+        onDragStart: onBlockDragStart(block),
+        onDragEnd: () => {
+          dragPayloadRef.current = null;
+          setDropTarget(null);
+        },
+        onDragOver: onBlockDragOver(block),
+        onDrop: onBlockDrop(block),
+        onClick: (e) => {
+          e.stopPropagation();
+          setSelectedId(block.id);
+        },
       };
-      setPageBlocks(updated);
-    } else if (isResizing) {
-      const deltaX = e.clientX - dragStartPos.x;
-      const deltaY = e.clientY - dragStartPos.y;
-      const newW = Math.max(80, dragStartPos.initialWidth + deltaX);
-      const newH = Math.max(40, dragStartPos.initialHeight + deltaY);
-
-      const updated = [...pageBlocks];
-      updated[selectedIndex] = {
-        ...updated[selectedIndex],
-        boxWidth: `${Math.round(newW)}px`,
-        boxHeight: `${Math.round(newH)}px`,
-      };
-      setPageBlocks(updated);
-    }
+    },
+    blockOverlay: (block) =>
+      block.id === selectedId ? (
+        <div className="pb-toolbar" contentEditable={false}>
+          <span className="pb-toolbar-name">{getComponent(block.type)?.name || block.type}</span>
+          <button type="button" title="Select parent" onClick={(e) => { e.stopPropagation(); const p = findParentOf(pageBlocks, block.id); setSelectedId(p ? p.id : null); }}>⤴</button>
+          <button type="button" title="Move up" onClick={(e) => { e.stopPropagation(); nudgeBlock(block.id, -1); }}>▲</button>
+          <button type="button" title="Move down" onClick={(e) => { e.stopPropagation(); nudgeBlock(block.id, 1); }}>▼</button>
+          <button type="button" title="Duplicate (⌘D)" onClick={(e) => { e.stopPropagation(); duplicateBlock(block.id); }}>⧉</button>
+          <button type="button" title="Delete (Del)" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}>✕</button>
+        </div>
+      ) : null,
   };
 
-  const handleMouseUpGlobal = () => {
-    if (isMovingFree || isResizing) {
-      setIsMovingFree(false);
-      setIsResizing(false);
-    }
-  };
-
-  const handleFontFileUpload = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const fontDataUrl = e.target.result;
-      const customFontName = `CustomFont_${Date.now()}`;
-      
-      const newStyle = document.createElement("style");
-      newStyle.appendChild(document.createTextNode(`
-        @font-face {
-          font-family: '${customFontName}';
-          src: url('${fontDataUrl}');
-        }
-      `));
-      document.head.appendChild(newStyle);
-
-      handleUpdateSelectedBlock("fontFamily", `'${customFontName}', sans-serif`);
-      handleUpdateSelectedBlock("customFontLoadedName", customFontName);
-      setMessage(`✅ Uploaded custom font "${file.name}"!`);
-      setTimeout(() => setMessage(""), 3000);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleImportTemplate = (template) => {
-    setPageTitle(template.title);
-    setSelectedSlug(template.slug);
-    setPageBlocks(JSON.parse(JSON.stringify(template.blocks)));
-    setSelectedIndex(null);
-    setShowTemplateModal(false);
-    setMessage(`✅ Imported ${template.title}! Click 'Save Layout' to publish.`);
-    setTimeout(() => setMessage(""), 4000);
-  };
-
-  const filteredWidgets = WIDGET_PALETTE.filter(w =>
-    w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    w.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredComponents = COMPONENTS.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedBlock = selectedIndex !== null ? pageBlocks[selectedIndex] : null;
-
-  const filteredPages = pagesList.filter(p =>
-    (p.title || "").toLowerCase().includes(pagesSearch.toLowerCase()) ||
-    (p.slug || "").toLowerCase().includes(pagesSearch.toLowerCase())
+  const filteredPages = pagesList.filter(
+    (p) => (p.title || "").toLowerCase().includes(pagesSearch.toLowerCase()) || (p.slug || "").toLowerCase().includes(pagesSearch.toLowerCase())
   );
 
+  // ======================================================== PAGES LIST VIEW
   if (viewMode === "list") {
     return (
-      <div style={{ minHeight: "100vh", background: "#0F0D0B", color: "#F5F0E8", padding: "32px", fontFamily: "'DM Sans', sans-serif" }}>
-        {/* Header Bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
+      <div style={{ minHeight: "100vh", background: "#0F0D0B", color: "#F5F0E8", padding: 32, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <span style={{ fontSize: 24, color: "var(--accent)" }}>▤</span>
-              <h1 style={{ fontFamily: "var(--font-serif, 'DM Serif Display')", fontSize: 28, color: "#F5F0E8", margin: 0 }}>
-                Pages & CMS Builder
-              </h1>
-              <span style={{ background: "rgba(201, 168, 76, 0.15)", border: "1px solid var(--accent)", color: "var(--accent)", padding: "2px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
-                {pagesList.length} Pages
-              </span>
-            </div>
-            <p style={{ color: "var(--text2, #A8A08C)", fontSize: 14, margin: 0 }}>
-              Manage all custom dynamic pages. Click <strong>Edit in Builder</strong> to customize blocks, typography, layouts, and video reels.
+            <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, margin: 0 }}>Pages &amp; CMS Builder</h1>
+            <p style={{ color: "#A8A08C", fontSize: 14, margin: "6px 0 0" }}>
+              Build any layout from nestable sections. Every block has desktop, tablet and mobile settings.
             </p>
           </div>
-
-          <div style={{ display: "flex", gap: 12 }}>
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              style={{
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                color: "#FFF",
-                padding: "10px 18px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span>▤</span> Sample Templates
-            </button>
-
-            <button
-              onClick={() => setShowCreatePageModal(true)}
-              style={{
-                background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
-                color: "#000",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 22px",
-                fontSize: 13,
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(201, 168, 76, 0.35)",
-              }}
-            >
-              + Create New Page
-            </button>
-          </div>
+          <button onClick={() => setShowCreateModal(true)} style={primaryBtn}>+ Create New Page</button>
         </div>
 
-        {message && (
-          <div style={{ background: "rgba(201, 168, 76, 0.15)", border: "1px solid var(--accent)", color: "var(--accent)", padding: "10px 20px", borderRadius: 8, marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
-            {message}
-          </div>
-        )}
+        {message && <div style={noticeStyle}>{message}</div>}
 
-        {/* Search Bar */}
-        <div style={{ marginBottom: 24, maxWidth: 400 }}>
-          <input
-            type="text"
-            placeholder="Search pages by title or slug..."
-            value={pagesSearch}
-            onChange={(e) => setPagesSearch(e.target.value)}
-            style={{
-              width: "100%",
-              background: "var(--surface, #171512)",
-              border: "1px solid var(--border2, rgba(255,255,255,0.12))",
-              color: "#FFF",
-              padding: "10px 14px",
-              borderRadius: 8,
-              fontSize: 13,
-            }}
-          />
-        </div>
+        <input type="text" placeholder="Search pages by title or slug..." value={pagesSearch} onChange={(e) => setPagesSearch(e.target.value)} style={{ ...fieldStyle, maxWidth: 420, marginBottom: 22 }} />
 
-        {/* Pages Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 20 }}>
-          {filteredPages.map((page) => {
-            const blocksCount = Array.isArray(page.blocks) ? page.blocks.length : (Array.isArray(page.layout) ? page.layout.length : 0);
-            return (
-              <div
-                key={page.slug}
-                style={{
-                  background: "var(--surface, #171512)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.06))",
-                  borderRadius: 12,
-                  padding: 22,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  transition: "all 0.25s ease",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <h3 style={{ fontSize: 17, color: "#FFF", fontWeight: 700, margin: 0 }}>
-                      {page.title}
-                    </h3>
-                    <span style={{ fontSize: 11, background: "rgba(201,168,76,0.12)", color: "var(--accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 600 }}>
-                      {blocksCount} block{blocksCount !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
-                    <span style={{ fontSize: 12, color: "var(--text2, #A8A08C)", fontFamily: "monospace" }}>
-                      /{page.slug}
-                    </span>
-                  </div>
-
-                  <p style={{ fontSize: 12, color: "var(--text2, #A8A08C)", margin: "0 0 20px 0", lineHeight: 1.5 }}>
-                    {page.createdAt ? `Created ${new Date(page.createdAt).toLocaleDateString()}` : (page.updatedAt ? `Updated ${new Date(page.updatedAt).toLocaleDateString()}` : "Custom studio page template")}
-                  </p>
-                </div>
-
-                {/* Operations Footer */}
-                <div style={{ display: "flex", gap: 8, borderTop: "1px solid var(--border, rgba(255,255,255,0.06))", paddingTop: 14 }}>
-                  <button
-                    onClick={() => handleOpenEditor(page.slug)}
-                    style={{
-                      flex: 1,
-                      background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
-                      color: "#000",
-                      border: "none",
-                      padding: "8px 0",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Edit in Builder
-                  </button>
-
-                  <a
-                    href={`/${page.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      background: "var(--surface2, #211E1A)",
-                      border: "1px solid var(--border2, rgba(255,255,255,0.12))",
-                      color: "#FFF",
-                      padding: "8px 12px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      textDecoration: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    ↗ View
-                  </a>
-
-                  <button
-                    onClick={(e) => handleDuplicatePage(page, e)}
-                    title="Duplicate Page"
-                    style={{
-                      background: "var(--surface2, #211E1A)",
-                      border: "1px solid var(--border2, rgba(255,255,255,0.12))",
-                      color: "var(--text2)",
-                      padding: "8px 10px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ⎘
-                  </button>
-
-                  <button
-                    onClick={(e) => handlePromptDelete(page.slug, page.title, e)}
-                    title="Delete Page"
-                    style={{
-                      background: "rgba(255,62,108,0.12)",
-                      border: "1px solid #FF3E6C",
-                      color: "#FF3E6C",
-                      padding: "8px 10px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+          {filteredPages.map((page) => (
+            <div key={page.slug} style={{ background: "#16120E", border: "1px solid rgba(201,168,76,.2)", borderRadius: 12, padding: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                <h3 style={{ margin: 0, fontSize: 17 }}>{page.title}</h3>
+                <span style={{ fontSize: 10, background: "rgba(201,168,76,.15)", color: "#C9A84C", padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
+                  {flattenBlocks(page.blocks || []).length} blocks
+                </span>
               </div>
-            );
-          })}
+              <code style={{ display: "block", fontSize: 12, color: "#8b8474", margin: "8px 0 16px" }}>/{page.slug}</code>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => openEditor(page.slug)} style={{ ...primaryBtn, flex: 1, padding: "8px 12px", fontSize: 12 }}>Edit in Builder</button>
+                <a href={`/${page.slug}`} target="_blank" rel="noreferrer" style={{ ...ghostBtn, textDecoration: "none", fontSize: 12 }}>View</a>
+                <button onClick={(e) => duplicatePage(page, e)} title="Duplicate" style={{ ...ghostBtn, fontSize: 12 }}>⧉</button>
+                <button onClick={(e) => { e.stopPropagation(); setPageToDelete(page); }} title="Delete" style={{ ...ghostBtn, color: "#FF6B8B", borderColor: "rgba(255,62,108,.4)", fontSize: 12 }}>✕</button>
+              </div>
+            </div>
+          ))}
+          {filteredPages.length === 0 && <p style={{ color: "#8b8474", fontSize: 14 }}>No pages yet — create one to get started.</p>}
         </div>
 
-        {/* Custom Confirmation Modal for Deletion */}
+        {showCreateModal && <CreateModal />}
         {pageToDelete && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 4000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <div style={{ background: "#171512", border: "1px solid rgba(255,62,108,0.4)", borderRadius: 16, padding: "28px 32px", maxWidth: 440, width: "100%", textAlign: "center", boxShadow: "0 20px 50px rgba(0,0,0,0.9)" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,62,108,0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 16px" }}>
-                ✕
-              </div>
-              
-              <h3 style={{ fontSize: 20, color: "#FFF", fontWeight: 700, margin: "0 0 8px 0" }}>
-                Delete Page?
-              </h3>
-              
-              <p style={{ fontSize: 14, color: "var(--text2, #A8A08C)", lineHeight: 1.5, margin: "0 0 24px 0" }}>
-                Are you sure you want to delete <strong style={{ color: "#FFF" }}>"{pageToDelete.title}"</strong> (<code style={{ color: "var(--accent)", fontSize: 12 }}>/{pageToDelete.slug}</code>)? This action cannot be undone.
-              </p>
-
-              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-                <button
-                  onClick={() => setPageToDelete(null)}
-                  style={{
-                    flex: 1,
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    color: "#FFF",
-                    padding: "10px 18px",
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleConfirmDelete}
-                  style={{
-                    flex: 1,
-                    background: "linear-gradient(135deg, #FF3E6C 0%, #E60039 100%)",
-                    border: "none",
-                    color: "#FFF",
-                    padding: "10px 18px",
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(255,62,108,0.4)",
-                  }}
-                >
-                  Yes, Delete Page
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Page Modal */}
-        {showCreatePageModal && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <div style={{ background: "var(--surface, #171512)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 16, padding: 30, maxWidth: 500, width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <h2 style={{ fontSize: 20, color: "var(--accent)", fontWeight: 700, margin: 0 }}>Create New Custom Page</h2>
-                <button onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
-              </div>
-
-              <form onSubmit={handleCreateNewPage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>Page Title *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Wedding Framing Guide"
-                    value={newPageTitle}
-                    onChange={(e) => {
-                      setNewPageTitle(e.target.value);
-                      if (!newPageSlug) {
-                        setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
-                      }
-                    }}
-                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>URL Slug (e.g. /wedding-framing-guide)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="wedding-framing-guide"
-                    value={newPageSlug}
-                    onChange={(e) => setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13, fontFamily: "monospace" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "var(--text2, #A8A08C)", marginBottom: 6 }}>Initial Preset Template</label>
-                  <select
-                    value={newPagePreset}
-                    onChange={(e) => setNewPagePreset(e.target.value)}
-                    style={{ width: "100%", background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
-                  >
-                    <option value="blank">Blank Canvas (Empty)</option>
-                    {SAMPLE_TEMPLATES.map(t => (
-                      <option key={t.id} value={t.id}>{t.title} ({t.category})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
-                  <button type="button" onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "1px solid var(--border2, rgba(255,255,255,0.12))", color: "var(--text2, #A8A08C)", padding: "10px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
-                    Cancel
-                  </button>
-                  <button type="submit" style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    Create & Launch Editor
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Templates Importer Modal */}
-        {showTemplateModal && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <div style={{ background: "var(--surface, #171512)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 16, padding: 30, maxWidth: 840, width: "100%", maxHeight: "85vh", overflowY: "auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div>
-                  <h2 style={{ fontSize: 22, color: "var(--accent)", fontWeight: 700, margin: 0 }}>Load Sample Template</h2>
-                  <p style={{ fontSize: 13, color: "var(--text2, #A8A08C)", marginTop: 4 }}>Select a pre-designed luxury layout template to open in editor.</p>
-                </div>
-                <button onClick={() => setShowTemplateModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
-                {SAMPLE_TEMPLATES.map((tpl) => (
-                  <div key={tpl.id} style={{ background: "var(--surface2, #211E1A)", border: "1px solid var(--border2, rgba(255,255,255,0.12))", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontSize: 20 }}>▤</span>
-                        <div>
-                          <h3 style={{ fontSize: 16, color: "#fff", fontWeight: 700, margin: 0 }}>{tpl.title}</h3>
-                          <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>{tpl.category}</span>
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--text2, #A8A08C)", margin: "10px 0 16px" }}>
-                        Includes {tpl.blocks.length} pre-formatted layout blocks.
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        handleImportTemplate(tpl);
-                        setViewMode("editor");
-                      }}
-                      style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}
-                    >
-                      Import & Edit Template
-                    </button>
-                  </div>
-                ))}
+          <div style={modalOverlay}>
+            <div style={modalCard}>
+              <h3 style={{ marginTop: 0 }}>Delete “{pageToDelete.title}”?</h3>
+              <p style={{ color: "#A8A08C", fontSize: 13 }}>The route /{pageToDelete.slug} will stop working. This cannot be undone.</p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                <button onClick={() => setPageToDelete(null)} style={ghostBtn}>Cancel</button>
+                <button onClick={deletePage} style={{ ...primaryBtn, background: "#FF3E6C", color: "#fff" }}>Delete</button>
               </div>
             </div>
           </div>
@@ -862,1703 +633,896 @@ export default function ElementorPageBuilder() {
     );
   }
 
+  function CreateModal() {
+    return (
+      <div style={modalOverlay}>
+        <div style={{ ...modalCard, maxWidth: 560 }}>
+          <h3 style={{ marginTop: 0 }}>Create New Page</h3>
+          <form onSubmit={createPage} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={labelStyle}>Page Title *</label>
+              <input required value={newPageTitle} onChange={(e) => { setNewPageTitle(e.target.value); setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-")); }} style={fieldStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>URL Slug</label>
+              <input value={newPageSlug} onChange={(e) => setNewPageSlug(e.target.value)} style={fieldStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Starting Layout</label>
+              <div style={{ display: "grid", gap: 8 }}>
+                {STARTER_LAYOUTS.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setNewPagePreset(s.id)}
+                    style={{
+                      textAlign: "left",
+                      background: newPagePreset === s.id ? "rgba(201,168,76,.18)" : "#14100B",
+                      border: `1px solid ${newPagePreset === s.id ? "#C9A84C" : "rgba(255,255,255,.1)"}`,
+                      borderRadius: 8,
+                      padding: 10,
+                      cursor: "pointer",
+                      color: "#fff",
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: "#A8A08C", marginTop: 2 }}>{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button type="button" onClick={() => setShowCreateModal(false)} style={ghostBtn}>Cancel</button>
+              <button type="submit" style={primaryBtn}>Create Page</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================ EDITOR VIEW
+  const inPreview = previewMode;
+
   return (
-    <div
-      onMouseMove={handleMouseMoveGlobal}
-      onMouseUp={handleMouseUpGlobal}
-      style={{ height: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", flexDirection: "column", fontFamily: "var(--font-serif)", overflow: "hidden", userSelect: (isMovingFree || isResizing) ? "none" : "auto" }}
-    >
-      
-      {/* ELEGANT STUDIO CONTROL BAR */}
-      <header style={{
-        height: "72px",
-        minHeight: "72px",
-        background: "rgba(13, 10, 7, 0.95)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(201, 168, 76, 0.25)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 28px",
-        zIndex: 200,
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.6)"
-      }}>
-        {/* LEFT GROUP */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button
-            onClick={() => setViewMode("list")}
-            style={{
-              color: "var(--accent)",
-              border: "1px solid var(--accent)",
-              fontSize: 13,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "rgba(201, 168, 76, 0.1)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.2s ease"
-            }}
-          >
-            ← All Pages
+    <div style={{ position: "fixed", inset: 0, background: "#08070A", color: "#F5F0E8", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif", zIndex: 500 }}>
+      <style dangerouslySetInnerHTML={{ __html: EDITOR_CSS }} />
+
+      {/* ============================================================ TOOLBAR */}
+      <header className="pb-topbar">
+        {/* left cluster — where am I */}
+        <div className="pb-topbar-group">
+          <button onClick={() => setViewMode("list")} className="pb-btn pb-btn-quiet" title="Back to all pages">
+            <span style={{ fontSize: 14 }}>←</span> Pages
           </button>
 
-          <button
-            onClick={() => setLeftOpen(!leftOpen)}
-            style={{
-              background: leftOpen ? "rgba(201, 168, 76, 0.18)" : "rgba(255, 255, 255, 0.05)",
-              border: `1px solid ${leftOpen ? "var(--accent)" : "rgba(255, 255, 255, 0.15)"}`,
-              color: leftOpen ? "var(--accent)" : "#FFF",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              transition: "all 0.2s ease"
-            }}
-          >
-            <span>❖</span> {leftOpen ? "Hide Palette" : "Show Palette"}
-          </button>
+          <div className="pb-page-chip">
+            <span className="pb-page-chip-label">Editing</span>
+            <select
+              value={selectedSlug}
+              onChange={(e) => { setSelectedSlug(e.target.value); loadPage(e.target.value); }}
+              className="pb-page-select"
+            >
+              {pagesList.map((p) => (
+                <option key={p.slug} value={p.slug} style={{ background: "#15121C" }}>{p.title}</option>
+              ))}
+            </select>
+            <code className="pb-page-slug">/{selectedSlug}</code>
+          </div>
         </div>
 
-        {/* CENTER GROUP: ACTIVE PAGE SELECTOR & NEW PAGE BUTTON */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(20, 15, 10, 0.85)", border: "1px solid rgba(201, 168, 76, 0.35)", padding: "6px 14px", borderRadius: "30px", boxShadow: "0 4px 15px rgba(0,0,0,0.5)" }}>
-          <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent)", fontWeight: 700 }}>
-            PAGE:
-          </span>
-          <select
-            value={selectedSlug}
-            onChange={(e) => {
-              if (e.target.value === "__create_new__") {
-                setShowCreatePageModal(true);
-              } else {
-                handleSelectPage(e.target.value);
-              }
-            }}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#FFF",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              outline: "none",
-              maxWidth: 280,
-              textOverflow: "ellipsis"
-            }}
-          >
-            <option value="__create_new__" style={{ background: "#1C150C", color: "var(--accent)", fontWeight: 700 }}>
-              + Create New Custom Page...
-            </option>
-            {pagesList.map(p => (
-              <option key={p.slug} value={p.slug} style={{ background: "#110D09", color: "#FFF" }}>
-                {p.title} (/{p.slug})
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => setShowCreatePageModal(true)}
-            style={{
-              background: "var(--accent)",
-              color: "#000",
-              border: "none",
-              borderRadius: "16px",
-              padding: "5px 14px",
-              fontSize: 11,
-              fontWeight: 800,
-              cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(201,168,76,0.3)"
-            }}
-          >
-            + Create New Page
-          </button>
+        {/* center cluster — device */}
+        <div className="pb-device-switch" role="group" aria-label="Preview size">
+          {BREAKPOINTS.map((bp) => (
+            <button
+              key={bp.id}
+              onClick={() => setDevice(bp.id)}
+              className={`pb-device-btn ${device === bp.id ? "is-active" : ""}`}
+              title={bp.maxWidth ? `${bp.label} — styles apply at ${bp.maxWidth}px and below` : `${bp.label} — the base styles`}
+            >
+              <span style={{ fontSize: 13 }}>{bp.icon}</span>
+              <span>{bp.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* RIGHT GROUP */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={() => setShowTemplateModal(true)}
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              color: "var(--accent)",
-              border: "1px solid rgba(201, 168, 76, 0.3)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-          >
-            <span>▤</span> Templates
+        {/* right cluster — actions */}
+        <div className="pb-topbar-group" style={{ marginLeft: "auto" }}>
+          <div className="pb-seg">
+            <button onClick={undo} disabled={!canUndo} title="Undo (⌘Z)" className="pb-seg-btn">↶</button>
+            <button onClick={redo} disabled={!canRedo} title="Redo (⌘⇧Z)" className="pb-seg-btn">↷</button>
+          </div>
+
+          <button onClick={() => setPreviewMode(true)} className="pb-btn pb-btn-quiet" title="Full-page preview (P)">
+            <span style={{ fontSize: 13 }}>▶</span> Preview
           </button>
 
-          <a
-            href={`/${selectedSlug}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              color: "#FFF",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: 12,
-              textDecoration: "none",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-          >
-            <span>↗</span> Live Page
+          <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer" className="pb-btn pb-btn-quiet" style={{ textDecoration: "none" }}>
+            ↗ Live
           </a>
 
-          <button
-            onClick={() => setRightOpen(!rightOpen)}
-            style={{
-              background: rightOpen ? "rgba(201, 168, 76, 0.18)" : "rgba(255, 255, 255, 0.05)",
-              border: `1px solid ${rightOpen ? "var(--accent)" : "rgba(255, 255, 255, 0.15)"}`,
-              color: rightOpen ? "var(--accent)" : "#FFF",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-          >
-            <span>⚙</span> {rightOpen ? "Hide Inspector" : "Inspector"}
-          </button>
-
-          <button
-            onClick={handleSavePage}
-            disabled={saving}
-            style={{
-              background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
-              color: "#000",
-              border: "none",
-              padding: "9px 24px",
-              borderRadius: "20px",
-              fontSize: 13,
-              fontWeight: 800,
-              cursor: "pointer",
-              boxShadow: "0 4px 15px rgba(201, 168, 76, 0.4)",
-              letterSpacing: "0.03em"
-            }}
-          >
-            {saving ? "Publishing..." : "Save Layout"}
+          <button onClick={savePage} disabled={saving} className="pb-btn pb-btn-primary">
+            {saving ? "Publishing…" : "Save & Publish"}
           </button>
         </div>
       </header>
 
-      {message && (
-        <div style={{ background: "rgba(201, 168, 76, 0.15)", borderBottom: "1px solid var(--accent)", color: "var(--accent)", padding: "8px 24px", fontSize: 12, textAlign: "center", fontWeight: 600 }}>
-          {message}
+      {message && <div className="pb-flash">{message}</div>}
+
+      {/* ========================================================== WORKSPACE */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, position: "relative" }}>
+        {/* ------------------------------------------------------- LEFT RAIL */}
+        <div className="pb-rail">
+          {[
+            ["widgets", "❖", "Widgets"],
+            ["layers", "≡", "Layers"],
+            ["page", "🎛", "Page"],
+          ].map(([id, icon, lbl]) => (
+            <button
+              key={id}
+              onClick={() => {
+                if (id === "page") { setSelectedId(null); setRightOpen(true); setLeftTab("layers"); }
+                else setLeftTab(id);
+                setLeftOpen(true);
+              }}
+              className={`pb-rail-btn ${leftTab === id && id !== "page" ? "is-active" : ""}`}
+              title={lbl}
+            >
+              <span style={{ fontSize: 17 }}>{icon}</span>
+              <span style={{ fontSize: 9.5 }}>{lbl}</span>
+            </button>
+          ))}
+          <div style={{ flex: 1 }} />
+          <button onClick={() => setLeftOpen((v) => !v)} className="pb-rail-btn" title={leftOpen ? "Collapse panel" : "Expand panel"}>
+            <span style={{ fontSize: 15 }}>{leftOpen ? "◀" : "▶"}</span>
+          </button>
         </div>
-      )}
 
-      {/* 3-PANE WORKSPACE */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
-        
-        {/* LEFT PANE: WIDGET PALETTE WITH DRAGGABLE WIDGETS */}
+        {/* ------------------------------------------------------ LEFT PANEL */}
         {leftOpen && (
-          <aside style={{ width: "300px", minWidth: "300px", background: "#0A0805", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.3s ease" }}>
-            <div style={{ padding: 16, borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--accent)", margin: 0, fontWeight: 700 }}>
-                Widgets Palette
-              </h3>
-              <button onClick={() => setLeftOpen(false)} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14 }}>◀</button>
-            </div>
-            <div style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>
-              <input
-                type="text"
-                placeholder="Search widgets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: "100%", background: "#14100B", border: "1px solid var(--border2)", color: "#FFF", padding: "8px 12px", borderRadius: 6, fontSize: 12 }}
-              />
-              <span style={{ fontSize: 10, color: "var(--text2)", display: "block", marginTop: 4 }}>Click or Drag & Drop widgets onto canvas</span>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-              {filteredWidgets.map((widget) => (
-                <div
-                  key={widget.id}
-                  draggable={true}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData("widgetId", widget.id);
-                    setDraggedWidgetId(widget.id);
-                  }}
-                  onClick={() => handleAddWidget(widget)}
-                  style={{
-                    background: "#14100B",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    padding: 12,
-                    textAlign: "left",
-                    cursor: "grab",
-                    transition: "all 0.2s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    userSelect: "none"
-                  }}
-                >
-                  <span style={{ fontSize: 20 }}>{widget.icon}</span>
-                  <div>
-                    <div style={{ fontSize: 13, color: "#FFF", fontWeight: 600 }}>{widget.name}</div>
-                    <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>{widget.category} • Drag Me</div>
-                  </div>
+          <aside className="pb-panel" style={{ width: 344, minWidth: 344 }}>
+            {leftTab === "widgets" ? (
+              <>
+                <div className="pb-panel-head">
+                  <h2 className="pb-panel-title">Widgets</h2>
+                  <p className="pb-panel-sub">Drag onto the canvas, or click to drop into the selected section.</p>
+                  <input
+                    type="text"
+                    placeholder="Search widgets…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pb-search"
+                  />
                 </div>
-              ))}
-            </div>
-          </aside>
-        )}
 
-        {/* CENTER PANE: SPACIOUS LIVE VISUAL CANVAS DROP TARGET */}
-        <main
-          ref={canvasRef}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleCanvasDrop(e)}
-          style={{ flex: 1, background: "#050403", backgroundImage: "radial-gradient(rgba(201, 168, 76, 0.08) 1px, transparent 1px)", backgroundSize: "24px 24px", overflowY: "auto", padding: "40px 60px", position: "relative" }}
-        >
-          <div style={{ maxWidth: "1100px", margin: "0 auto", minHeight: "850px", background: "#080605", border: "1px solid var(--border)", borderRadius: 16, padding: "40px 30px", boxShadow: "0 20px 50px rgba(0,0,0,0.8)", position: "relative", overflow: "hidden" }}>
-            
-            {/* Signature Floating Animated Background Liquid Blobs */}
-            <div className="canvas-liquid-blob-1" />
-            <div className="canvas-liquid-blob-2" />
-
-            <style dangerouslySetInnerHTML={{
-              __html: `
-              .canvas-liquid-blob-1 {
-                position: absolute;
-                top: -10%;
-                left: 10%;
-                width: 500px;
-                height: 500px;
-                background: radial-gradient(circle, rgba(181, 139, 92, 0.22) 0%, rgba(139, 94, 60, 0) 70%);
-                border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%;
-                animation: liquid-move-1 25s infinite alternate ease-in-out;
-                pointer-events: none;
-                z-index: 0;
-              }
-              .canvas-liquid-blob-2 {
-                position: absolute;
-                bottom: -15%;
-                right: 5%;
-                width: 550px;
-                height: 550px;
-                background: radial-gradient(circle, rgba(139, 94, 60, 0.2) 0%, rgba(201, 168, 76, 0) 70%);
-                border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
-                animation: liquid-move-2 30s infinite alternate ease-in-out;
-                pointer-events: none;
-                z-index: 0;
-              }
-              @keyframes liquid-move-1 {
-                0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-                33% { transform: translate(60px, -40px) scale(1.15) rotate(45deg); }
-                66% { transform: translate(-30px, 60px) scale(0.9) rotate(90deg); }
-                100% { transform: translate(0, 0) scale(1) rotate(180deg); }
-              }
-              @keyframes liquid-move-2 {
-                0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-                50% { transform: translate(-80px, 40px) scale(1.2) rotate(120deg); }
-                100% { transform: translate(50px, -50px) scale(0.9) rotate(-60deg); }
-              }
-            ` }} />
-
-            {/* Authentic Yaadein Suspended Brass Picture Lamp Hero Banner Preview */}
-            <div style={{
-              position: "relative",
-              padding: "70px 20px 40px",
-              background: "linear-gradient(to bottom, #14110E 0%, #080605 100%)",
-              border: "1px solid var(--border)",
-              borderRadius: "14px",
-              textAlign: "center",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-              marginBottom: 40,
-              overflow: "hidden",
-              zIndex: 2,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.6)"
-            }}>
-              {/* Suspended Lamp Graphics */}
-              <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", width: 240, marginBottom: 15, zIndex: 20 }}>
-                {/* Rod */}
-                <div style={{ width: 4, height: 60, background: "linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d)", boxShadow: "1px 0 3px rgba(0,0,0,0.4)" }} />
-                {/* Mount */}
-                <div style={{ width: 28, height: 14, background: "linear-gradient(135deg, #2b1f0d, #8f723b 40%, #dfc38a 60%, #5e461b)", border: "1px solid #1a1205", borderRadius: 2 }} />
-                {/* Arm */}
-                <div style={{ width: 5, height: 32, background: "linear-gradient(to right, #403014, #9c7f47 50%, #2b1f0d)" }} />
-                {/* Head */}
-                <div style={{ width: 280, height: 18, background: "linear-gradient(to bottom, #362710 0%, #8f723b 25%, #dfc38a 45%, #fae7b5 55%, #8f723b 75%, #362710 100%)", border: "1px solid #1a1205", borderRadius: 10, position: "relative", boxShadow: "0 6px 14px rgba(0,0,0,0.6)" }}>
-                  {/* Bulb */}
-                  <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 3, background: "#fff", borderRadius: 2, boxShadow: "0 0 10px 3px #fae7b5, 0 0 20px 6px #fae7b5" }} />
-                </div>
-                {/* Ambient Light Beam Glow */}
-                <div style={{ position: "absolute", top: 110, left: "50%", transform: "translateX(-50%)", width: 450, height: 300, background: "radial-gradient(ellipse at top, rgba(255, 238, 180, 0.28) 0%, rgba(255, 238, 180, 0.1) 40%, transparent 70%)", filter: "blur(20px)", pointerEvents: "none", zIndex: 5 }} />
-              </div>
-
-              <div style={{ position: "relative", zIndex: 10 }}>
-                <span style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent)", fontWeight: 700 }}>
-                  Yaadein Studio Page
-                </span>
-                <h1 style={{ fontFamily: "var(--font-display, 'Cinzel', serif)", fontSize: 36, color: "#FFF", margin: "8px 0 6px" }}>
-                  {pageTitle}
-                </h1>
-                <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--text2)", maxWidth: 550, margin: "0 auto", lineHeight: 1.6 }}>
-                  Custom page layout built inside Yaadein Elementor Studio.
-                </p>
-              </div>
-
-              {/* Studio Light Switch Pill */}
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(20, 15, 10, 0.85)", border: "1px solid rgba(201, 168, 76, 0.3)", padding: "6px 16px", borderRadius: 25, zIndex: 10 }}>
-                <span style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent)", textTransform: "uppercase", fontWeight: 700 }}>
-                  Studio Light
-                </span>
-                <div style={{ width: 36, height: 18, background: "var(--accent)", borderRadius: 10, position: "relative" }}>
-                  <div style={{ width: 14, height: 14, background: "#000", borderRadius: "50%", position: "absolute", top: 2, right: 2 }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Dropped Layout Blocks */}
-            {pageBlocks.length > 0 ? (
-              pageBlocks.map((block, idx) => {
-                const isSelected = selectedIndex === idx;
-                const isDragOver = dragOverIndex === idx;
-                const textColor = block.textColor || "#C9A84C";
-                const fontFamily = block.fontFamily || "inherit";
-                const fontStyle = block.fontStyle || "normal";
-                const textDecoration = block.textDecoration || "none";
-                const textTransform = block.textTransform || "none";
-
-                // Layout Flow & Sizing Math
-                const isAbsolute = block.positionMode === "absolute";
-                const displayMode = block.displayMode || "block";
-                const isInline = displayMode === "inline-50" || displayMode === "inline-33" || (block.boxWidth && block.boxWidth !== "100%" && block.boxWidth !== "auto");
-                
-                const boxWidth = block.boxWidth || (displayMode === "inline-50" ? "48%" : displayMode === "inline-33" ? "31%" : "100%");
-                const boxHeight = block.boxHeight || "auto";
-                const mLeft = block.marginLeft !== undefined && block.marginLeft !== "" ? `${block.marginLeft}px` : (block.boxAlign === "center" ? "auto" : block.boxAlign === "right" ? "auto" : "0");
-                const mRight = block.marginRight !== undefined && block.marginRight !== "" ? `${block.marginRight}px` : (block.boxAlign === "center" ? "auto" : block.boxAlign === "left" ? "auto" : "0");
-
-                const wrapperStyle = {
-                  position: isAbsolute ? "absolute" : "relative",
-                  left: isAbsolute ? `${block.posX || 0}px` : "auto",
-                  top: isAbsolute ? `${block.posY || 0}px` : "auto",
-                  display: isAbsolute ? "block" : (isInline ? "inline-block" : "block"),
-                  verticalAlign: "top",
-                  boxSizing: "border-box",
-                  width: boxWidth,
-                  height: boxHeight,
-                  marginTop: isAbsolute ? 0 : `${block.marginTop || 0}px`,
-                  marginBottom: isAbsolute ? 0 : `${block.marginBottom || 20}px`,
-                  marginLeft: isAbsolute ? 0 : mLeft,
-                  marginRight: isAbsolute ? 0 : mRight,
-                  paddingTop: `${block.paddingTop || 10}px`,
-                  paddingBottom: `${block.paddingBottom || 10}px`,
-                  paddingLeft: `${block.paddingLeft || 10}px`,
-                  paddingRight: `${block.paddingRight || 10}px`,
-                  background: block.bgColor === "transparent" ? "transparent" : (block.bgColor || (block.bgGradient ? block.bgGradient : "transparent")),
-                  backdropFilter: block.backdropBlur ? `blur(${block.backdropBlur}px)` : "none",
-                  borderStyle: block.borderStyle || "none",
-                  borderWidth: `${block.borderWidth || 1}px`,
-                  borderColor: block.borderColor || "transparent",
-                  borderRadius: `${block.borderRadius || 0}px`,
-                  boxShadow: block.shadow || "none",
-                  opacity: block.opacity ? parseFloat(block.opacity) : 1,
-                  outline: isDragOver ? "3px solid #FFD700" : isSelected ? "2px solid var(--accent)" : "1px dashed rgba(255,255,255,0.1)",
-                  outlineOffset: "4px",
-                  cursor: isAbsolute ? "move" : "grab",
-                  transition: isMovingFree || isResizing ? "none" : "all 0.2s ease",
-                  zIndex: isSelected ? 50 : 2,
-                };
-
-                return (
-                  <div
-                    key={block.id || idx}
-                    draggable={!isAbsolute}
-                    onMouseDown={(e) => isAbsolute && handleMouseDownMove(e, idx)}
-                    onDragStart={(e) => {
-                      if (!isAbsolute) {
-                        e.dataTransfer.setData("blockIndex", idx.toString());
-                        setDraggedBlockIndex(idx);
-                      }
-                    }}
-                    onDragOver={(e) => {
-                      if (!isAbsolute) {
-                        e.preventDefault();
-                        setDragOverIndex(idx);
-                      }
-                    }}
-                    onDragLeave={() => setDragOverIndex(null)}
-                    onDrop={(e) => !isAbsolute && handleCanvasDrop(e, idx)}
-                    style={wrapperStyle}
-                    onClick={() => setSelectedIndex(idx)}
-                  >
-                    
-                    {/* Floating Block Toolbar */}
-                    {isSelected && (
-                      <div style={{ position: "absolute", top: -32, right: 0, background: "var(--accent)", color: "#000", padding: "3px 12px", borderRadius: "6px 6px 0 0", fontSize: 11, fontWeight: 700, display: "flex", gap: 10, alignItems: "center", zIndex: 100 }}>
-                        <span>Selected #{idx + 1} ({block.type}) {isAbsolute ? "📍 Freeform Drag" : ""}</span>
-                        <button onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, -1); }} style={{ background: "none", border: "none", cursor: "pointer" }}>▲</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, 1); }} style={{ background: "none", border: "none", cursor: "pointer" }}>▼</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDuplicateBlock(idx); }} style={{ background: "none", border: "none", cursor: "pointer" }}>📋</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteBlock(idx); }} style={{ background: "none", border: "none", cursor: "pointer" }}>🗑️</button>
-                      </div>
-                    )}
-
-                    {/* CORNER RESIZE HANDLE (↘) */}
-                    {isSelected && (
-                      <div
-                        onMouseDown={(e) => handleMouseDownResize(e, idx)}
-                        style={{
-                          position: "absolute",
-                          bottom: -6,
-                          right: -6,
-                          width: 16,
-                          height: 16,
-                          background: "var(--accent)",
-                          border: "2px solid #000",
-                          borderRadius: "50%",
-                          cursor: "se-resize",
-                          zIndex: 110,
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.8)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 8,
-                          color: "#000",
-                          fontWeight: 900
-                        }}
-                      >
-                        ↘
-                      </div>
-                    )}
-
-                    {/* RENDERERS */}
-                    {block.type === "heading" && (
-                      <h2 style={{ fontFamily, fontSize: `${block.fontSize || 36}px`, color: textColor, textAlign: block.textAlign || "center", fontWeight: block.fontWeight || "700", fontStyle, textDecoration, textTransform, letterSpacing: `${block.letterSpacing || 0}px`, lineHeight: block.lineHeight || "1.3", textShadow: block.textShadow || "none", margin: 0 }}>
-                        {block.text}
-                      </h2>
-                    )}
-
-                    {block.type === "paragraph" && (
-                      <p style={{ fontFamily, fontSize: `${block.fontSize || 16}px`, color: textColor, textAlign: block.textAlign || "left", fontWeight: block.fontWeight || "400", fontStyle, textDecoration, textTransform, letterSpacing: `${block.letterSpacing || 0}px`, lineHeight: block.lineHeight || "1.8", textShadow: block.textShadow || "none", margin: 0 }}>
-                        {block.text}
-                      </p>
-                    )}
-
-                    {block.type === "row-2col" && (
-                      <div style={{ display: "grid", gridTemplateColumns: block.colRatio || "1fr 1fr", gap: `${block.gap || 24}px`, alignItems: block.verticalAlign || "center" }}>
-                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 10, border: "1px solid var(--border)" }}>
-                          <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>LEFT COLUMN (50%)</span>
-                          {block.col1Type === "image" ? (
-                            <img src={block.col1Image || "/images/bespoke_framing.png"} alt="Left Media" style={{ width: "100%", borderRadius: 8, height: 180, objectFit: "cover", marginTop: 8 }} />
-                          ) : (
-                            <div style={{ marginTop: 8 }}>
-                              {block.col1Title && <h4 style={{ fontSize: 18, color: textColor, margin: "0 0 6px 0" }}>{block.col1Title}</h4>}
-                              <p style={{ fontSize: 13, color: "var(--text2)", margin: 0 }}>{block.col1Body}</p>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 20, borderRadius: 10, border: "1px solid var(--border)" }}>
-                          <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>RIGHT COLUMN (50%)</span>
-                          {block.col2Type === "image" ? (
-                            <img src={block.col2Image || "/images/bespoke_framing.png"} alt="Right Media" style={{ width: "100%", borderRadius: 8, height: 180, objectFit: "cover", marginTop: 8 }} />
-                          ) : (
-                            <div style={{ marginTop: 8 }}>
-                              {block.col2Title && <h4 style={{ fontSize: 18, color: textColor, margin: "0 0 6px 0" }}>{block.col2Title}</h4>}
-                              <p style={{ fontSize: 13, color: "var(--text2)", margin: 0 }}>{block.col2Body}</p>
-                              {block.col2ButtonText && <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "8px 20px", borderRadius: 6, fontSize: 12, marginTop: 10 }}>{block.col2ButtonText}</span>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === "row-3col" && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: `${block.gap || 20}px` }}>
-                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
-                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col1Title}</h5>
-                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col1Body}</p>
-                        </div>
-                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
-                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col2Title}</h5>
-                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col2Body}</p>
-                        </div>
-                        <div style={{ background: "rgba(20, 12, 6, 0.6)", padding: 16, borderRadius: 10, textAlign: "center" }}>
-                          <h5 style={{ color: textColor, fontSize: 16 }}>{block.col3Title}</h5>
-                          <p style={{ fontSize: 13, color: "var(--text2)" }}>{block.col3Body}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === "image" && (
-                      <div style={{ textAlign: "center" }}>
-                        <img src={block.url || "/images/bespoke_framing.png"} alt="Widget" style={{ maxWidth: block.width || "100%", borderRadius: `${block.borderRadius || 8}px`, border: `${block.borderWidth || 1}px ${block.borderStyle || "solid"} ${block.borderColor || "transparent"}`, objectFit: block.objectFit || "cover" }} />
-                        {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>{block.caption}</p>}
-                      </div>
-                    )}
-
-                    {block.type === "video" && (
-                      <div style={{ textAlign: "center" }}>
-                        <video src={block.url || "/videos/reel1.mp4"} controls style={{ width: "100%", maxHeight: 350, borderRadius: `${block.borderRadius || 12}px`, background: "#000" }} />
-                        {block.caption && <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>{block.caption}</p>}
-                      </div>
-                    )}
-
-                    {block.type === "button" && (
-                      <div style={{ textAlign: block.alignment || "center" }}>
-                        <span style={{ display: "inline-block", background: block.btnColor || textColor, color: block.textColor || "#000", fontFamily, fontWeight: block.fontWeight || "700", fontSize: `${block.fontSize || 14}px`, padding: `${block.paddingTop || 14}px ${block.paddingRight || 32}px`, borderRadius: `${block.borderRadius || 8}px` }}>
-                          {block.text} {block.iconName === "arrow" ? "→" : block.iconName === "star" ? "✦" : ""}
-                        </span>
-                      </div>
-                    )}
-
-                    {block.type === "cta-banner" && (
-                      <div style={{ background: block.bgGradient || "linear-gradient(135deg, rgba(201, 168, 76, 0.2) 0%, rgba(20, 12, 6, 0.9) 100%)", border: `1px solid ${textColor}`, borderRadius: 16, padding: 40, textAlign: "center" }}>
-                        <h3 style={{ fontFamily, fontSize: 30, color: textColor, marginBottom: 10 }}>{block.title}</h3>
-                        <p style={{ color: "var(--text2)", fontSize: 15, marginBottom: 20 }}>{block.subtitle}</p>
-                        <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "12px 28px", borderRadius: 8, fontSize: 13 }}>{block.buttonText}</span>
-                      </div>
-                    )}
-
-                    {block.type === "testimonial" && (
-                      <div style={{ background: "rgba(28, 15, 7, 0.6)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: 12, padding: 24 }}>
-                        <div style={{ color: textColor, fontSize: 18, marginBottom: 8 }}>{"★".repeat(parseInt(block.rating || "5"))}</div>
-                        <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "#fff", fontStyle: "italic", marginBottom: 12 }}>"{block.quote}"</p>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: textColor }}>{block.name} ({block.location})</div>
-                      </div>
-                    )}
-
-                    {block.type === "faq" && (
-                      <div style={{ background: "rgba(20, 12, 6, 0.7)", border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
-                        <div style={{ fontWeight: 600, color: textColor, fontSize: 15 }}>❓ {block.question}</div>
-                        <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 6 }}>{block.answer}</div>
-                      </div>
-                    )}
-
-                    {block.type === "pricing" && (
-                      <div style={{ background: "rgba(201, 168, 76, 0.15)", border: `1px solid ${textColor}`, borderRadius: 16, padding: 28, textAlign: "center" }}>
-                        {block.ribbonBadge && <span style={{ background: textColor, color: "#000", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4 }}>{block.ribbonBadge}</span>}
-                        <h4 style={{ fontSize: 20, color: "#fff", marginTop: 6 }}>{block.title}</h4>
-                        <div style={{ fontSize: 32, fontWeight: 700, color: textColor, margin: "8px 0" }}>{block.currency || "Rs."} {block.price}</div>
-                        <span style={{ display: "inline-block", background: textColor, color: "#000", fontWeight: 700, padding: "10px 24px", borderRadius: 8, fontSize: 13, marginTop: 12 }}>{block.buttonText}</span>
-                      </div>
-                    )}
-
-                    {block.type === "divider" && (
-                      <div style={{ padding: "10px 0", display: "flex", alignItems: "center" }}>
-                        <div style={{ width: "100%", height: parseInt(block.height || "1"), background: textColor }} />
-                      </div>
-                    )}
-
-                    {block.type === "spacer" && (
-                      <div style={{ height: parseInt(block.height || "40"), background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--text2)" }}>
-                        Spacer Gap ({block.height || 40}px)
-                      </div>
-                    )}
-
-                    {block.type === "video-reels" && (() => {
-                      const reelsList = Array.isArray(block.reels) ? block.reels : [];
-                      const isCarousel = block.layout === "carousel";
-                      const cols = parseInt(block.columns || "2");
-                      return (
-                        <div style={{ background: "rgba(20, 12, 6, 0.5)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
-                          <div style={{ textAlign: "center", marginBottom: 16 }}>
-                            <span style={{ fontSize: 10, color: textColor, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{block.sectionTitle || "Our Work in Motion"}</span>
-                            {block.sectionSubtitle && <p style={{ fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>{block.sectionSubtitle}</p>}
-                          </div>
-                          
-                          {isCarousel ? (
-                            <div style={{ display: "flex", gap: 12, overflow: "hidden", justifyContent: reelsList.length <= 3 ? "center" : "flex-start" }}>
-                              {reelsList.map((reel, rIdx) => (
-                                <div key={reel.id || rIdx} style={{ flex: "0 0 160px", background: "#000", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)", position: "relative", height: 220, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 8, textAlign: "center" }}>
-                                  <span style={{ fontSize: 18, color: "var(--accent)" }}>❖</span>
-                                  <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, marginTop: 4 }}>Instagram Reel</span>
-                                  <span style={{ fontSize: 9, color: "var(--text2)", maxWidth: "100%", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginTop: 2, display: "block" }}>{reel.instagramUrl || "No URL"}</span>
-                                  {reel.featured && (
-                                    <span style={{ position: "absolute", top: 6, right: 6, background: "var(--accent)", color: "#000", fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>FEATURED</span>
-                                  )}
-                                  {reel.caption && (
-                                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.85)", padding: "4px 6px", fontSize: 8, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{reel.caption}</div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, justifyContent: "center" }}>
-                              {reelsList.map((reel, rIdx) => (
-                                <div key={reel.id || rIdx} style={{ background: "#000", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)", position: "relative", minHeight: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 8, textAlign: "center" }}>
-                                  <span style={{ fontSize: 18, color: "var(--accent)" }}>❖</span>
-                                  <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, marginTop: 4 }}>Instagram Reel</span>
-                                  <span style={{ fontSize: 9, color: "var(--text2)", maxWidth: "90%", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginTop: 2, display: "block" }}>{reel.instagramUrl || "No URL"}</span>
-                                  {reel.featured && (
-                                    <span style={{ position: "absolute", top: 6, right: 6, background: "var(--accent)", color: "#000", fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>FEATURED</span>
-                                  )}
-                                  {reel.caption && (
-                                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.85)", padding: "4px 6px", fontSize: 8, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{reel.caption}</div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, color: "var(--accent)", fontWeight: 600 }}>
-                            {reelsList.length} Reel{reelsList.length !== 1 ? "s" : ""} • {isCarousel ? "Carousel (Horizontal Row with Arrow Navigation)" : `Grid Layout (${cols} Columns)`}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                  </div>
-                );
-              })
-            ) : (
-              <div style={{ padding: "100px 20px", textAlign: "center", color: "var(--text2)" }}>
-                <h3>Your Canvas is Empty</h3>
-                <p style={{ fontSize: 14, marginTop: 8 }}>Drag & drop any widget from the left palette or click it to add it to your layout.</p>
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* RIGHT PANE: COLLAPSIBLE INSPECTOR */}
-        {rightOpen && (
-          <aside style={{ width: "340px", minWidth: "340px", background: "#0A0805", borderLeft: "1px solid var(--border)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.3s ease" }}>
-            <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--accent)", margin: 0, fontWeight: 700 }}>
-                ⚙️ Inspector: {selectedBlock ? selectedBlock.type : "Select Block"}
-              </h3>
-              <button onClick={() => setRightOpen(false)} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14 }}>▶</button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-              {selectedBlock ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  
-                  {/* INSPECTOR SUB-TABS */}
-                  <div style={{ display: "flex", background: "#14100B", padding: 3, borderRadius: 6, border: "1px solid var(--border)" }}>
-                    {["content", "typography", "style", "spacing"].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveInspectorTab(tab)}
-                        style={{
-                          flex: 1,
-                          background: activeInspectorTab === tab ? "var(--accent)" : "none",
-                          color: activeInspectorTab === tab ? "#000" : "#fff",
-                          border: "none",
-                          padding: "6px 4px",
-                          borderRadius: 4,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          textTransform: "capitalize"
-                        }}
-                      >
-                        {tab === "style" ? "Box Style" : tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* TAB 1: CONTENT & SPECIFIC ENTITIES */}
-                  {activeInspectorTab === "content" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      
-                      {selectedBlock.type === "heading" && (
-                        <>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>HTML Heading Tag</label>
-                            <select
-                              value={selectedBlock.tag || "h2"}
-                              onChange={(e) => handleUpdateSelectedBlock("tag", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                            >
-                              <option value="h1">H1 (Main Title)</option>
-                              <option value="h2">H2 (Section Header)</option>
-                              <option value="h3">H3 (Sub Header)</option>
-                              <option value="h4">H4 (Minor Title)</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Headline Text String</label>
-                            <textarea
-                              value={selectedBlock.text || ""}
-                              onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
-                              rows={3}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {selectedBlock.type === "paragraph" && (
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Paragraph Text Content</label>
-                          <textarea
-                            value={selectedBlock.text || ""}
-                            onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
-                            rows={5}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      )}
-
-                      {selectedBlock.type === "image" && (
-                        <>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>Select Image File (Local Storage)</label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (evt) => {
-                                    handleUpdateSelectedBlock("url", evt.target.result);
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Caption Text</label>
-                            <input
-                              type="text"
-                              value={selectedBlock.caption || ""}
-                              onChange={(e) => handleUpdateSelectedBlock("caption", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {selectedBlock.type === "video" && (
-                        <>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>Select Video File (Local Storage)</label>
-                            <input
-                              type="file"
-                              accept="video/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (evt) => {
-                                    handleUpdateSelectedBlock("url", evt.target.result);
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {selectedBlock.type === "video-reels" && (() => {
-                        const reelsList = Array.isArray(selectedBlock.reels) ? selectedBlock.reels : [];
-                        const isCarousel = (selectedBlock.layout || "carousel") === "carousel";
-
-                        const updateReelField = (rIdx, field, value) => {
-                          const updated = [...reelsList];
-                          updated[rIdx] = { ...updated[rIdx], [field]: value };
-                          handleUpdateSelectedBlock("reels", updated);
-                        };
-
-                        const addReel = () => {
-                          const updated = [...reelsList, { id: `r_${Date.now()}`, instagramUrl: "", caption: "", featured: false }];
-                          handleUpdateSelectedBlock("reels", updated);
-                        };
-
-                        const deleteReel = (rIdx) => {
-                          handleUpdateSelectedBlock("reels", reelsList.filter((_, i) => i !== rIdx));
-                        };
-
-                        const moveReel = (rIdx, delta) => {
-                          const tgt = rIdx + delta;
-                          if (tgt < 0 || tgt >= reelsList.length) return;
-                          const updated = [...reelsList];
-                          [updated[rIdx], updated[tgt]] = [updated[tgt], updated[rIdx]];
-                          handleUpdateSelectedBlock("reels", updated);
-                        };
-
-                        return (
-                          <>
-                            {/* Section Header */}
-                            <div>
-                              <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Section Title</label>
-                              <input
-                                type="text"
-                                value={selectedBlock.sectionTitle || ""}
-                                onChange={(e) => handleUpdateSelectedBlock("sectionTitle", e.target.value)}
-                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Section Subtitle</label>
-                              <input
-                                type="text"
-                                value={selectedBlock.sectionSubtitle || ""}
-                                onChange={(e) => handleUpdateSelectedBlock("sectionSubtitle", e.target.value)}
-                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                              />
-                            </div>
-
-                            {/* Layout & Columns */}
-                            <div style={{ display: "grid", gridTemplateColumns: isCarousel ? "1fr" : "1fr 1fr", gap: 10 }}>
-                              <div>
-                                <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Layout Mode</label>
-                                <select
-                                  value={selectedBlock.layout || "carousel"}
-                                  onChange={(e) => handleUpdateSelectedBlock("layout", e.target.value)}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                                >
-                                  <option value="carousel">Horizontal Carousel (Scroll Buttons)</option>
-                                  <option value="grid">Fixed Column Grid</option>
-                                </select>
-                              </div>
-                              {!isCarousel && (
-                                <div>
-                                  <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Grid Columns</label>
-                                  <select
-                                    value={selectedBlock.columns || "2"}
-                                    onChange={(e) => handleUpdateSelectedBlock("columns", e.target.value)}
-                                    style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                                  >
-                                    <option value="1">1 Column</option>
-                                    <option value="2">2 Columns</option>
-                                    <option value="3">3 Columns</option>
-                                    <option value="4">4 Columns</option>
-                                  </select>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Reels CRUD List */}
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                                <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>Instagram Reels ({reelsList.length})</span>
-                                <button
-                                  onClick={addReel}
-                                  style={{ background: "var(--accent)", color: "#000", border: "none", padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-                                >
-                                  + Add Reel
-                                </button>
-                              </div>
-
-                              {reelsList.map((reel, rIdx) => (
-                                <div key={reel.id || rIdx} style={{ background: "rgba(201,168,76,0.08)", border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                    <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>Reel #{rIdx + 1}</span>
-                                    <div style={{ display: "flex", gap: 4 }}>
-                                      <button onClick={() => moveReel(rIdx, -1)} disabled={rIdx === 0} style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "2px 6px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>▲</button>
-                                      <button onClick={() => moveReel(rIdx, 1)} disabled={rIdx === reelsList.length - 1} style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "2px 6px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>▼</button>
-                                      <button onClick={() => deleteReel(rIdx)} style={{ background: "rgba(255,62,108,0.15)", border: "1px solid #FF3E6C", color: "#FF3E6C", padding: "2px 8px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>✕</button>
-                                    </div>
-                                  </div>
-
-                                  {/* Link Input */}
-                                  <div style={{ marginBottom: 6 }}>
-                                    <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Instagram Reel URL</label>
-                                    <input
-                                      type="text"
-                                      placeholder="https://www.instagram.com/reel/..."
-                                      value={reel.instagramUrl || ""}
-                                      onChange={(e) => updateReelField(rIdx, "instagramUrl", e.target.value)}
-                                      style={{ width: "100%", background: "#0A0805", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11, fontFamily: "monospace" }}
-                                    />
-                                  </div>
-
-                                  {/* Caption */}
-                                  <div style={{ marginBottom: 6 }}>
-                                    <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Caption (Optional)</label>
-                                    <input
-                                      type="text"
-                                      placeholder="Behind the scenes at Yaadein Studio..."
-                                      value={reel.caption || ""}
-                                      onChange={(e) => updateReelField(rIdx, "caption", e.target.value)}
-                                      style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11 }}
-                                    />
-                                  </div>
-
-                                  {/* Featured Toggle */}
-                                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--accent)", fontWeight: 600, cursor: "pointer" }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={!!reel.featured}
-                                      onChange={(e) => updateReelField(rIdx, "featured", e.target.checked)}
-                                    />
-                                    Mark as Featured
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        );
-                      })()}
-                      {selectedBlock.type === "button" && (
-                        <>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Button Label</label>
-                            <input
-                              type="text"
-                              value={selectedBlock.text || ""}
-                              onChange={(e) => handleUpdateSelectedBlock("text", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Button Link Target</label>
-                            <input
-                              type="text"
-                              value={selectedBlock.link || ""}
-                              onChange={(e) => handleUpdateSelectedBlock("link", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {selectedBlock.type === "row-2col" && (
-                        <>
-                          <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
-                            <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>Left Column (50%)</h4>
-                            <select
-                              value={selectedBlock.col1Type || "text"}
-                              onChange={(e) => handleUpdateSelectedBlock("col1Type", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 8 }}
-                            >
-                              <option value="text">Paragraph / Narrative Text</option>
-                              <option value="image">Image / Photo</option>
-                            </select>
-                            {selectedBlock.col1Type === "image" ? (
-                              <div>
-                                <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Select Left Image File</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = (evt) => {
-                                        handleUpdateSelectedBlock("col1Image", evt.target.result);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <input
-                                  type="text"
-                                  placeholder="Left Title (Optional)"
-                                  value={selectedBlock.col1Title || ""}
-                                  onChange={(e) => handleUpdateSelectedBlock("col1Title", e.target.value)}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
-                                />
-                                <textarea
-                                  placeholder="Left Paragraph Text"
-                                  value={selectedBlock.col1Body || ""}
-                                  onChange={(e) => handleUpdateSelectedBlock("col1Body", e.target.value)}
-                                  rows={3}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                                />
-                              </>
-                            )}
-                          </div>
-
-                          <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
-                            <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>Right Column (50%)</h4>
-                            <select
-                              value={selectedBlock.col2Type || "text"}
-                              onChange={(e) => handleUpdateSelectedBlock("col2Type", e.target.value)}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 8 }}
-                            >
-                              <option value="text">Paragraph / Narrative Text</option>
-                              <option value="image">Image / Photo</option>
-                            </select>
-                            {selectedBlock.col2Type === "image" ? (
-                              <div>
-                                <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Select Right Image File</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = (evt) => {
-                                        handleUpdateSelectedBlock("col2Image", evt.target.result);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <input
-                                  type="text"
-                                  placeholder="Right Title (Optional)"
-                                  value={selectedBlock.col2Title || ""}
-                                  onChange={(e) => handleUpdateSelectedBlock("col2Title", e.target.value)}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
-                                />
-                                <textarea
-                                  placeholder="Right Paragraph Text"
-                                  value={selectedBlock.col2Body || ""}
-                                  onChange={(e) => handleUpdateSelectedBlock("col2Body", e.target.value)}
-                                  rows={3}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Button Label (Optional)"
-                                  value={selectedBlock.col2ButtonText || ""}
-                                  onChange={(e) => handleUpdateSelectedBlock("col2ButtonText", e.target.value)}
-                                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                                />
-                              </>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* TAB 2: ADVANCED TYPOGRAPHY SUITE */}
-                  {activeInspectorTab === "typography" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>🔤 Font Family</label>
-                        <select
-                          value={selectedBlock.fontFamily || "inherit"}
-                          onChange={(e) => handleUpdateSelectedBlock("fontFamily", e.target.value)}
-                          style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
+                <div className="pb-panel-body">
+                  {CATEGORIES.map((cat) => {
+                    const items = filteredComponents.filter((c) => c.category === cat);
+                    if (!items.length) return null;
+                    const isOpen = openCategories[cat] !== false;
+                    return (
+                      <div key={cat} style={{ marginBottom: 10 }}>
+                        <button
+                          onClick={() => setOpenCategories((p) => ({ ...p, [cat]: isOpen ? false : true }))}
+                          className="pb-cat-head"
                         >
-                          {FONT_FAMILIES.map(f => (
-                            <option key={f.val} value={f.val}>{f.name}</option>
-                          ))}
-                        </select>
+                          <span style={{ color: "#8b8474", fontSize: 10, transform: isOpen ? "none" : "rotate(-90deg)", transition: "transform .18s ease", display: "inline-block" }}>▾</span>
+                          <span style={{ flex: 1, textAlign: "left" }}>{cat}</span>
+                          <span className="pb-cat-count">{items.length}</span>
+                        </button>
 
-                        {/* UPLOAD CUSTOM FONT FILE */}
-                        <div style={{ background: "rgba(201,168,76,0.1)", padding: 8, borderRadius: 6, border: "1px solid var(--border)" }}>
-                          <label style={{ display: "block", fontSize: 10, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📁 Upload Custom Font (.ttf, .otf, .woff)</label>
-                          <input
-                            type="file"
-                            accept=".ttf,.otf,.woff,.woff2"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFontFileUpload(file);
-                            }}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 10 }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* TEXT COLOR & COLOR PICKER */}
-                      <div>
-                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>🎨 Text Font Color & Color Picker</label>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input
-                            type="color"
-                            value={selectedBlock.textColor || "#C9A84C"}
-                            onChange={(e) => handleUpdateSelectedBlock("textColor", e.target.value)}
-                            style={{ width: 40, height: 32, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
-                          />
-                          <select
-                            value={selectedBlock.textColor || "#C9A84C"}
-                            onChange={(e) => handleUpdateSelectedBlock("textColor", e.target.value)}
-                            style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: selectedBlock.textColor || "#C9A84C", fontWeight: 700, padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            {FONT_COLORS.map(c => (
-                              <option key={c.hex} value={c.hex} style={{ color: c.hex, background: "#111" }}>{c.name}</option>
+                        {isOpen && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+                            {items.map((c) => (
+                              <div
+                                key={c.id}
+                                draggable
+                                onDragStart={onPaletteDragStart(c.id)}
+                                onDragEnd={() => { dragPayloadRef.current = null; setDropTarget(null); }}
+                                onClick={() => addBlock(c.id)}
+                                className="pb-widget"
+                                title={c.description || `Add ${c.name}`}
+                              >
+                                <span className="pb-widget-icon">{c.icon}</span>
+                                <span style={{ minWidth: 0, flex: 1 }}>
+                                  <span className="pb-widget-name">{c.name}</span>
+                                  {c.description && <span className="pb-widget-desc">{c.description}</span>}
+                                </span>
+                                <span className="pb-widget-grab">⠿</span>
+                              </div>
                             ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Font Size: {selectedBlock.fontSize || 36}px</label>
-                        <input
-                          type="range"
-                          min="12"
-                          max="96"
-                          value={selectedBlock.fontSize || 36}
-                          onChange={(e) => handleUpdateSelectedBlock("fontSize", e.target.value)}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Font Weight</label>
-                          <select
-                            value={selectedBlock.fontWeight || "700"}
-                            onChange={(e) => handleUpdateSelectedBlock("fontWeight", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            <option value="300">300 (Light)</option>
-                            <option value="400">400 (Regular)</option>
-                            <option value="600">600 (Semi-Bold)</option>
-                            <option value="700">700 (Bold)</option>
-                            <option value="900">900 (Black)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Alignment</label>
-                          <select
-                            value={selectedBlock.textAlign || "center"}
-                            onChange={(e) => handleUpdateSelectedBlock("textAlign", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            <option value="left">Left</option>
-                            <option value="center">Center</option>
-                            <option value="right">Right</option>
-                            <option value="justify">Justify</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Text Transform</label>
-                          <select
-                            value={selectedBlock.textTransform || "none"}
-                            onChange={(e) => handleUpdateSelectedBlock("textTransform", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            <option value="none">None</option>
-                            <option value="uppercase">UPPERCASE</option>
-                            <option value="lowercase">lowercase</option>
-                            <option value="capitalize">Capitalize</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Text Style</label>
-                          <select
-                            value={selectedBlock.fontStyle || "normal"}
-                            onChange={(e) => handleUpdateSelectedBlock("fontStyle", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            <option value="normal">Normal</option>
-                            <option value="italic">Italic</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TAB 3: BOX STYLE & FREEFORM POSITIONING */}
-                  {activeInspectorTab === "style" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      
-                      {/* FREEFORM DRAG VS FLOW MODE */}
-                      <div style={{ background: "rgba(201,168,76,0.12)", padding: 10, borderRadius: 8, border: "1px solid var(--accent)" }}>
-                        <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📍 Position Mode</label>
-                        <select
-                          value={selectedBlock.positionMode || "relative"}
-                          onChange={(e) => handleUpdateSelectedBlock("positionMode", e.target.value)}
-                          style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12, marginBottom: 6 }}
-                        >
-                          <option value="relative">Flow Layout (Auto Vertical Flow)</option>
-                          <option value="absolute">Freeform Canvas Drag (Absolute X/Y)</option>
-                        </select>
-
-                        {selectedBlock.positionMode === "absolute" && (
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6 }}>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, color: "var(--text2)" }}>X Pos (Left px)</label>
-                              <input
-                                type="number"
-                                value={selectedBlock.posX || 0}
-                                onChange={(e) => handleUpdateSelectedBlock("posX", parseInt(e.target.value) || 0)}
-                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, color: "var(--text2)" }}>Y Pos (Top px)</label>
-                              <input
-                                type="number"
-                                value={selectedBlock.posY || 0}
-                                onChange={(e) => handleUpdateSelectedBlock("posY", parseInt(e.target.value) || 0)}
-                                style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 4, borderRadius: 4, fontSize: 11 }}
-                              />
-                            </div>
                           </div>
                         )}
                       </div>
-
-                      {/* DISPLAY LAYOUT MODE */}
-                      {selectedBlock.positionMode !== "absolute" && (
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📐 Flow Placement</label>
-                          <select
-                            value={selectedBlock.displayMode || (selectedBlock.boxWidth === "48%" || selectedBlock.boxWidth === "45%" ? "inline-50" : "block")}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSelectedBlock("displayMode", val);
-                              if (val === "inline-50") {
-                                handleUpdateSelectedBlock("boxWidth", "45%");
-                                handleUpdateSelectedBlock("marginRight", "20");
-                              } else if (val === "inline-33") {
-                                handleUpdateSelectedBlock("boxWidth", "30%");
-                                handleUpdateSelectedBlock("marginRight", "16");
-                              } else {
-                                handleUpdateSelectedBlock("boxWidth", "100%");
-                                handleUpdateSelectedBlock("marginRight", "");
-                              }
-                            }}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          >
-                            <option value="block">Full Width Row Block (Default)</option>
-                            <option value="inline-50">Inline Side-by-Side (45% Width + Gap)</option>
-                            <option value="inline-33">Inline Side-by-Side (30% Width + Gap)</option>
-                          </select>
-                        </div>
-                      )}
-
-                      {/* WIDTH & HEIGHT */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Box Width</label>
-                          <input
-                            type="text"
-                            value={selectedBlock.boxWidth || "100%"}
-                            onChange={(e) => handleUpdateSelectedBlock("boxWidth", e.target.value)}
-                            placeholder="e.g. 100%, 450px, 45%"
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Box Height</label>
-                          <input
-                            type="text"
-                            value={selectedBlock.boxHeight || "auto"}
-                            onChange={(e) => handleUpdateSelectedBlock("boxHeight", e.target.value)}
-                            placeholder="e.g. auto, 250px"
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* BOX POSITION / ALIGNMENT */}
-                      {selectedBlock.positionMode !== "absolute" && (
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 4 }}>📍 Box Alignment Position</label>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            {["left", "center", "right"].map((pos) => (
-                              <button
-                                key={pos}
-                                onClick={() => handleUpdateSelectedBlock("boxAlign", pos)}
-                                style={{
-                                  flex: 1,
-                                  background: (selectedBlock.boxAlign || "center") === pos ? "var(--accent)" : "var(--surface2)",
-                                  color: (selectedBlock.boxAlign || "center") === pos ? "#000" : "#fff",
-                                  border: "1px solid var(--border)",
-                                  padding: "6px 0",
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  textTransform: "capitalize",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                {pos}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* BACKGROUND COLOR & TRANSPARENT TOGGLE */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <label style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>Background Color</label>
-                          <button
-                            onClick={() => handleUpdateSelectedBlock("bgColor", "transparent")}
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid var(--border)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}
-                          >
-                            Set Transparent
-                          </button>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input
-                            type="color"
-                            value={selectedBlock.bgColor === "transparent" ? "#000000" : (selectedBlock.bgColor || "#080605")}
-                            onChange={(e) => handleUpdateSelectedBlock("bgColor", e.target.value)}
-                            style={{ width: 36, height: 30, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
-                          />
-                          <input
-                            type="text"
-                            value={selectedBlock.bgColor || "transparent"}
-                            onChange={(e) => handleUpdateSelectedBlock("bgColor", e.target.value)}
-                            placeholder="transparent or #14100B"
-                            style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* BORDER STYLE, WIDTH & COLOR */}
-                      <div style={{ background: "rgba(201,168,76,0.05)", padding: 10, borderRadius: 8, border: "1px solid var(--border)" }}>
-                        <h4 style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 8 }}>🖼️ Border & Frame Styling</h4>
-                        
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Style</label>
-                            <select
-                              value={selectedBlock.borderStyle || "none"}
-                              onChange={(e) => {
-                                handleUpdateSelectedBlock("borderStyle", e.target.value);
-                                if (!selectedBlock.borderWidth || selectedBlock.borderWidth === "0") {
-                                  handleUpdateSelectedBlock("borderWidth", "1");
-                                }
-                              }}
-                              style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 5, borderRadius: 4, fontSize: 11 }}
-                            >
-                              {BORDER_STYLES.map(b => (
-                                <option key={b.val} value={b.val}>{b.name}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Color</label>
-                            <div style={{ display: "flex", gap: 4 }}>
-                              <input
-                                type="color"
-                                value={selectedBlock.borderColor || "#C9A84C"}
-                                onChange={(e) => handleUpdateSelectedBlock("borderColor", e.target.value)}
-                                style={{ width: 28, height: 26, border: "1px solid var(--border)", background: "none", cursor: "pointer", borderRadius: 4 }}
-                              />
-                              <input
-                                type="text"
-                                value={selectedBlock.borderColor || "#C9A84C"}
-                                onChange={(e) => handleUpdateSelectedBlock("borderColor", e.target.value)}
-                                style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 3, borderRadius: 4, fontSize: 10 }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Width: {selectedBlock.borderWidth || 1}px</label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="20"
-                            value={selectedBlock.borderWidth || 1}
-                            onChange={(e) => handleUpdateSelectedBlock("borderWidth", e.target.value)}
-                            style={{ width: "100%" }}
-                          />
-                        </div>
-
-                        <div style={{ marginTop: 6 }}>
-                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 2 }}>Border Radius: {selectedBlock.borderRadius || 0}px</label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="60"
-                            value={selectedBlock.borderRadius || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("borderRadius", e.target.value)}
-                            style={{ width: "100%" }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* SHADOW & OPACITY */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Box Shadow Preset</label>
-                          <select
-                            value={selectedBlock.shadow || "none"}
-                            onChange={(e) => handleUpdateSelectedBlock("shadow", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 11 }}
-                          >
-                            {SHADOW_PRESETS.map(s => (
-                              <option key={s.name} value={s.val}>{s.name}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Opacity: {selectedBlock.opacity || 1}</label>
-                          <input
-                            type="range"
-                            min="0.1"
-                            max="1.0"
-                            step="0.05"
-                            value={selectedBlock.opacity || 1}
-                            onChange={(e) => handleUpdateSelectedBlock("opacity", e.target.value)}
-                            style={{ width: "100%" }}
-                          />
-                        </div>
-                      </div>
-
-                    </div>
+                    );
+                  })}
+                  {filteredComponents.length === 0 && (
+                    <p style={{ fontSize: 12.5, color: "#77715f", padding: "20px 4px", lineHeight: 1.6 }}>
+                      Nothing matches “{searchQuery}”.
+                    </p>
                   )}
-
-                  {/* TAB 4: SPACING & HORIZONTAL MARGINS/PADDING */}
-                  {activeInspectorTab === "spacing" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ background: "rgba(201,168,76,0.1)", padding: 10, borderRadius: 6, border: "1px solid var(--border)" }}>
-                        <h4 style={{ fontSize: 11, color: "var(--accent)", marginBottom: 6, fontWeight: 700 }}>↔️ Quick Side-by-Side Gap Presets</h4>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {[
-                            { label: "Small (10px)", gap: "10" },
-                            { label: "Medium (20px)", gap: "20" },
-                            { label: "Large (35px)", gap: "35" },
-                          ].map(preset => (
-                            <button
-                              key={preset.gap}
-                              onClick={() => {
-                                handleUpdateSelectedBlock("marginRight", preset.gap);
-                              }}
-                              style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: "6px 0", borderRadius: 4, fontSize: 10, cursor: "pointer" }}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Padding Top (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.paddingTop || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("paddingTop", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Padding Bottom (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.paddingBottom || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("paddingBottom", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Padding Left (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.paddingLeft || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("paddingLeft", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Padding Right (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.paddingRight || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("paddingRight", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Margin Top (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.marginTop || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("marginTop", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>Margin Bottom (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.marginBottom || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("marginBottom", e.target.value)}
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Margin Left (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.marginLeft || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("marginLeft", e.target.value)}
-                            placeholder="0"
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 11, color: "var(--accent)", fontWeight: 700, marginBottom: 2 }}>Margin Right (px)</label>
-                          <input
-                            type="number"
-                            value={selectedBlock.marginRight || 0}
-                            onChange={(e) => handleUpdateSelectedBlock("marginRight", e.target.value)}
-                            placeholder="e.g. 20"
-                            style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 6, borderRadius: 4, fontSize: 12 }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                 </div>
+              </>
+            ) : (
+              <>
+                <div className="pb-panel-head">
+                  <h2 className="pb-panel-title">Layers</h2>
+                  <p className="pb-panel-sub">The structure of this page. Click to select, ◐ marks responsive overrides.</p>
+                </div>
+                <div className="pb-panel-body">
+                  <button
+                    onClick={() => setSelectedId(null)}
+                    className="pb-layer-row"
+                    style={{ background: selectedId === null ? "rgba(201,168,76,.18)" : "transparent", borderColor: selectedId === null ? "#C9A84C" : "transparent", width: "100%", marginBottom: 6 }}
+                  >
+                    <span style={{ fontSize: 13 }}>🎛</span>
+                    <span style={{ flex: 1, textAlign: "left", fontWeight: 700 }}>Page settings</span>
+                  </button>
+                  <LayerTree
+                    blocks={pageBlocks}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    collapsed={collapsedLayers}
+                    toggleCollapse={(id) => setCollapsedLayers((p) => ({ ...p, [id]: !p[id] }))}
+                  />
+                  {pageBlocks.length === 0 && <p style={{ fontSize: 12.5, color: "#77715f", padding: "16px 4px", lineHeight: 1.6 }}>No blocks yet — add one from the Widgets tab.</p>}
+                </div>
+              </>
+            )}
+          </aside>
+        )}
+
+        {/* ---------------------------------------------------------- CANVAS */}
+        <main
+          className="pb-stage"
+          onClick={() => setSelectedId(null)}
+          onDragOver={(e) => { if (dragPayloadRef.current) { e.preventDefault(); setDropTarget({ id: "__root__", mode: "inside" }); } }}
+          onDrop={(e) => { e.preventDefault(); performDrop("__root__", "inside"); }}
+        >
+          <div className="pb-stage-bar">
+            <span className="pb-stage-meta">
+              {deviceMeta.icon} {deviceMeta.label}
+              <span style={{ opacity: .55 }}> · {deviceMeta.maxWidth ? `≤ ${deviceMeta.maxWidth}px` : "base styles"}</span>
+            </span>
+            <span className="pb-stage-meta" style={{ opacity: .7 }}>
+              {flattenBlocks(pageBlocks).length} blocks
+            </span>
+          </div>
+
+          <div className="pb-stage-scroll">
+            <div className="pb-device-frame" style={{ width: deviceMeta.canvasWidth }}>
+              <div className="pb-browser-chrome">
+                <span className="pb-dot" style={{ background: "#FF5F57" }} />
+                <span className="pb-dot" style={{ background: "#FEBC2E" }} />
+                <span className="pb-dot" style={{ background: "#28C840" }} />
+                <span className="pb-url">yaadein.pk/{selectedSlug}</span>
+              </div>
+
+              <div
+                className="pb-canvas"
+                style={{
+                  width: "100%",
+                  background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#080605",
+                  backgroundImage: pageSettings.backdropType === "image" && pageSettings.backdropImage ? `url(${pageSettings.backdropImage})` : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <style dangerouslySetInnerHTML={{ __html: canvasCss }} />
+
+                {pageSettings.showHero !== false && (
+                  <div style={{ padding: device === "mobile" ? "40px 18px 30px" : "60px 24px 44px", textAlign: pageSettings.headingAlign || "center", background: "linear-gradient(to bottom, #14110E 0%, rgba(8,6,5,0) 100%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                    {pageSettings.showLamp !== false && (
+                      <BlockView block={{ id: "__hero_lamp__", type: "studio-lamp", lampWidth: device === "mobile" ? 220 : 380, rodHeight: 50, beamWidth: 500, beamHeight: 340, glowIntensity: 0.38, followsPageLight: true }} device={device} ctx={{ lightOn: previewLightOn }} />
+                    )}
+                    <h1 style={{ margin: 0, fontFamily: pageSettings.headingFontFamily, fontSize: Math.round((parseInt(pageSettings.headingFontSize || 52, 10) || 52) * (device === "mobile" ? 0.6 : 0.86)), color: pageSettings.headingColor, lineHeight: 1.15 }}>
+                      {pageSettings.heading || pageTitle}
+                    </h1>
+                    {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 14, color: "#A8A08C", maxWidth: 560, lineHeight: 1.6 }}>{pageSettings.subtitle}</p>}
+                    {pageSettings.showLightSwitch !== false && (
+                      <BlockView block={{ id: "__hero_switch__", type: "light-switch", label: "Studio Light" }} device={device} ctx={{ lightOn: previewLightOn, setLightOn: setPreviewLightOn }} />
+                    )}
+                  </div>
+                )}
+
+                <div style={{ position: "relative", minHeight: 320, paddingBottom: 80 }}>
+                  {pageBlocks.map((block, i) => (
+                    <BlockView key={block.id} block={block} device={device} ctx={editorCtx} index={i} />
+                  ))}
+                  {pageBlocks.length === 0 && (
+                    <div className="pb-empty">
+                      <span style={{ fontSize: 34 }}>▭</span>
+                      <h3>Start with a Section</h3>
+                      <p>Sections are the containers everything else lives in. Drop one on the canvas, then fill it with headings, images and buttons.</p>
+                      <button onClick={(e) => { e.stopPropagation(); addBlock("section"); }} className="pb-btn pb-btn-primary" style={{ marginTop: 6 }}>
+                        + Add a Section
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* ------------------------------------------------------ RIGHT PANEL */}
+        {rightOpen && (
+          <aside className="pb-panel" style={{ width: 396, minWidth: 396, borderLeft: "1px solid rgba(255,255,255,.07)", borderRight: "none" }}>
+            <div className="pb-panel-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div>
+                <h2 className="pb-panel-title">{selectedBlock ? "Block settings" : "Page settings"}</h2>
+                <p className="pb-panel-sub" style={{ marginBottom: 0 }}>
+                  {selectedBlock ? "Everything about the selected block." : "Applies to the whole page."}
+                </p>
+              </div>
+              <button onClick={() => setRightOpen(false)} className="pb-icon-btn" title="Hide inspector">✕</button>
+            </div>
+
+            <div className="pb-panel-body">
+              {selectedBlock ? (
+                <Inspector
+                  block={selectedBlock}
+                  device={device}
+                  onChange={updateField}
+                  onClearDevice={clearDeviceOverride}
+                  onResetSize={resetBlockSize}
+                  onDuplicate={() => duplicateBlock(selectedBlock.id)}
+                  onDelete={() => deleteBlock(selectedBlock.id)}
+                  breadcrumb={
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center", fontSize: 11, color: "#8b8474" }}>
+                      <button onClick={() => setSelectedId(null)} style={crumbBtn}>Page</button>
+                      {selectedParent && (
+                        <>
+                          <span>›</span>
+                          <button onClick={() => setSelectedId(selectedParent.id)} style={crumbBtn}>{getComponent(selectedParent.type)?.name || selectedParent.type}</button>
+                        </>
+                      )}
+                      <span>›</span>
+                      <span style={{ color: "#C9A84C", fontWeight: 700 }}>{getComponent(selectedBlock.type)?.name || selectedBlock.type}</span>
+                    </div>
+                  }
+                />
               ) : (
-                <div style={{ padding: 30, textAlign: "center", color: "var(--text2)", fontSize: 12 }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>⚙️</div>
-                  <p>Click any element on the center canvas to open its real-time Style & Property Inspector.</p>
-                </div>
+                <PageSettingsPanel settings={pageSettings} setSettings={setPageSettings} pageTitle={pageTitle} setPageTitle={setPageTitle} />
               )}
             </div>
           </aside>
         )}
 
+        {!rightOpen && (
+          <button onClick={() => setRightOpen(true)} className="pb-reopen" title="Show inspector">⚙</button>
+        )}
       </div>
 
-      {/* CREATE NEW CUSTOM PAGE MODAL */}
-      {showCreatePageModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 30, maxWidth: 540, width: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div>
-                <h2 style={{ fontSize: 20, color: "var(--accent)", fontWeight: 700 }}>➕ Create New Custom Page</h2>
-                <p style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>Add a brand new page route to your website & page builder.</p>
-              </div>
-              <button onClick={() => setShowCreatePageModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
-            </div>
-
-            <form onSubmit={handleCreateNewPage} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>Page Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Bespoke Framing Guide"
-                  value={newPageTitle}
-                  onChange={(e) => {
-                    setNewPageTitle(e.target.value);
-                    if (!newPageSlug) {
-                      setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
-                    }
-                  }}
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>URL Slug / Route *</label>
-                <div style={{ display: "flex", alignItems: "center", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px" }}>
-                  <span style={{ fontSize: 12, color: "var(--accent)", fontFamily: "monospace" }}>/</span>
-                  <input
-                    type="text"
-                    required
-                    placeholder="bespoke-framing-guide"
-                    value={newPageSlug}
-                    onChange={(e) => setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                    style={{ flex: 1, background: "none", border: "none", color: "#fff", padding: "10px 4px", fontSize: 13, fontFamily: "monospace", outline: "none" }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 4 }}>Starting Layout Preset</label>
-                <select
-                  value={newPagePreset}
-                  onChange={(e) => setNewPagePreset(e.target.value)}
-                  style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 8, fontSize: 13 }}
-                >
-                  <option value="blank">✨ Blank Canvas (Empty Page)</option>
-                  {SAMPLE_TEMPLATES.map(t => (
-                    <option key={t.id} value={t.id}>📋 {t.title}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 10 }}>
-                <button type="button" onClick={() => setShowCreatePageModal(false)} style={{ background: "var(--surface2)", color: "#fff", border: "1px solid var(--border)", padding: "10px 20px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
-                  Cancel
+      {/* ==================================================== FULL-PAGE PREVIEW */}
+      {inPreview && (
+        <div className="pb-preview-overlay">
+          <div className="pb-preview-bar">
+            <span style={{ fontSize: 12, color: "#A8A08C" }}>
+              Previewing <strong style={{ color: "#F5F0E8" }}>{pageTitle}</strong>
+            </span>
+            <div className="pb-device-switch" style={{ margin: "0 auto" }}>
+              {BREAKPOINTS.map((bp) => (
+                <button key={bp.id} onClick={() => setDevice(bp.id)} className={`pb-device-btn ${device === bp.id ? "is-active" : ""}`}>
+                  <span style={{ fontSize: 13 }}>{bp.icon}</span>
+                  <span>{bp.label}</span>
                 </button>
-                <button type="submit" style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  Create & Launch Editor
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* SAMPLE TEMPLATES IMPORTER MODAL */}
-      {showTemplateModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 30, maxWidth: 840, width: "100%", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div>
-                <h2 style={{ fontSize: 22, color: "var(--accent)", fontWeight: 700 }}>📚 Load Sample Template</h2>
-                <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Select a pre-designed luxury layout template to load into your editor.</p>
-              </div>
-              <button onClick={() => setShowTemplateModal(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>&times;</button>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
-              {SAMPLE_TEMPLATES.map((tpl) => (
-                <div key={tpl.id} style={{ background: "var(--surface2)", border: "1px solid var(--border2)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <span style={{ fontSize: 24 }}>{tpl.icon}</span>
-                      <div>
-                        <h3 style={{ fontSize: 16, color: "#fff", fontWeight: 700 }}>{tpl.title}</h3>
-                        <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>{tpl.category}</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--text2)", margin: "10px 0 16px" }}>
-                      Includes {tpl.blocks.length} pre-formatted layout blocks.
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleImportTemplate(tpl)}
-                    style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}
-                  >
-                    Import Template
-                  </button>
-                </div>
               ))}
             </div>
+            <button onClick={() => setPreviewMode(false)} className="pb-btn pb-btn-primary">✕ Exit preview</button>
+          </div>
+
+          <div className="pb-preview-scroll">
+            <div
+              className="pb-preview-frame"
+              style={{
+                width: deviceMeta.canvasWidth,
+                background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#050403",
+                backgroundImage: pageSettings.backdropType === "image" && pageSettings.backdropImage ? `url(${pageSettings.backdropImage})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                borderRadius: device === "desktop" ? 0 : 26,
+              }}
+            >
+              <style dangerouslySetInnerHTML={{ __html: previewCss }} />
+              {pageSettings.showHero !== false && (
+                <div style={{ padding: device === "mobile" ? "56px 20px 40px" : "90px 30px 60px", textAlign: pageSettings.headingAlign || "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+                  {pageSettings.showLamp !== false && (
+                    <BlockView block={{ id: "__pv_lamp__", type: "studio-lamp", lampWidth: device === "mobile" ? 260 : 440, rodHeight: 60, beamWidth: 650, beamHeight: 460, glowIntensity: 0.38, followsPageLight: true }} device={device} ctx={{ lightOn: previewLightOn }} />
+                  )}
+                  <h1 style={{ margin: 0, fontFamily: pageSettings.headingFontFamily, fontSize: device === "mobile" ? Math.round((parseInt(pageSettings.headingFontSize || 52, 10) || 52) * 0.62) : parseInt(pageSettings.headingFontSize || 52, 10), color: pageSettings.headingColor, lineHeight: 1.15 }}>
+                    {pageSettings.heading || pageTitle}
+                  </h1>
+                  {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 16, color: "#A8A08C", maxWidth: 620, lineHeight: 1.7 }}>{pageSettings.subtitle}</p>}
+                  {pageSettings.showLightSwitch !== false && (
+                    <BlockView block={{ id: "__pv_switch__", type: "light-switch", label: "Studio Light" }} device={device} ctx={{ lightOn: previewLightOn, setLightOn: setPreviewLightOn }} />
+                  )}
+                </div>
+              )}
+              <div className="pb-preview-main" style={{ maxWidth: pageSettings.contentMaxWidth || "1200px" }}>
+                {pageBlocks.map((block, i) => (
+                  <BlockView key={block.id} block={block} device={device} ctx={previewCtx} index={i} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Layers tree
+// ---------------------------------------------------------------------------
+
+function LayerTree({ blocks, selectedId, onSelect, collapsed, toggleCollapse, depth = 0 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {(blocks || []).map((block) => {
+        const comp = getComponent(block.type);
+        const kids = block.children || [];
+        const isOpen = !collapsed[block.id];
+        return (
+          <div key={block.id}>
+            <div
+              onClick={(e) => { e.stopPropagation(); onSelect(block.id); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 7px",
+                paddingLeft: 7 + depth * 12,
+                borderRadius: 5,
+                cursor: "pointer",
+                background: selectedId === block.id ? "rgba(201,168,76,.22)" : "transparent",
+                border: `1px solid ${selectedId === block.id ? "#C9A84C" : "transparent"}`,
+                fontSize: 11,
+              }}
+            >
+              {kids.length > 0 ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleCollapse(block.id); }}
+                  style={{ background: "none", border: "none", color: "#8b8474", cursor: "pointer", padding: 0, fontSize: 9, width: 10 }}
+                >
+                  {isOpen ? "▾" : "▸"}
+                </button>
+              ) : (
+                <span style={{ width: 10 }} />
+              )}
+              <span style={{ fontSize: 12 }}>{comp?.icon || "▪"}</span>
+              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: selectedId === block.id ? "#fff" : "#cfc7b6" }}>
+                {comp?.name || block.type}
+              </span>
+              {(block.mobile || block.tablet) && <span title="Has responsive overrides" style={{ fontSize: 8, color: "#C9A84C" }}>◐</span>}
+            </div>
+            {kids.length > 0 && isOpen && (
+              <LayerTree blocks={kids} selectedId={selectedId} onSelect={onSelect} collapsed={collapsed} toggleCollapse={toggleCollapse} depth={depth + 1} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page settings panel
+// ---------------------------------------------------------------------------
+
+function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
+  const upd = (k, v) => setSettings((prev) => ({ ...prev, [k]: v }));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p style={{ fontSize: 11, color: "#8b8474", margin: 0, lineHeight: 1.5 }}>
+        Applies to the whole page. Click any block on the canvas to edit that block instead.
+      </p>
+
+      <div style={panelBox}>
+        <div style={panelTitle}>✍️ Page Heading</div>
+        <label style={labelStyle}>Heading Text</label>
+        <input value={settings.heading || ""} placeholder={pageTitle} onChange={(e) => upd("heading", e.target.value)} style={fieldStyle} />
+        <label style={labelStyle}>Sub-heading</label>
+        <textarea rows={2} value={settings.subtitle || ""} onChange={(e) => upd("subtitle", e.target.value)} style={fieldStyle} />
+        <label style={labelStyle}>Page Name (dashboard + tab)</label>
+        <input value={pageTitle} onChange={(e) => setPageTitle(e.target.value)} style={fieldStyle} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div>
+            <label style={labelStyle}>Size (px)</label>
+            <input type="number" value={settings.headingFontSize || "52"} onChange={(e) => upd("headingFontSize", e.target.value)} style={fieldStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Align</label>
+            <select value={settings.headingAlign || "center"} onChange={(e) => upd("headingAlign", e.target.value)} style={fieldStyle}>
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+        </div>
+        <label style={labelStyle}>Heading Font</label>
+        <select value={settings.headingFontFamily || "var(--font-display)"} onChange={(e) => upd("headingFontFamily", e.target.value)} style={fieldStyle}>
+          {FONT_FAMILIES.map((f) => <option key={f.val} value={f.val}>{f.name}</option>)}
+        </select>
+        <label style={labelStyle}>Heading Colour</label>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input type="color" value={settings.headingColor || "#FFFFFF"} onChange={(e) => upd("headingColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(201,168,76,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
+          <input value={settings.headingColor || ""} onChange={(e) => upd("headingColor", e.target.value)} style={{ ...fieldStyle, flex: 1 }} />
+        </div>
+      </div>
+
+      <div style={panelBox}>
+        <div style={panelTitle}>💡 Studio Chrome</div>
+        {[["showHero", "Show hero banner"], ["showLamp", "Show suspended brass lamp"], ["showLightSwitch", "Show Studio Light button"], ["showBlobs", "Show ambient glow blobs"]].map(([k, lbl]) => (
+          <label key={k} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, cursor: "pointer" }}>
+            <input type="checkbox" checked={settings[k] !== false} onChange={(e) => upd(k, e.target.checked)} />
+            {lbl}
+          </label>
+        ))}
+      </div>
+
+      <div style={panelBox}>
+        <div style={panelTitle}>📐 Content Width</div>
+        <label style={labelStyle}>Max width of the block area</label>
+        <select value={settings.contentMaxWidth || "1200px"} onChange={(e) => upd("contentMaxWidth", e.target.value)} style={fieldStyle}>
+          <option value="100%">Full bleed (100%)</option>
+          <option value="1400px">Extra wide (1400px)</option>
+          <option value="1200px">Standard (1200px)</option>
+          <option value="1000px">Narrow (1000px)</option>
+          <option value="760px">Article (760px)</option>
+        </select>
+      </div>
+
+      <div style={panelBox}>
+        <div style={panelTitle}>🌌 Backdrop</div>
+        <label style={labelStyle}>Type</label>
+        <select value={settings.backdropType || "none"} onChange={(e) => upd("backdropType", e.target.value)} style={fieldStyle}>
+          <option value="none">None (studio black)</option>
+          <option value="color">Solid colour</option>
+          <option value="gradient">Gradient</option>
+          <option value="image">Image</option>
+        </select>
+
+        {(settings.backdropType === "color" || settings.backdropType === "image") && (
+          <>
+            <label style={labelStyle}>{settings.backdropType === "image" ? "Base colour" : "Fill colour"}</label>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input type="color" value={settings.backdropColor || "#050403"} onChange={(e) => upd("backdropColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(201,168,76,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
+              <input value={settings.backdropColor || ""} onChange={(e) => upd("backdropColor", e.target.value)} style={{ ...fieldStyle, flex: 1 }} />
+            </div>
+          </>
+        )}
+
+        {settings.backdropType === "gradient" && (
+          <>
+            <label style={labelStyle}>Preset</label>
+            <select value={settings.backdropGradient || ""} onChange={(e) => upd("backdropGradient", e.target.value)} style={fieldStyle}>
+              {GRADIENT_PRESETS.map((g) => <option key={g.val} value={g.val}>{g.name}</option>)}
+            </select>
+            <label style={labelStyle}>Custom CSS gradient</label>
+            <textarea rows={2} value={settings.backdropGradient || ""} onChange={(e) => upd("backdropGradient", e.target.value)} style={{ ...fieldStyle, fontFamily: "monospace", fontSize: 10 }} />
+          </>
+        )}
+
+        {settings.backdropType === "image" && (
+          <>
+            <label style={labelStyle}>Upload image</label>
+            <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const r = new FileReader(); r.onload = (ev) => upd("backdropImage", ev.target.result); r.readAsDataURL(file); }} style={{ ...fieldStyle, fontSize: 10 }} />
+            <label style={labelStyle}>Or image URL</label>
+            <input value={(settings.backdropImage || "").startsWith("data:") ? "" : settings.backdropImage || ""} onChange={(e) => upd("backdropImage", e.target.value)} style={fieldStyle} />
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, cursor: "pointer", marginTop: 6 }}>
+              <input type="checkbox" checked={settings.backdropParallax !== false} onChange={(e) => upd("backdropParallax", e.target.checked)} />
+              Parallax scroll
+            </label>
+          </>
+        )}
+
+        {settings.backdropType !== "none" && (
+          <>
+            <label style={labelStyle}>Overlay tint</label>
+            <input value={settings.backdropOverlay || ""} placeholder="rgba(5,4,3,0.55)" onChange={(e) => upd("backdropOverlay", e.target.value)} style={fieldStyle} />
+            <label style={labelStyle}>Backdrop blur ({settings.backdropBlur || 0}px)</label>
+            <input type="range" min="0" max="24" value={settings.backdropBlur || "0"} onChange={(e) => upd("backdropBlur", e.target.value)} style={{ width: "100%" }} />
+          </>
+        )}
+      </div>
+
+      <p style={{ fontSize: 10, color: "#6f6a5d", textAlign: "center", margin: 0, lineHeight: 1.6 }}>
+        ⌘Z undo · ⌘⇧Z redo · ⌘D duplicate · Del removes · Esc deselects
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared inline styles
+// ---------------------------------------------------------------------------
+
+const fieldStyle = {
+  width: "100%",
+  background: "#14100B",
+  border: "1px solid rgba(201,168,76,.22)",
+  color: "#fff",
+  padding: "7px 9px",
+  borderRadius: 6,
+  fontSize: 12,
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+  marginBottom: 2,
+};
+
+const labelStyle = { display: "block", fontSize: 11, color: "#A8A08C", margin: "8px 0 4px" };
+
+const primaryBtn = {
+  background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
+  color: "#000",
+  border: "none",
+  padding: "9px 20px",
+  borderRadius: 20,
+  fontSize: 13,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const ghostBtn = {
+  background: "rgba(255,255,255,.05)",
+  border: "1px solid rgba(255,255,255,.15)",
+  color: "#fff",
+  padding: "7px 14px",
+  borderRadius: 20,
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const crumbBtn = { background: "none", border: "none", color: "#8b8474", fontSize: 10, cursor: "pointer", padding: 0, textDecoration: "underline" };
+
+const panelBox = { background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.16)", borderRadius: 8, padding: 10 };
+const panelTitle = { fontSize: 11, color: "#C9A84C", fontWeight: 800, marginBottom: 6 };
+
+const noticeStyle = { background: "rgba(201,168,76,.15)", border: "1px solid #C9A84C", color: "#C9A84C", padding: "8px 18px", borderRadius: 8, marginBottom: 18, fontSize: 13, fontWeight: 600 };
+
+const modalOverlay = { position: "fixed", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
+const modalCard = { background: "#16120E", border: "1px solid rgba(201,168,76,.3)", borderRadius: 14, padding: 26, maxWidth: 460, width: "100%", color: "#F5F0E8" };
+
+const EDITOR_CSS = `
+/* ---------------------------------------------------------------- toolbar */
+.pb-topbar {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 14px 20px;
+  background: #100E14;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.pb-topbar-group { display: flex; align-items: center; gap: 10px; }
+
+.pb-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 11px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; border: 1px solid transparent;
+  transition: all .18s ease; white-space: nowrap;
+}
+.pb-btn-quiet { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.11); color: #E8E3D8; }
+.pb-btn-quiet:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+.pb-btn-primary {
+  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%);
+  color: #17130A; font-weight: 800; box-shadow: 0 4px 16px rgba(201,168,76,.3);
+}
+.pb-btn-primary:hover { filter: brightness(1.08); }
+.pb-btn-primary:disabled { opacity: .55; cursor: default; }
+
+.pb-page-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  padding: 7px 14px; border-radius: 12px;
+}
+.pb-page-chip-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #77715f; font-weight: 700; }
+.pb-page-select {
+  background: transparent; border: none; color: #F5F0E8;
+  font-size: 14px; font-weight: 700; cursor: pointer; outline: none;
+  font-family: inherit; max-width: 220px;
+}
+.pb-page-slug { font-size: 11px; color: #77715f; font-family: monospace; }
+
+.pb-device-switch {
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 13px;
+}
+.pb-device-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 10px; border: none;
+  background: transparent; color: #A8A08C;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .18s ease; white-space: nowrap;
+}
+.pb-device-btn:hover { color: #F5F0E8; background: rgba(255,255,255,.05); }
+.pb-device-btn.is-active { background: #C9A84C; color: #17130A; font-weight: 800; }
+
+.pb-seg { display: flex; gap: 2px; padding: 3px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 11px; }
+.pb-seg-btn {
+  background: none; border: none; color: #E8E3D8; cursor: pointer;
+  padding: 7px 13px; border-radius: 8px; font-size: 15px; line-height: 1; transition: background .15s ease;
+}
+.pb-seg-btn:hover:not(:disabled) { background: rgba(255,255,255,.09); }
+.pb-seg-btn:disabled { color: rgba(255,255,255,.2); cursor: default; }
+
+.pb-flash {
+  padding: 11px 20px; text-align: center; font-size: 13px; font-weight: 600;
+  background: rgba(201,168,76,.14); color: #E8D48B;
+  border-bottom: 1px solid rgba(201,168,76,.3);
+}
+
+/* ------------------------------------------------------------ left rail */
+.pb-rail {
+  width: 74px; min-width: 74px; background: #0C0A10;
+  border-right: 1px solid rgba(255,255,255,.07);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 0; gap: 6px;
+}
+.pb-rail-btn {
+  width: 56px; padding: 11px 0; border-radius: 12px;
+  background: transparent; border: 1px solid transparent; color: #8b8474;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  cursor: pointer; font-family: inherit; font-weight: 600; transition: all .18s ease;
+}
+.pb-rail-btn:hover { background: rgba(255,255,255,.05); color: #E8E3D8; }
+.pb-rail-btn.is-active { background: rgba(201,168,76,.15); border-color: rgba(201,168,76,.4); color: #C9A84C; }
+
+/* ---------------------------------------------------------------- panels */
+.pb-panel {
+  background: #0C0A10; border-right: 1px solid rgba(255,255,255,.07);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pb-panel-head { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.pb-panel-title { margin: 0; font-size: 16px; font-weight: 700; color: #F5F0E8; letter-spacing: -.01em; }
+.pb-panel-sub { margin: 6px 0 14px; font-size: 12px; color: #77715f; line-height: 1.55; }
+.pb-panel-body { flex: 1; overflow-y: auto; padding: 18px 20px 40px; }
+.pb-panel-body::-webkit-scrollbar { width: 10px; }
+.pb-panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.09); border-radius: 6px; border: 3px solid #0C0A10; }
+
+.pb-search {
+  width: 100%; box-sizing: border-box;
+  background: #151109; border: 1px solid rgba(201,168,76,.2); color: #fff;
+  padding: 11px 14px; border-radius: 10px; font-size: 13px; font-family: inherit; outline: none;
+}
+.pb-search:focus { border-color: rgba(201,168,76,.55); }
+
+.pb-cat-head {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  background: none; border: none; cursor: pointer; padding: 8px 2px;
+  font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
+  color: #C9A84C; font-family: inherit;
+}
+.pb-cat-count { font-size: 10px; color: #77715f; background: rgba(255,255,255,.06); padding: 2px 8px; border-radius: 9px; letter-spacing: 0; }
+
+.pb-widget {
+  display: flex; align-items: center; gap: 13px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 12px 13px; cursor: grab; user-select: none;
+  transition: all .16s ease;
+}
+.pb-widget:hover { background: rgba(201,168,76,.1); border-color: rgba(201,168,76,.4); transform: translateX(3px); }
+.pb-widget:active { cursor: grabbing; }
+.pb-widget-icon {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
+  background: rgba(201,168,76,.13); border: 1px solid rgba(201,168,76,.22);
+  display: flex; align-items: center; justify-content: center; font-size: 16px; color: #C9A84C;
+}
+.pb-widget-name { display: block; font-size: 13px; font-weight: 600; color: #EDE7DA; line-height: 1.3; }
+.pb-widget-desc {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 11px; color: #77715f; margin-top: 3px; line-height: 1.45;
+}
+.pb-widget-grab { color: #4a463d; font-size: 13px; flex-shrink: 0; }
+
+.pb-layer-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border-radius: 9px; cursor: pointer;
+  border: 1px solid transparent; font-size: 12.5px; color: #cfc7b6;
+  background: transparent; font-family: inherit;
+}
+.pb-layer-row:hover { background: rgba(255,255,255,.05); }
+
+.pb-icon-btn {
+  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  color: #A8A08C; cursor: pointer; font-size: 13px;
+}
+.pb-icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+.pb-reopen {
+  position: absolute; right: 20px; top: 20px; z-index: 60;
+  width: 46px; height: 46px; border-radius: 14px;
+  background: #C9A84C; border: none; color: #17130A; font-size: 19px;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5);
+}
+
+/* ---------------------------------------------------------------- canvas */
+.pb-stage {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  background: #08070A;
+  background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.pb-stage-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 22px; border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(12,10,16,.75);
+}
+.pb-stage-meta { font-size: 11.5px; color: #A8A08C; font-weight: 600; }
+.pb-stage-scroll { flex: 1; overflow-y: auto; padding: 34px 28px 90px; }
+.pb-stage-scroll::-webkit-scrollbar { width: 12px; }
+.pb-stage-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 7px; border: 3px solid #08070A; }
+
+.pb-device-frame {
+  max-width: 100%; margin: 0 auto;
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.07);
+  transition: width .3s cubic-bezier(.22,.61,.36,1);
+}
+.pb-browser-chrome {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 16px; background: #17151D; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.pb-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.pb-url {
+  margin-left: 12px; flex: 1; font-size: 11px; color: #6f6a5d; font-family: monospace;
+  background: rgba(0,0,0,.35); padding: 5px 12px; border-radius: 7px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.pb-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 90px 32px; text-align: center; color: #6f6a5d;
+}
+.pb-empty h3 { margin: 6px 0 0; color: #C9A84C; font-size: 19px; }
+.pb-empty p { margin: 0; font-size: 13.5px; max-width: 400px; line-height: 1.65; }
+
+/* ------------------------------------------------------- editing affordances */
+.pb-canvas .pb-editable { cursor: pointer; }
+.pb-canvas .pb-editable:hover { outline: 1px dashed rgba(201,168,76,.5); outline-offset: 2px; }
+.pb-canvas .pb-selected { outline: 2px solid #C9A84C !important; outline-offset: 2px; }
+.pb-canvas .pb-drop-inside { outline: 2px dashed #7CE0A0 !important; outline-offset: -4px; background-image: linear-gradient(rgba(124,224,160,.08), rgba(124,224,160,.08)); }
+.pb-canvas .pb-drop-before { box-shadow: 0 -3px 0 0 #7CE0A0; }
+.pb-canvas .pb-drop-after { box-shadow: 0 3px 0 0 #7CE0A0; }
+.pb-toolbar {
+  position: absolute; top: -30px; right: 0; z-index: 999;
+  display: flex; align-items: center; gap: 2px;
+  background: #C9A84C; color: #17130A;
+  border-radius: 9px 9px 0 0; padding: 4px 9px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif; box-shadow: 0 -3px 12px rgba(0,0,0,.35);
+}
+.pb-toolbar-name { padding-right: 8px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.pb-toolbar button { background: none; border: none; cursor: pointer; font-size: 12px; padding: 3px 6px; color: #17130A; border-radius: 5px; }
+.pb-toolbar button:hover { background: rgba(0,0,0,.18); }
+.pb-canvas .pb-rich a { color: #C9A84C; }
+
+/* --------------------------------------------------------- full-page preview */
+.pb-preview-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: #050403; display: flex; flex-direction: column;
+  animation: pb-preview-in .22s ease;
+}
+@keyframes pb-preview-in { from { opacity: 0; } to { opacity: 1; } }
+.pb-preview-bar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 12px 22px; background: #100E14;
+  border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap;
+}
+.pb-preview-scroll { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 0; }
+.pb-preview-frame {
+  max-width: 100%; min-height: 100%;
+  transition: width .3s cubic-bezier(.22,.61,.36,1);
+  box-shadow: 0 0 60px rgba(0,0,0,.6);
+  color: #E0D7CD;
+}
+.pb-preview-main { width: 100%; margin: 0 auto; padding: 40px 20px 90px; box-sizing: border-box; }
+.pb-preview-scroll::-webkit-scrollbar { width: 12px; }
+.pb-preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 7px; border: 3px solid #050403; }
+
+@media (max-width: 1500px) {
+  .pb-panel { width: 300px !important; min-width: 300px !important; }
+}
+`;

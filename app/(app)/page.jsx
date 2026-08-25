@@ -4231,10 +4231,7 @@ export default function HomePage() {
     const isGame = isBoardGame(p);
 
     const getProductPreviewImage = (prod) => {
-      const name = (prod.name || "").toLowerCase();
-      if (name.includes("ludo")) return "/images/ludo.png";
-      if (name.includes("chess")) return "/images/Chess.jpeg";
-      if (name.includes("monopoly")) return "/images/monopoly.png";
+      if (prod.thumbnailUrl) return prod.thumbnailUrl;
       return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
     };
 
@@ -4313,8 +4310,8 @@ export default function HomePage() {
                 }}
               >
                 <img
-                  src={getProductPreviewImage(p)}
-                  alt="Frame Art Preview"
+                  src={p.thumbnailUrl || getProductPreviewImage(p)}
+                  alt={p.name || "Frame Art Preview"}
                   style={{
                     width: isLandscape ? "152%" : "100%",
                     height: isLandscape ? "152%" : "100%",
