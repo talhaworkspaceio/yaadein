@@ -137,6 +137,60 @@ export default function PageBuilder() {
   const [openCategories, setOpenCategories] = useState({});
   const [previewFaqs, setPreviewFaqs] = useState({});
 
+  // Panels are drag-resizable and remembered, so the canvas can take as much of
+  // a large monitor as the admin wants.
+  const [leftWidth, setLeftWidth] = useState(300);
+  const [rightWidth, setRightWidth] = useState(340);
+  const [focusMode, setFocusMode] = useState(false);
+  const resizeRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("pb_panels") || "{}");
+      if (saved.left) setLeftWidth(saved.left);
+      if (saved.right) setRightWidth(saved.right);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pb_panels", JSON.stringify({ left: leftWidth, right: rightWidth }));
+    } catch {}
+  }, [leftWidth, rightWidth]);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      const r = resizeRef.current;
+      if (!r) return;
+      e.preventDefault();
+      const delta = e.clientX - r.startX;
+      if (r.side === "left") setLeftWidth(Math.min(460, Math.max(230, r.startWidth + delta)));
+      else setRightWidth(Math.min(520, Math.max(260, r.startWidth - delta)));
+    };
+    const onUp = () => {
+      if (!resizeRef.current) return;
+      resizeRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const startResize = (side) => (e) => {
+    e.preventDefault();
+    resizeRef.current = { side, startX: e.clientX, startWidth: side === "left" ? leftWidth : rightWidth };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const showLeft = leftOpen && !focusMode;
+  const showRight = rightOpen && !focusMode;
+
   // ---- modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState("");
@@ -252,6 +306,9 @@ export default function PageBuilder() {
       } else if (!mod && e.key.toLowerCase() === "p") {
         e.preventDefault();
         setPreviewMode((v) => !v);
+      } else if (!mod && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setFocusMode((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -733,6 +790,14 @@ export default function PageBuilder() {
             <button onClick={redo} disabled={!canRedo} title="Redo (⌘⇧Z)" className="pb-seg-btn">↷</button>
           </div>
 
+          <button
+            onClick={() => setFocusMode((v) => !v)}
+            className={`pb-btn ${focusMode ? "pb-btn-on" : "pb-btn-quiet"}`}
+            title="Focus mode — hide both panels and give the canvas the whole screen (F)"
+          >
+            <span style={{ fontSize: 13 }}>{focusMode ? "⤡" : "⤢"}</span> {focusMode ? "Exit focus" : "Focus"}
+          </button>
+
           <button onClick={() => setPreviewMode(true)} className="pb-btn pb-btn-quiet" title="Full-page preview (P)">
             <span style={{ fontSize: 13 }}>▶</span> Preview
           </button>
@@ -752,6 +817,7 @@ export default function PageBuilder() {
       {/* ========================================================== WORKSPACE */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, position: "relative" }}>
         {/* ------------------------------------------------------- LEFT RAIL */}
+        {!focusMode && (
         <div className="pb-rail">
           {[
             ["widgets", "❖", "Widgets"],
@@ -777,10 +843,11 @@ export default function PageBuilder() {
             <span style={{ fontSize: 15 }}>{leftOpen ? "◀" : "▶"}</span>
           </button>
         </div>
+        )}
 
         {/* ------------------------------------------------------ LEFT PANEL */}
-        {leftOpen && (
-          <aside className="pb-panel" style={{ width: 344, minWidth: 344 }}>
+        {showLeft && (
+          <aside className="pb-panel" style={{ width: leftWidth, minWidth: leftWidth }}>
             {leftTab === "widgets" ? (
               <>
                 <div className="pb-panel-head">
@@ -871,6 +938,7 @@ export default function PageBuilder() {
             )}
           </aside>
         )}
+        {showLeft && <div className="pb-resizer" onMouseDown={startResize("left")} title="Drag to resize" />}
 
         {/* ---------------------------------------------------------- CANVAS */}
         <main
@@ -946,8 +1014,9 @@ export default function PageBuilder() {
         </main>
 
         {/* ------------------------------------------------------ RIGHT PANEL */}
-        {rightOpen && (
-          <aside className="pb-panel" style={{ width: 396, minWidth: 396, borderLeft: "1px solid rgba(255,255,255,.07)", borderRight: "none" }}>
+        {showRight && <div className="pb-resizer" onMouseDown={startResize("right")} title="Drag to resize" />}
+        {showRight && (
+          <aside className="pb-panel" style={{ width: rightWidth, minWidth: rightWidth, borderLeft: "1px solid rgba(255,255,255,.07)", borderRight: "none" }}>
             <div className="pb-panel-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div>
                 <h2 className="pb-panel-title">{selectedBlock ? "Block settings" : "Page settings"}</h2>
@@ -989,8 +1058,11 @@ export default function PageBuilder() {
           </aside>
         )}
 
-        {!rightOpen && (
+        {!showRight && !focusMode && (
           <button onClick={() => setRightOpen(true)} className="pb-reopen" title="Show inspector">⚙</button>
+        )}
+        {focusMode && (
+          <button onClick={() => setFocusMode(false)} className="pb-reopen" title="Exit focus mode (F)">⤡</button>
         )}
       </div>
 
@@ -1355,13 +1427,13 @@ const EDITOR_CSS = `
 
 /* ------------------------------------------------------------ left rail */
 .pb-rail {
-  width: 74px; min-width: 74px; background: #0C0A10;
+  width: 62px; min-width: 62px; background: #0C0A10;
   border-right: 1px solid rgba(255,255,255,.07);
   display: flex; flex-direction: column; align-items: center;
-  padding: 14px 0; gap: 6px;
+  padding: 12px 0; gap: 5px;
 }
 .pb-rail-btn {
-  width: 56px; padding: 11px 0; border-radius: 12px;
+  width: 50px; padding: 10px 0; border-radius: 11px;
   background: transparent; border: 1px solid transparent; color: #8b8474;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   cursor: pointer; font-family: inherit; font-weight: 600; transition: all .18s ease;
@@ -1451,7 +1523,7 @@ const EDITOR_CSS = `
   background: rgba(12,10,16,.75);
 }
 .pb-stage-meta { font-size: 11.5px; color: #A8A08C; font-weight: 600; }
-.pb-stage-scroll { flex: 1; overflow-y: auto; padding: 34px 28px 90px; }
+.pb-stage-scroll { flex: 1; overflow-y: auto; padding: 20px 20px 80px; }
 .pb-stage-scroll::-webkit-scrollbar { width: 12px; }
 .pb-stage-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 7px; border: 3px solid #08070A; }
 
@@ -1522,7 +1594,19 @@ const EDITOR_CSS = `
 .pb-preview-scroll::-webkit-scrollbar { width: 12px; }
 .pb-preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 7px; border: 3px solid #050403; }
 
-@media (max-width: 1500px) {
-  .pb-panel { width: 300px !important; min-width: 300px !important; }
+/* Drag handle between a panel and the canvas */
+.pb-resizer {
+  width: 6px; flex: 0 0 6px; cursor: col-resize;
+  background: transparent; position: relative; z-index: 20;
+  transition: background .15s ease;
+}
+.pb-resizer::after {
+  content: ''; position: absolute; inset: 0 2px;
+  border-radius: 3px; background: transparent; transition: background .15s ease;
+}
+.pb-resizer:hover::after, .pb-resizer:active::after { background: rgba(201,168,76,.55); }
+
+.pb-btn-on {
+  background: rgba(201,168,76,.18); border-color: #C9A84C; color: #C9A84C;
 }
 `;
