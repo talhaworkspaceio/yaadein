@@ -27,8 +27,8 @@ import { Icon } from "./BlockView";
 
 const input = {
   width: "100%",
-  background: "#151109",
-  border: "1px solid rgba(201,168,76,0.2)",
+  background: "#1E1A15",
+  border: "1px solid rgba(181,139,92,0.2)",
   color: "#fff",
   padding: "10px 12px",
   borderRadius: 9,
@@ -39,8 +39,8 @@ const input = {
   outline: "none",
 };
 
-const label = { display: "block", fontSize: 12, color: "#A8A08C", marginBottom: 6 };
-const groupBox = { background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.16)", borderRadius: 10, padding: 14 };
+const label = { display: "block", fontSize: 12, color: "#C5B6A5", marginBottom: 6 };
+const groupBox = { background: "rgba(181,139,92,0.05)", border: "1px solid rgba(181,139,92,0.16)", borderRadius: 10, padding: 14 };
 
 // Collapsible sections in one scroll beat eight micro-tabs: everything is
 // discoverable, and you can have Content and Spacing open side by side.
@@ -70,12 +70,12 @@ function IconPicker({ value, onChange, allowNone }) {
         onClick={() => setOpen((v) => !v)}
         style={{ ...input, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left" }}
       >
-        {value && value !== "none" ? <Icon name={value} size={16} color="#C9A84C" /> : <span style={{ opacity: 0.5 }}>◻</span>}
+        {value && value !== "none" ? <Icon name={value} size={16} color="#B58B5C" /> : <span style={{ opacity: 0.5 }}>◻</span>}
         <span style={{ flex: 1 }}>{value || "none"}</span>
         <span style={{ opacity: 0.6 }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, maxHeight: 170, overflowY: "auto", background: "#0A0805", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 6, padding: 6 }}>
+        <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, maxHeight: 170, overflowY: "auto", background: "#1E1A15", border: "1px solid rgba(181,139,92,0.2)", borderRadius: 6, padding: 6 }}>
           {allowNone && (
             <button
               type="button"
@@ -84,7 +84,7 @@ function IconPicker({ value, onChange, allowNone }) {
                 setOpen(false);
               }}
               title="No icon"
-              style={{ background: value === "none" ? "#C9A84C" : "transparent", border: "1px solid rgba(255,255,255,.1)", borderRadius: 4, padding: 5, cursor: "pointer", color: "#fff", fontSize: 10 }}
+              style={{ background: value === "none" ? "#B58B5C" : "transparent", border: "1px solid rgba(181,139,92,.22)", borderRadius: 4, padding: 5, cursor: "pointer", color: "#fff", fontSize: 10 }}
             >
               ✕
             </button>
@@ -99,8 +99,8 @@ function IconPicker({ value, onChange, allowNone }) {
                 setOpen(false);
               }}
               style={{
-                background: value === name ? "rgba(201,168,76,.3)" : "transparent",
-                border: `1px solid ${value === name ? "#C9A84C" : "rgba(255,255,255,.08)"}`,
+                background: value === name ? "rgba(181,139,92,.3)" : "transparent",
+                border: `1px solid ${value === name ? "#B58B5C" : "rgba(181,139,92,.18)"}`,
                 borderRadius: 4,
                 padding: 5,
                 cursor: "pointer",
@@ -109,7 +109,7 @@ function IconPicker({ value, onChange, allowNone }) {
                 justifyContent: "center",
               }}
             >
-              <Icon name={name} size={15} color="#E0D7CD" />
+              <Icon name={name} size={15} color="#C5B6A5" />
             </button>
           ))}
         </div>
@@ -138,7 +138,7 @@ function Repeater({ field, value, onChange }) {
       {list.map((item, i) => (
         <div key={i} style={{ ...groupBox, display: "flex", flexDirection: "column", gap: 7 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 10, color: "#C9A84C", fontWeight: 700 }}>
+            <span style={{ fontSize: 10, color: "#B58B5C", fontWeight: 700 }}>
               {field.itemLabel || "Item"} #{i + 1}
             </span>
             <div style={{ display: "flex", gap: 3 }}>
@@ -159,7 +159,7 @@ function Repeater({ field, value, onChange }) {
                   ))}
                 </select>
               ) : sub.type === "toggle" ? (
-                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: "#E0D7CD", cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: "#C5B6A5", cursor: "pointer" }}>
                   <input type="checkbox" checked={!!item[sub.key]} onChange={(e) => update(i, sub.key, e.target.checked)} />
                   Enabled
                 </label>
@@ -185,7 +185,7 @@ function Repeater({ field, value, onChange }) {
 
 const miniBtn = (disabled) => ({
   background: "transparent",
-  border: "1px solid rgba(255,255,255,.18)",
+  border: "1px solid rgba(181,139,92,.32)",
   color: disabled ? "rgba(255,255,255,.25)" : "#fff",
   padding: "1px 6px",
   borderRadius: 4,
@@ -194,9 +194,9 @@ const miniBtn = (disabled) => ({
 });
 
 const addBtn = {
-  background: "rgba(201,168,76,.16)",
-  border: "1px dashed #C9A84C",
-  color: "#C9A84C",
+  background: "rgba(181,139,92,.16)",
+  border: "1px dashed #B58B5C",
+  color: "#B58B5C",
   padding: "11px 14px",
   borderRadius: 9,
   fontSize: 12,
@@ -222,7 +222,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
       {isResponsive && device !== "desktop" && (
         <span
           title={`Editing the ${device} value. Desktop stays unchanged.`}
-          style={{ fontSize: 8, fontWeight: 800, letterSpacing: ".06em", padding: "1px 5px", borderRadius: 8, background: overridden ? "#C9A84C" : "rgba(201,168,76,.2)", color: overridden ? "#000" : "#C9A84C" }}
+          style={{ fontSize: 8, fontWeight: 800, letterSpacing: ".06em", padding: "1px 5px", borderRadius: 8, background: overridden ? "#B58B5C" : "rgba(181,139,92,.2)", color: overridden ? "#000" : "#B58B5C" }}
         >
           {device.toUpperCase()}
         </span>
@@ -265,7 +265,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
       control = (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input type="range" min={field.min} max={field.max} step={field.step} value={effective ?? field.min} onChange={(e) => set(Number(e.target.value))} style={{ flex: 1 }} />
-          <span style={{ fontSize: 10, color: "#C9A84C", minWidth: 34, textAlign: "right" }}>{effective ?? "—"}</span>
+          <span style={{ fontSize: 10, color: "#B58B5C", minWidth: 34, textAlign: "right" }}>{effective ?? "—"}</span>
         </div>
       );
       break;
@@ -291,9 +291,9 @@ function Field({ block, field, device, onChange, onClearDevice }) {
               onClick={() => set(o.value)}
               style={{
                 flex: 1,
-                background: effective === o.value ? "#C9A84C" : "#14100B",
+                background: effective === o.value ? "#B58B5C" : "#1E1A15",
                 color: effective === o.value ? "#000" : "#fff",
-                border: "1px solid rgba(201,168,76,.22)",
+                border: "1px solid rgba(181,139,92,.22)",
                 padding: "10px 6px",
                 borderRadius: 8,
                 fontSize: 11.5,
@@ -311,11 +311,11 @@ function Field({ block, field, device, onChange, onClearDevice }) {
 
     case "toggle":
       return (
-        <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: "#E0D7CD", cursor: "pointer", padding: "10px 12px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 9 }}>
-          <input type="checkbox" checked={!!effective} onChange={(e) => set(e.target.checked)} style={{ width: 15, height: 15, accentColor: "#C9A84C" }} />
+        <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: "#C5B6A5", cursor: "pointer", padding: "10px 12px", background: "rgba(232,216,198,.035)", border: "1px solid rgba(181,139,92,.16)", borderRadius: 9 }}>
+          <input type="checkbox" checked={!!effective} onChange={(e) => set(e.target.checked)} style={{ width: 15, height: 15, accentColor: "#B58B5C" }} />
           <span>{field.label}</span>
           {isResponsive && device !== "desktop" && (
-            <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 5px", borderRadius: 8, background: overridden ? "#C9A84C" : "rgba(201,168,76,.2)", color: overridden ? "#000" : "#C9A84C" }}>{device.toUpperCase()}</span>
+            <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 5px", borderRadius: 8, background: overridden ? "#B58B5C" : "rgba(181,139,92,.2)", color: overridden ? "#000" : "#B58B5C" }}>{device.toUpperCase()}</span>
           )}
         </label>
       );
@@ -325,11 +325,11 @@ function Field({ block, field, device, onChange, onClearDevice }) {
         <div style={{ display: "flex", gap: 6 }}>
           <input
             type="color"
-            value={/^#[0-9a-f]{6}$/i.test(String(effective || "")) ? effective : "#C9A84C"}
+            value={/^#[0-9a-f]{6}$/i.test(String(effective || "")) ? effective : "#B58B5C"}
             onChange={(e) => set(e.target.value)}
-            style={{ width: 44, height: 40, background: "none", border: "1px solid rgba(201,168,76,.22)", borderRadius: 9, padding: 3, cursor: "pointer", flexShrink: 0 }}
+            style={{ width: 44, height: 40, background: "none", border: "1px solid rgba(181,139,92,.22)", borderRadius: 9, padding: 3, cursor: "pointer", flexShrink: 0 }}
           />
-          <input type="text" value={stored ?? ""} placeholder={field.placeholder || "#C9A84C / rgba(...)"} onChange={(e) => set(e.target.value)} style={{ ...input, flex: 1 }} />
+          <input type="text" value={stored ?? ""} placeholder={field.placeholder || "#B58B5C / rgba(...)"} onChange={(e) => set(e.target.value)} style={{ ...input, flex: 1 }} />
         </div>
       );
       break;
@@ -345,9 +345,9 @@ function Field({ block, field, device, onChange, onClearDevice }) {
                   type="button"
                   onClick={() => set(p)}
                   style={{
-                    background: effective === p ? "#C9A84C" : "#14100B",
+                    background: effective === p ? "#B58B5C" : "#1E1A15",
                     color: effective === p ? "#000" : "#fff",
-                    border: "1px solid rgba(201,168,76,.22)",
+                    border: "1px solid rgba(181,139,92,.22)",
                     padding: "6px 11px",
                     borderRadius: 7,
                     fontSize: 11,
@@ -383,7 +383,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
                   onChange={(e) => onChange(k, e.target.value === "" ? "" : Number(e.target.value), editingDevice)}
                   style={{ ...input, padding: "9px 4px", textAlign: "center", fontSize: 12.5 }}
                 />
-                <div style={{ fontSize: 10, color: "#77715f", textAlign: "center", marginTop: 4, fontWeight: 600 }}>{labels[i]}</div>
+                <div style={{ fontSize: 10, color: "#8A7B6B", textAlign: "center", marginTop: 4, fontWeight: 600 }}>{labels[i]}</div>
               </div>
             ))}
           </div>
@@ -393,7 +393,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
               const v = dv(keys[0]) ?? 0;
               keys.forEach((k) => onChange(k, v, editingDevice));
             }}
-            style={{ marginTop: 5, background: "none", border: "none", color: allSame ? "#6f6a5d" : "#C9A84C", fontSize: 10, cursor: "pointer", padding: 0 }}
+            style={{ marginTop: 5, background: "none", border: "none", color: allSame ? "#8A7B6B" : "#B58B5C", fontSize: 10, cursor: "pointer", padding: 0 }}
           >
             ⇔ match all sides
           </button>
@@ -407,7 +407,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
       const val = effective || "";
       control = (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {val && !isVideo && <img src={val} alt="" style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(201,168,76,.22)" }} />}
+          {val && !isVideo && <img src={val} alt="" style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(181,139,92,.22)" }} />}
           <input
             type="file"
             accept={isVideo ? "video/*" : "image/*"}
@@ -467,7 +467,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
             {list.map((src, i) => (
               <div key={i} style={{ position: "relative" }}>
-                <img src={src} alt="" style={{ width: "100%", height: 54, objectFit: "cover", borderRadius: 5, border: "1px solid rgba(201,168,76,.22)" }} />
+                <img src={src} alt="" style={{ width: "100%", height: 54, objectFit: "cover", borderRadius: 5, border: "1px solid rgba(181,139,92,.22)" }} />
                 <button
                   type="button"
                   onClick={() => set(list.filter((_, x) => x !== i))}
@@ -546,7 +546,7 @@ function Field({ block, field, device, onChange, onClearDevice }) {
     <div>
       {header}
       {control}
-      {field.hint && <div style={{ fontSize: 11, color: "#77715f", marginTop: 7, lineHeight: 1.55 }}>{field.hint}</div>}
+      {field.hint && <div style={{ fontSize: 11, color: "#8A7B6B", marginTop: 7, lineHeight: 1.55 }}>{field.hint}</div>}
     </div>
   );
 }
@@ -599,14 +599,14 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* identity card */}
-      <div style={{ background: "linear-gradient(160deg, rgba(201,168,76,.14), rgba(201,168,76,.04))", border: "1px solid rgba(201,168,76,.28)", borderRadius: 14, padding: 16 }}>
+      <div style={{ background: "linear-gradient(160deg, rgba(181,139,92,.14), rgba(181,139,92,.04))", border: "1px solid rgba(181,139,92,.28)", borderRadius: 14, padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ width: 40, height: 40, borderRadius: 11, background: "rgba(201,168,76,.18)", border: "1px solid rgba(201,168,76,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 11, background: "rgba(181,139,92,.18)", border: "1px solid rgba(181,139,92,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>
             {comp?.icon || "▪"}
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#F5F0E8", lineHeight: 1.25 }}>{comp?.name || block.type}</div>
-            <div style={{ fontSize: 11, color: "#8b8474", marginTop: 2 }}>{comp?.category || "Block"}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#F4EFE6", lineHeight: 1.25 }}>{comp?.name || block.type}</div>
+            <div style={{ fontSize: 11, color: "#9A8A79", marginTop: 2 }}>{comp?.category || "Block"}</div>
           </div>
         </div>
 
@@ -620,16 +620,16 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
       </div>
 
       {device !== "desktop" && (
-        <div style={{ background: "rgba(201,168,76,.12)", border: "1px solid rgba(201,168,76,.35)", borderRadius: 11, padding: "12px 14px", fontSize: 12, lineHeight: 1.55, color: "#E8DCC0" }}>
-          <strong style={{ color: "#C9A84C" }}>Editing {device}.</strong> Fields marked{" "}
-          <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 8, background: "rgba(201,168,76,.25)", color: "#C9A84C" }}>{device.toUpperCase()}</span>{" "}
+        <div style={{ background: "rgba(181,139,92,.12)", border: "1px solid rgba(181,139,92,.35)", borderRadius: 11, padding: "12px 14px", fontSize: 12, lineHeight: 1.55, color: "#E8DCC0" }}>
+          <strong style={{ color: "#B58B5C" }}>Editing {device}.</strong> Fields marked{" "}
+          <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 8, background: "rgba(181,139,92,.25)", color: "#B58B5C" }}>{device.toUpperCase()}</span>{" "}
           save an override for this size only. Everything else stays inherited from desktop.
         </div>
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
         <button type="button" onClick={expandAll} style={linkBtn}>Expand all</button>
-        <span style={{ color: "#3d382f" }}>|</span>
+        <span style={{ color: "#4A3F35" }}>|</span>
         <button type="button" onClick={collapseAll} style={linkBtn}>Collapse all</button>
       </div>
 
@@ -638,7 +638,7 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
         const isOpen = open[sec.id];
         const touched = touchedCount(fields);
         return (
-          <section key={sec.id} style={{ border: `1px solid ${isOpen ? "rgba(201,168,76,.3)" : "rgba(255,255,255,.08)"}`, borderRadius: 13, overflow: "hidden", background: isOpen ? "rgba(255,255,255,.02)" : "transparent" }}>
+          <section key={sec.id} style={{ border: `1px solid ${isOpen ? "rgba(181,139,92,.3)" : "rgba(181,139,92,.18)"}`, borderRadius: 13, overflow: "hidden", background: isOpen ? "rgba(255,255,255,.02)" : "transparent" }}>
             <button
               type="button"
               onClick={() => toggle(sec.id)}
@@ -647,9 +647,9 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                background: isOpen ? "rgba(201,168,76,.1)" : "transparent",
+                background: isOpen ? "rgba(181,139,92,.1)" : "transparent",
                 border: "none",
-                borderBottom: isOpen ? "1px solid rgba(201,168,76,.18)" : "none",
+                borderBottom: isOpen ? "1px solid rgba(181,139,92,.18)" : "none",
                 padding: "14px 16px",
                 cursor: "pointer",
                 textAlign: "left",
@@ -657,24 +657,24 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
                 fontFamily: "inherit",
               }}
             >
-              <span style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(201,168,76,.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#C9A84C", flexShrink: 0 }}>{sec.icon}</span>
+              <span style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(181,139,92,.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#B58B5C", flexShrink: 0 }}>{sec.icon}</span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: isOpen ? "#F5F0E8" : "#cfc7b6" }}>{sec.label}</span>
-                <span style={{ display: "block", fontSize: 11, color: "#77715f", marginTop: 2 }}>{sec.hint}</span>
+                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: isOpen ? "#F4EFE6" : "#C5B6A5" }}>{sec.label}</span>
+                <span style={{ display: "block", fontSize: 11, color: "#8A7B6B", marginTop: 2 }}>{sec.hint}</span>
               </span>
               {touched > 0 && !isOpen && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", background: "rgba(201,168,76,.16)", padding: "2px 8px", borderRadius: 9 }}>{touched}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#B58B5C", background: "rgba(181,139,92,.16)", padding: "2px 8px", borderRadius: 9 }}>{touched}</span>
               )}
-              <span style={{ color: "#8b8474", fontSize: 12, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}>▾</span>
+              <span style={{ color: "#9A8A79", fontSize: 12, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}>▾</span>
             </button>
 
             {isOpen && (
               <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 18 }}>
                 {sec.id === "content" && comp?.description && (
-                  <p style={{ fontSize: 12, color: "#8b8474", margin: 0, lineHeight: 1.6 }}>{comp.description}</p>
+                  <p style={{ fontSize: 12, color: "#9A8A79", margin: 0, lineHeight: 1.6 }}>{comp.description}</p>
                 )}
                 {fields.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "#6f6a5d", margin: 0, lineHeight: 1.6 }}>
+                  <p style={{ fontSize: 12, color: "#8A7B6B", margin: 0, lineHeight: 1.6 }}>
                     {sec.id === "content"
                       ? "This block holds other blocks. Drop widgets inside it, then style it from the sections below."
                       : "Nothing to configure here for this block."}
@@ -695,8 +695,8 @@ export default function Inspector({ block, device, onChange, onClearDevice, onRe
 
 const actionBtn = {
   flex: 1,
-  background: "rgba(255,255,255,.06)",
-  border: "1px solid rgba(255,255,255,.14)",
+  background: "rgba(232,216,198,.065)",
+  border: "1px solid rgba(181,139,92,.28)",
   color: "#fff",
   padding: "8px 6px",
   borderRadius: 9,
@@ -707,4 +707,4 @@ const actionBtn = {
   whiteSpace: "nowrap",
 };
 
-const linkBtn = { background: "none", border: "none", color: "#8b8474", fontSize: 11, cursor: "pointer", padding: 0, fontFamily: "inherit" };
+const linkBtn = { background: "none", border: "none", color: "#9A8A79", fontSize: 11, cursor: "pointer", padding: 0, fontFamily: "inherit" };

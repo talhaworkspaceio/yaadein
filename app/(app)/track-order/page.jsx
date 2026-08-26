@@ -6,6 +6,7 @@ import { ref, onValue } from "firebase/database";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useTrackPageContent } from "../../lib/cms";
+import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -155,6 +156,518 @@ export default function TrackOrderPage() {
   };
 
   const currentStep = order ? getStatusStep(order.status) : 0;
+
+  // ---- Section registry (see lib/pageBuilder/sectionLayout) ------------
+  const trackSectionNodes = {
+      hero: (
+        <>
+      <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of Track Order heading */}
+        <div className={`exquisite-lamp catalog-lamp track-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+          {/* Lamp glow & particle system */}
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+
+        <h1 className="hero-title">{trackCms?.title || "Track Order"}</h1>
+
+        <p className="hero-desc">
+          {trackCms?.subtitle || "Review the status of your handcrafted orders. Enter your Order Reference ID code below to trace your design through production and delivery."}
+        </p>
+
+        
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Studio Light</span>
+          <button 
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
+            onClick={() => setLightOn(!lightOn)} 
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
+      </div>
+
+        </>
+      ),
+      content: (
+        <>
+      <section className="track-section">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="track-container">
+          <div className="track-card">
+            <h2 className="track-card-title">Order Tracking Search</h2>
+
+            <form onSubmit={handleTrackOrder} className="search-form-group">
+              <input
+                type="text"
+                placeholder={trackCms?.inputPlaceholder || "Enter Reference ID (e.g. YAADEIN-XXXXXX)"}
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                className="order-search-input"
+              />
+              <button type="submit" className="btn-premium btn-track" disabled={loading}>
+                {loading ? "Searching..." : (trackCms?.buttonText || "Track Status")}
+              </button>
+            </form>
+
+            {errorMsg && <div style={{ color: "#FF7777", fontFamily: "var(--font-typewriter)", fontSize: "13px" }}>{errorMsg}</div>}
+
+            {recentOrders.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", fontSize: "12px", fontFamily: "var(--font-typewriter)", color: "var(--text2)" }}>
+                <span>Recent Orders:</span>
+                {recentOrders.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setSearchId(id);
+                      handleTrackOrder(null, id);
+                    }}
+                    style={{
+                      background: "rgba(212, 175, 55, 0.08)",
+                      border: "1px solid rgba(212, 175, 55, 0.2)",
+                      borderRadius: "4px",
+                      color: "var(--accent)",
+                      padding: "4px 8px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-typewriter)",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {id}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {searched && !order && (
+              <div style={{ textAlign: "center", color: "var(--text2)", padding: "20px 0", fontFamily: "var(--font-typewriter)", borderTop: "1.5px dashed rgba(181, 139, 92, 0.15)", paddingTop: "30px" }}>
+                ❌ Order ID "{searchId}" not found. Please double-check your receipt code.
+              </div>
+            )}
+
+            {order && (
+              <div style={{ borderTop: "1.5px dashed rgba(181, 139, 92, 0.2)", paddingTop: "30px" }}>
+                
+                {/* Cancelled Banner */}
+                {order.status === "Cancelled" && (
+                  <div className="cancelled-banner">
+                    ⚠️ THIS ORDER HAS BEEN CANCELLED
+                  </div>
+                )}
+
+                {/* Timeline progress tracker */}
+                {order.status !== "Cancelled" && (
+                  <div className="track-timeline">
+                    <div className="track-timeline-line" />
+                    <div 
+                      className="track-timeline-progress" 
+                      style={{ width: `${(currentStep / 3) * 100}%` }}
+                    />
+
+                    <div className={`timeline-node ${currentStep >= 0 ? "active" : ""} ${currentStep > 0 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Placed</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 1 ? "active" : ""} ${currentStep > 1 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Processing</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 2 ? "active" : ""} ${currentStep > 2 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Shipped</span>
+                    </div>
+
+                    <div className={`timeline-node ${currentStep >= 3 ? "active" : ""} ${currentStep > 3 ? "completed" : ""}`}>
+                      <div className="node-dot">✓</div>
+                      <span className="node-label">Delivered</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Details Row */}
+                <div className="order-info-grid">
+                  <div>
+                    <h3 className="info-col-title">Order Summary</h3>
+                    <div className="tracking-items-list">
+                      {(order.items || []).map((item, idx) => (
+                        <div key={idx} className="tracking-item">
+                          <div className="tracking-item-thumb" style={{ background: item.frameColor }}>
+                            {item.image ? (
+                              <img src={item.image} alt={item.frameName} />
+                            ) : (
+                              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(201, 168, 76, 0.15)", fontSize: "16px", fontFamily: "var(--font-display)" }}>Y</div>
+                            )}
+                          </div>
+                          <div className="tracking-item-info">
+                            <span className="tracking-item-name">{item.frameName}</span>
+                            <span className="tracking-item-meta">{item.size || "Standard"} • {item.orientation || "Portrait"} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
+                          </div>
+                          <span className="tracking-item-price">{item.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="info-col-title">Recipient Details</h3>
+                    <div className="customer-summary">
+                      <div><strong>Full Name:</strong> {order.customer?.fullName}</div>
+                      <div><strong>Phone Number:</strong> {order.customer?.phone}</div>
+                      <div><strong>Shipping Address:</strong> {order.customer?.address}</div>
+                      <div><strong>City / Region:</strong> {order.customer?.city}</div>
+                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(181, 139, 92, 0.15)", color: "var(--accent)", fontFamily: "var(--font-typewriter)", fontSize: "15px" }}>
+                        <strong>Grand Total:</strong> Rs. {order.total?.toLocaleString()} {order.paymentMethod ? `(${order.paymentMethod})` : "(COD)"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+        </>
+      ),
+    };
 
   return (
     <div className="track-root">
@@ -1200,506 +1713,7 @@ export default function TrackOrderPage() {
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
-      <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of Track Order heading */}
-        <div className={`exquisite-lamp catalog-lamp track-lamp ${lightOn ? 'on' : ''}`}>
-          <div className="lamp-rod" />
-          <div className="lamp-mount" />
-          <div className="lamp-arm" />
-          <div className="lamp-head">
-            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
-          </div>
-
-          {/* Light beam */}
-          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
-
-          {/* Lamp glow & particle system */}
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-        </div>
-
-        <h1 className="hero-title">{trackCms?.title || "Track Order"}</h1>
-
-        <p className="hero-desc">
-          {trackCms?.subtitle || "Review the status of your handcrafted orders. Enter your Order Reference ID code below to trace your design through production and delivery."}
-        </p>
-
-        
-        {/* Toggle switch panel */}
-        <div className="light-control-panel">
-          <span className="light-control-label">Studio Light</span>
-          <button 
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`} 
-            onClick={() => setLightOn(!lightOn)} 
-            aria-label="Toggle Studio Light"
-          >
-            <span className="light-switch-knob" />
-          </button>
-        </div>
-      </div>
-
-      <section className="track-section">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="track-container">
-          <div className="track-card">
-            <h2 className="track-card-title">Order Tracking Search</h2>
-
-            <form onSubmit={handleTrackOrder} className="search-form-group">
-              <input
-                type="text"
-                placeholder={trackCms?.inputPlaceholder || "Enter Reference ID (e.g. YAADEIN-XXXXXX)"}
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                className="order-search-input"
-              />
-              <button type="submit" className="btn-premium btn-track" disabled={loading}>
-                {loading ? "Searching..." : (trackCms?.buttonText || "Track Status")}
-              </button>
-            </form>
-
-            {errorMsg && <div style={{ color: "#FF7777", fontFamily: "var(--font-typewriter)", fontSize: "13px" }}>{errorMsg}</div>}
-
-            {recentOrders.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", fontSize: "12px", fontFamily: "var(--font-typewriter)", color: "var(--text2)" }}>
-                <span>Recent Orders:</span>
-                {recentOrders.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      setSearchId(id);
-                      handleTrackOrder(null, id);
-                    }}
-                    style={{
-                      background: "rgba(212, 175, 55, 0.08)",
-                      border: "1px solid rgba(212, 175, 55, 0.2)",
-                      borderRadius: "4px",
-                      color: "var(--accent)",
-                      padding: "4px 8px",
-                      fontSize: "11px",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-typewriter)",
-                      transition: "all 0.2s ease"
-                    }}
-                  >
-                    {id}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {searched && !order && (
-              <div style={{ textAlign: "center", color: "var(--text2)", padding: "20px 0", fontFamily: "var(--font-typewriter)", borderTop: "1.5px dashed rgba(181, 139, 92, 0.15)", paddingTop: "30px" }}>
-                ❌ Order ID "{searchId}" not found. Please double-check your receipt code.
-              </div>
-            )}
-
-            {order && (
-              <div style={{ borderTop: "1.5px dashed rgba(181, 139, 92, 0.2)", paddingTop: "30px" }}>
-                
-                {/* Cancelled Banner */}
-                {order.status === "Cancelled" && (
-                  <div className="cancelled-banner">
-                    ⚠️ THIS ORDER HAS BEEN CANCELLED
-                  </div>
-                )}
-
-                {/* Timeline progress tracker */}
-                {order.status !== "Cancelled" && (
-                  <div className="track-timeline">
-                    <div className="track-timeline-line" />
-                    <div 
-                      className="track-timeline-progress" 
-                      style={{ width: `${(currentStep / 3) * 100}%` }}
-                    />
-
-                    <div className={`timeline-node ${currentStep >= 0 ? "active" : ""} ${currentStep > 0 ? "completed" : ""}`}>
-                      <div className="node-dot">✓</div>
-                      <span className="node-label">Placed</span>
-                    </div>
-
-                    <div className={`timeline-node ${currentStep >= 1 ? "active" : ""} ${currentStep > 1 ? "completed" : ""}`}>
-                      <div className="node-dot">✓</div>
-                      <span className="node-label">Processing</span>
-                    </div>
-
-                    <div className={`timeline-node ${currentStep >= 2 ? "active" : ""} ${currentStep > 2 ? "completed" : ""}`}>
-                      <div className="node-dot">✓</div>
-                      <span className="node-label">Shipped</span>
-                    </div>
-
-                    <div className={`timeline-node ${currentStep >= 3 ? "active" : ""} ${currentStep > 3 ? "completed" : ""}`}>
-                      <div className="node-dot">✓</div>
-                      <span className="node-label">Delivered</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Details Row */}
-                <div className="order-info-grid">
-                  <div>
-                    <h3 className="info-col-title">Order Summary</h3>
-                    <div className="tracking-items-list">
-                      {(order.items || []).map((item, idx) => (
-                        <div key={idx} className="tracking-item">
-                          <div className="tracking-item-thumb" style={{ background: item.frameColor }}>
-                            {item.image ? (
-                              <img src={item.image} alt={item.frameName} />
-                            ) : (
-                              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(201, 168, 76, 0.15)", fontSize: "16px", fontFamily: "var(--font-display)" }}>Y</div>
-                            )}
-                          </div>
-                          <div className="tracking-item-info">
-                            <span className="tracking-item-name">{item.frameName}</span>
-                            <span className="tracking-item-meta">{item.size || "Standard"} • {item.orientation || "Portrait"} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
-                          </div>
-                          <span className="tracking-item-price">{item.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="info-col-title">Recipient Details</h3>
-                    <div className="customer-summary">
-                      <div><strong>Full Name:</strong> {order.customer?.fullName}</div>
-                      <div><strong>Phone Number:</strong> {order.customer?.phone}</div>
-                      <div><strong>Shipping Address:</strong> {order.customer?.address}</div>
-                      <div><strong>City / Region:</strong> {order.customer?.city}</div>
-                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(181, 139, 92, 0.15)", color: "var(--accent)", fontFamily: "var(--font-typewriter)", fontSize: "15px" }}>
-                        <strong>Grand Total:</strong> Rs. {order.total?.toLocaleString()} {order.paymentMethod ? `(${order.paymentMethod})` : "(COD)"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
+      <SectionLayoutRenderer pageId="track" nodes={trackSectionNodes} ctx={{ isEditor: false, lightOn: true }} />
       <Footer />
 
       {/* CART DRAWER SLIDE-OVER */}

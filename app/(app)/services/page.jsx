@@ -7,6 +7,7 @@ import BeforeAfterSlider from "../components/BeforeAfterSlider";
 import { useServicesPageContent } from "../../lib/cms";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../lib/firebase";
+import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
 
 export const INITIAL_DEFAULT_SERVICES = [
   {
@@ -192,6 +193,139 @@ export default function ServicesPage() {
       return acc + priceVal * (item.quantity || 1);
     }, 0);
   };
+
+  // ---- Section registry (see lib/pageBuilder/sectionLayout) ------------
+  const servicesSectionNodes = {
+      hero: (
+        <>
+      <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of Our Services heading */}
+        <div className={`exquisite-lamp catalog-lamp services-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+        </div>
+
+        {servicesCms?.eyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{servicesCms.eyebrow}</span>}
+        <h1 className="hero-title">{servicesCms?.heroTitle || servicesCms?.title || "Our Services"}</h1>
+        <p className="hero-desc">
+          {servicesCms?.heroSubtitle || servicesCms?.subtitle || "Handcrafted in Pakistan with archival materials, museum-grade glass, and century-tested woodworking precision."}
+        </p>
+
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Studio Light</span>
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
+      </div>
+
+        </>
+      ),
+      content: (
+        <>
+      <section className="services-section">
+        <div className="services-container">
+          {loading ? (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "100px 20px",
+              gap: "20px"
+            }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                border: "2px solid rgba(201, 168, 76, 0.15)",
+                borderTopColor: "var(--accent)",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }} />
+              <span style={{
+                fontFamily: "var(--font-typewriter)",
+                fontSize: "12px",
+                color: "var(--accent)",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase"
+              }}>
+                Loading Studio Services...
+              </span>
+            </div>
+          ) : servicesList && servicesList.length > 0 ? (
+            servicesList.map((srv, idx) => {
+              const rawSlug = srv.slug || "";
+              const cleanSlug = rawSlug.replace(/^\//, '');
+              const imgUrl = srv.featuredImage || srv.imageUrl || srv.mainImage?.url || "/images/bespoke_framing.png";
+              const featBullets = (srv.features && srv.features.length > 0)
+                ? srv.features.map(f => typeof f === 'string' ? f : (f.featureText || f))
+                : [];
+
+              return (
+                <div key={srv.id || idx} className="service-card">
+                  <div className="service-visual">
+                    {cleanSlug === "photo-restoration" ? (
+                      <BeforeAfterSlider
+                        before="/images/restoration/couple_before.png"
+                        after="/images/restoration/couple_after.png"
+                        style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
+                      />
+                    ) : cleanSlug === "photo-editing" ? (
+                      <BeforeAfterSlider
+                        before="/images/restoration/child_before.png"
+                        after="/images/restoration/child_after.png"
+                        style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
+                      />
+                    ) : (
+                      <img
+                        src={imgUrl}
+                        alt={srv.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    )}
+                  </div>
+                  <div className="service-info">
+                    <h2 className="service-name">{srv.title}</h2>
+                    <p className="service-desc">{srv.shortDesc || srv.detailedText}</p>
+                    {featBullets.length > 0 && (
+                      <ul className="service-features">
+                        {featBullets.map((bullet, bIdx) => (
+                          <li key={bIdx}>{bullet}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {srv.enableNavigationButton !== false && (
+                      <a href={`/services/${cleanSlug}`} className="btn-service">
+                        {(srv.ctaText ? srv.ctaText.replace(/Nikkah\s*Nama/gi, "Nikkahnama") : "Explore Details")} &rarr;
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "60px 0" }}>
+              No services found.
+            </div>
+          )}
+        </div>
+      </section>
+
+        </>
+      ),
+    };
 
   return (
     <div className="services-root">
@@ -537,127 +671,7 @@ export default function ServicesPage() {
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
-      <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of Our Services heading */}
-        <div className={`exquisite-lamp catalog-lamp services-lamp ${lightOn ? 'on' : ''}`}>
-          <div className="lamp-rod" />
-          <div className="lamp-mount" />
-          <div className="lamp-arm" />
-          <div className="lamp-head">
-            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
-          </div>
-
-          {/* Light beam */}
-          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
-        </div>
-
-        {servicesCms?.eyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{servicesCms.eyebrow}</span>}
-        <h1 className="hero-title">{servicesCms?.heroTitle || servicesCms?.title || "Our Services"}</h1>
-        <p className="hero-desc">
-          {servicesCms?.heroSubtitle || servicesCms?.subtitle || "Handcrafted in Pakistan with archival materials, museum-grade glass, and century-tested woodworking precision."}
-        </p>
-
-        {/* Toggle switch panel */}
-        <div className="light-control-panel">
-          <span className="light-control-label">Studio Light</span>
-          <button
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
-            onClick={() => setLightOn(!lightOn)}
-            aria-label="Toggle Studio Light"
-          >
-            <span className="light-switch-knob" />
-          </button>
-        </div>
-      </div>
-
-      <section className="services-section">
-        <div className="services-container">
-          {loading ? (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "100px 20px",
-              gap: "20px"
-            }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                border: "2px solid rgba(201, 168, 76, 0.15)",
-                borderTopColor: "var(--accent)",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }} />
-              <span style={{
-                fontFamily: "var(--font-typewriter)",
-                fontSize: "12px",
-                color: "var(--accent)",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase"
-              }}>
-                Loading Studio Services...
-              </span>
-            </div>
-          ) : servicesList && servicesList.length > 0 ? (
-            servicesList.map((srv, idx) => {
-              const rawSlug = srv.slug || "";
-              const cleanSlug = rawSlug.replace(/^\//, '');
-              const imgUrl = srv.featuredImage || srv.imageUrl || srv.mainImage?.url || "/images/bespoke_framing.png";
-              const featBullets = (srv.features && srv.features.length > 0)
-                ? srv.features.map(f => typeof f === 'string' ? f : (f.featureText || f))
-                : [];
-
-              return (
-                <div key={srv.id || idx} className="service-card">
-                  <div className="service-visual">
-                    {cleanSlug === "photo-restoration" ? (
-                      <BeforeAfterSlider
-                        before="/images/restoration/couple_before.png"
-                        after="/images/restoration/couple_after.png"
-                        style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
-                      />
-                    ) : cleanSlug === "photo-editing" ? (
-                      <BeforeAfterSlider
-                        before="/images/restoration/child_before.png"
-                        after="/images/restoration/child_after.png"
-                        style={{ width: "100%", height: "100%", aspectRatio: "auto", border: "none", borderRadius: "0", boxShadow: "none" }}
-                      />
-                    ) : (
-                      <img
-                        src={imgUrl}
-                        alt={srv.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    )}
-                  </div>
-                  <div className="service-info">
-                    <h2 className="service-name">{srv.title}</h2>
-                    <p className="service-desc">{srv.shortDesc || srv.detailedText}</p>
-                    {featBullets.length > 0 && (
-                      <ul className="service-features">
-                        {featBullets.map((bullet, bIdx) => (
-                          <li key={bIdx}>{bullet}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {srv.enableNavigationButton !== false && (
-                      <a href={`/services/${cleanSlug}`} className="btn-service">
-                        {(srv.ctaText ? srv.ctaText.replace(/Nikkah\s*Nama/gi, "Nikkahnama") : "Explore Details")} &rarr;
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "60px 0" }}>
-              No services found.
-            </div>
-          )}
-        </div>
-      </section>
-
+      <SectionLayoutRenderer pageId="services" nodes={servicesSectionNodes} ctx={{ isEditor: false, lightOn: true }} />
       <Footer />
     </div>
   );

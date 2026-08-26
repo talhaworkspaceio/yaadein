@@ -3772,6 +3772,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import CardDescription from "./components/CardDescription";
 import { useHomePageContent } from "../lib/cms";
+import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -4342,6 +4343,1233 @@ export default function HomePage() {
       </div>
     );
   };
+
+  // ---- Section registry -------------------------------------------------
+  // Each visual band of this page is a keyed node rather than a fixed line in
+  // the markup, so the Page Builder can reorder, hide or interleave them
+  // without any of this logic (cart, Firebase reads, players) being touched.
+  const homeSectionNodes = {
+      hero: (
+        <>
+      {/* FULLSCREEN VIDEO HERO BANNER */}
+      <section className="hero-fullscreen-frame">
+        <video
+          ref={heroVideoRef}
+          key={homeCms?.hero?.backgroundVideo?.url || homeCms?.hero?.backgroundVideoUrl || "/videos/yaadein.mp4"}
+          src={homeCms?.hero?.backgroundVideo?.url || (homeCms?.hero?.backgroundVideoUrl && homeCms.hero.backgroundVideoUrl.trim() !== "" ? homeCms.hero.backgroundVideoUrl : "/videos/yaadein.mp4")}
+          autoPlay
+          loop
+          muted={isMuted}
+          playsInline
+          className="hero-video-bg"
+        />
+
+        <div className="hero-video-overlay" />
+
+        <button
+          className="hero-volume-btn"
+          onClick={toggleMute}
+          aria-label={isMuted ? "Unmute video sound" : "Mute video sound"}
+          title={isMuted ? "Unmute Sound" : "Mute Sound"}
+        >
+          {isMuted ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          )}
+        </button>
+
+        <div className="hero-fullscreen-content">
+
+          <h1 className="hero-fullscreen-title">
+            {homeCms?.hero?.titleLine1 || "Turn Your"} {homeCms?.hero?.titleLine2 || "Moments Into"} <br />
+            <span>{homeCms?.hero?.titleHighlight || "Museum Art"}</span>
+          </h1>
+          <p className="hero-fullscreen-desc">
+            {homeCms?.hero?.subtitle || "Experience bespoke picture framing handcrafted for your specific style. Customize details in real-time, and let our master artisans deliver it ready to hang."}
+          </p>
+        </div>
+
+      </section>
+
+        </>
+      ),
+      catalog: (
+        <>
+      {/* CURATED PRODUCTS CATALOG */}
+      <section className={`catalog-section ${catalogEntered ? "animate-lamps" : ""}`} id="catalog">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div id="catalog-glow" className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        {/* Hanging Lamp Left */}
+        <div className="lamp-wrapper left">
+          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
+          <div className="lamp-glow-container">
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hanging Lamp Right */}
+        <div className="lamp-wrapper right">
+          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
+          <div className="lamp-glow-container">
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="catalog-container">
+          <div className="section-header">
+
+            <h2 className="section-title">{homeCms?.featuredProducts?.title || "Featured Products"}</h2>
+            <p className="section-desc">
+              {homeCms?.featuredProducts?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
+            </p>
+          </div>
+
+
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0", fontFamily: "var(--font-typewriter)" }}>
+              Loading catalog from database...
+            </div>
+          ) : searchQuery.trim() !== "" ? (
+            <div className="catalog-grid">
+              {products.filter(p =>
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
+              ).map((p) => renderProductCard(p))}
+            </div>
+          ) : (
+            <>
+              <div className="carousel-wrapper desktop-only-carousel">
+                <button
+                  className="carousel-arrow prev"
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + 3) % 3)}
+                  aria-label="Previous Slide"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+
+                <div className="carousel-viewport">
+                  <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}>
+                    <div className="carousel-slide">
+                      {portraitProducts.map((p) => renderProductCard(p))}
+                    </div>
+                    <div className="carousel-slide">
+                      {landscapeProducts.map((p) => renderProductCard(p))}
+                    </div>
+                    <div className="carousel-slide">
+                      {boardGames.map((p) => renderProductCard(p))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  className="carousel-arrow next"
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % 3)}
+                  aria-label="Next Slide"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <div className="carousel-indicators desktop-only-carousel">
+                {[0, 1, 2].map((idx) => (
+                  <button
+                    key={idx}
+                    className={`carousel-dot ${currentSlide === idx ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(idx)}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* MOBILE ONLY CAROUSEL (1 card at a time, flat list of 9 products) */}
+              <div className="mobile-only-carousel catalog-mobile-carousel">
+                <div className="carousel-viewport-mobile">
+                  <div
+                    className="carousel-track-mobile"
+                    style={{ transform: `translateX(-${mobileCuratedIndex * (100 / 9)}%)` }}
+                  >
+                    {[...portraitProducts, ...landscapeProducts, ...boardGames].map((p) => (
+                      <div key={`mob-${p.id}`} className="carousel-slide-mobile">
+                        {renderProductCard(p)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile controls centered below the card */}
+                <div className="mobile-carousel-controls">
+                  <button
+                    className="carousel-arrow-mobile prev"
+                    onClick={() => setMobileCuratedIndex((prev) => (prev - 1 + 9) % 9)}
+                    aria-label="Previous Slide"
+                  >
+                    ‹
+                  </button>
+                  <div className="carousel-indicators-mobile">
+                    {[...Array(9)].map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`carousel-dot-mobile ${mobileCuratedIndex === idx ? 'active' : ''}`}
+                        onClick={() => setMobileCuratedIndex(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    className="carousel-arrow-mobile next"
+                    onClick={() => setMobileCuratedIndex((prev) => (prev + 1) % 9)}
+                    aria-label="Next Slide"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+        </>
+      ),
+      showcase: (
+        <>
+      {/* EXQUISITE SHOWCASE SECTION */}
+      <section className="exquisite-section" id="showcase">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="exquisite-container">
+          {/* Left Column: Content */}
+          <div className="exquisite-content">
+            <h2 className="exquisite-title">{homeCms?.memoriesSection?.title || "Where Memories Meet Nature's Light"}</h2>
+
+            {/* Light Switch button positioned on top above paragraph for consistency */}
+            <button
+              className="light-control-panel"
+              onClick={() => setLightOn(!lightOn)}
+              aria-label="Toggle Light Switch"
+              style={{ marginTop: 4, marginBottom: 4 }}
+            >
+              <span className="light-control-label">{homeCms?.memoriesSection?.lightSwitchText || "Light Switch"}</span>
+              <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
+                <span className="light-switch-knob" />
+              </div>
+            </button>
+
+            <p className="exquisite-desc">
+              {homeCms?.memoriesSection?.body || "Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments."}
+            </p>
+
+            <div className="exquisite-actions">
+              <a href={homeCms?.memoriesSection?.browseButtonLink || "/catalog"} className="btn-premium exquisite-btn">
+                {homeCms?.memoriesSection?.browseButtonText || "BROWSE CATALOGUE"}
+              </a>
+            </div>
+          </div>
+
+
+          {/* Right Column: Visual */}
+          <div className="exquisite-visual">
+            <div className="exquisite-frame-component">
+              {/* Ambient wall glow behind the lamp */}
+              <div className={`exquisite-wall-glow ${lightOn ? 'on' : ''}`} />
+
+              {/* Picture light lamp */}
+              <div className="exquisite-lamp">
+                <div className="lamp-rod" />
+                <div className="lamp-mount" />
+                <div className="lamp-arm" />
+                <div className="lamp-head">
+                  <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+                </div>
+
+                {/* Light beam */}
+                <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+                {/* Copied glow & particle effect */}
+                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The frame wrapper */}
+              <div className={`exquisite-wood-frame ${lightOn ? 'light-on' : ''}`}>
+                {/* Wood Frame Texture Image */}
+                <img
+                  src="/frames/portrait/frame-01-correct-size.webp"
+                  alt="Antique Gold Frame"
+                  className="wood-frame-overlay"
+                />
+
+                {/* Inner photo area filling the frame space */}
+                <div className="exquisite-inner-photo">
+                  <img
+                    src="/images/dummyImg.jpg"
+                    alt="Exhibited B&W Artwork"
+                    className={lightOn ? 'light-active' : 'light-inactive'}
+                  />
+                  <div className="glass-reflection" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+        </>
+      ),
+      reviews: (
+        <>
+      {/* ── GOOGLE REVIEWS SECTION ── */}
+      <section className="reviews-section" id="reviews">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="reviews-container">
+          <div className="reviews-header">
+
+            <h2 className="reviews-title">What Our Clients Say</h2>
+            <p className="reviews-subtitle">
+              Real reviews from our verified customers on Google. Every frame tells a story — here's what they have to say.
+            </p>
+          </div>
+
+          <div className="reviews-summary-bar">
+            <span className="reviews-google-icon">🇬</span>
+            <span className="reviews-avg-score">4.9</span>
+            <div className="reviews-avg-detail">
+              <span className="reviews-stars">★★★★★</span>
+              <span className="reviews-count">Based on 127 Google Reviews</span>
+            </div>
+          </div>
+
+          <div className="reviews-carousel-wrapper">
+            <button
+              className="carousel-arrow prev desktop-only-carousel"
+              onClick={() => setCurrentReviewSlide((prev) => (prev - 1 + 2) % 2)}
+              aria-label="Previous Reviews"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <div className="reviews-carousel-viewport desktop-only-carousel">
+              <div className="reviews-carousel-track" style={{ transform: `translateX(-${currentReviewSlide * 50}%)` }}>
+                {/* Slide 1 */}
+                <div className="reviews-carousel-slide">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">AK</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Ayesha Khan</span>
+                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
+                      </p>
+                    </div>
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">HA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Hassan Ali</span>
+                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
+                      </p>
+                    </div>
+
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">SM</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Sara Malik</span>
+                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 2 */}
+                <div className="reviews-carousel-slide">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">OA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Omar Ahmed</span>
+                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
+                      </p>
+                    </div>
+
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">FZ</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Fatima Zahra</span>
+                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
+                      </p>
+                    </div>
+
+                  </a>
+
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">BI</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Bilal Iqbal</span>
+                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <button
+              className="carousel-arrow next desktop-only-carousel"
+              onClick={() => setCurrentReviewSlide((prev) => (prev + 1) % 2)}
+              aria-label="Next Reviews"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+
+            {/* MOBILE ONLY REVIEWS CAROUSEL */}
+            <div className="reviews-carousel-viewport mobile-only-carousel">
+              <div
+                className="reviews-carousel-track-mobile"
+                style={{ transform: `translateX(-${mobileReviewIndex * (100 / 6)}%)` }}
+              >
+                {/* Slide 1 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">AK</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Ayesha Khan</span>
+                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 2 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">HA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Hassan Ali</span>
+                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 3 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">SM</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Sara Malik</span>
+                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 4 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">OA</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Omar Ahmed</span>
+                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 5 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">FZ</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Fatima Zahra</span>
+                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+
+                {/* Slide 6 */}
+                <div className="review-slide-mobile-wrapper">
+                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
+                    <div>
+                      <div className="review-card-header">
+                        <div className="review-avatar">BI</div>
+                        <div className="review-author-info">
+                          <span className="review-author-name">Bilal Iqbal</span>
+                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
+                        </div>
+                      </div>
+                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
+                      <p className="review-text" style={{ marginTop: 6 }}>
+                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
+                      </p>
+                    </div>
+
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="reviews-carousel-indicators desktop-only-carousel">
+            {[0, 1].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${currentReviewSlide === idx ? 'active' : ''}`}
+                onClick={() => setCurrentReviewSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Mobile indicators for reviews */}
+          <div className="reviews-carousel-indicators mobile-only-carousel">
+            {[0, 1, 2, 3, 4, 5].map((idx) => (
+              <button
+                key={idx}
+                className={`carousel-dot ${mobileReviewIndex === idx ? 'active' : ''}`}
+                onClick={() => setMobileReviewIndex(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <div className="reviews-cta" style={{ textAlign: "center", marginTop: 28 }}>
+            <a
+              href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-review-cta"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 24px",
+                background: "rgba(20, 17, 14, 0.8)",
+                border: "1.5px solid var(--accent)",
+                borderRadius: 30,
+                color: "var(--accent)",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+                letterSpacing: "0.05em",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
+                transition: "all 0.2s ease"
+              }}
+            >
+              ⭐ View All Reviews on Google Profile ↗
+            </a>
+          </div>
+
+
+        </div>
+      </section>
+
+        </>
+      ),
+      heritage: (
+        <>
+      {/* ── VINTAGE WRITTEN HERITAGE SECTION ── */}
+      <section className="vintage-written-section" id="heritage">
+        <div className="vintage-written-container">
+          {/* Left Column: Content */}
+          <div className="vintage-written-content">
+            <span className="vintage-written-tagline">{homeCms?.writtenInTimeSection?.eyebrow || "Preserving Memories"}</span>
+            <div className="vintage-heading-wrapper">
+              <h2 className="vintage-written-title">{homeCms?.writtenInTimeSection?.title || "Written in Time"}</h2>
+            </div>
+            <p className="vintage-written-desc">
+              {homeCms?.writtenInTimeSection?.body || "Every frame we build, every photo we restore, is a testament to the moments that define us. Using traditional techniques and premium materials, we craft heirlooms that bridge generations. Let us help you write your story in wood and glass."}
+            </p>
+            <div className="vintage-written-signature">
+              <span className="signature-text">{homeCms?.writtenInTimeSection?.signature || "Yaadein Art Studio"}</span>
+            </div>
+          </div>
+
+
+          {/* Right Column: Vintage Fountain Pen Visual */}
+          <div className="vintage-written-visual">
+            <img
+              src="/images/pens/pen1.png"
+              alt="Vintage Fountain Pen"
+              className="vintage-new-pen-image"
+            />
+          </div>
+        </div>
+      </section>
+
+        </>
+      ),
+      services: (
+        <>
+      {/* ── OUR SERVICES SECTION (photo left, content right) ── */}
+      <section className="exquisite-section services-section" id="services">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="exquisite-container">
+          {/* Left Column: Visual (frame + picture light) */}
+          <div className="exquisite-visual">
+            <div className="exquisite-frame-component">
+              {/* Ambient wall glow behind the lamp */}
+              <div className={`exquisite-wall-glow ${servicesLightOn ? 'on' : ''}`} />
+
+              {/* Picture light lamp */}
+              <div className="exquisite-lamp">
+                <div className="lamp-rod" />
+                <div className="lamp-mount" />
+                <div className="lamp-arm" />
+                <div className="lamp-head">
+                  <div className={`lamp-bulb ${servicesLightOn ? 'on' : ''}`} />
+                </div>
+
+                {/* Light beam */}
+                <div className={`lamp-light-beam ${servicesLightOn ? 'on' : ''}`} />
+
+                {/* Glow & particle effect */}
+                <div className={`lamp-glow-container exquisite-glow-container ${servicesLightOn ? 'on' : ''}`}>
+                  <div className="glow"></div>
+                  <div className="particles">
+                    <div className="rotate">
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="angle">
+                        <div className="size">
+                          <div className="position">
+                            <div className="pulse">
+                              <div className="particle"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The frame wrapper */}
+              <div className={`exquisite-wood-frame ${servicesLightOn ? 'light-on' : ''}`}>
+                {/* Wood Frame Texture Image */}
+                <img
+                  src="/frames/portrait/frame-01-correct-size.webp"
+                  alt="Handcrafted Wooden Frame"
+                  className="wood-frame-overlay"
+                />
+
+                {/* Inner photo area — swap this src for a services/workshop shot */}
+                <div className="exquisite-inner-photo">
+                  <img
+                    src="/images/dummyImg.jpg"
+                    alt="Framing Craftsmanship at Work"
+                    className={servicesLightOn ? 'light-active' : 'light-inactive'}
+                  />
+                  <div className="glass-reflection" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Content */}
+          <div className="exquisite-content">
+            <p className="exquisite-tagline">{homeCms?.servicesSection?.eyebrow || "Our Services"}</p>
+            <h2 className="exquisite-title">{homeCms?.servicesSection?.title || "Crafted With Care, Delivered With Pride"}</h2>
+            <p className="exquisite-desc">
+              {homeCms?.servicesSection?.body || "From the first cut of wood to the final placement on your wall, every step is handled by our in-house artisans. Whatever your framing need, we bring museum-grade craftsmanship to your doorstep."}
+            </p>
+
+            <ul className="services-bullet-list">
+              <li>
+                <strong>{homeCms?.servicesSection?.feature1Title || "Old Photo Restoration"}</strong>
+                <span>{homeCms?.servicesSection?.feature1Desc || "Bring damaged, faded, or torn family photographs back to life with professional digital repair and colorization."}</span>
+              </li>
+              <li>
+                <strong>{homeCms?.servicesSection?.feature2Title || "Nikkahnama Frame"}</strong>
+                <span>{homeCms?.servicesSection?.feature2Desc || "Elegant custom-built frames designed specifically to preserve and display your Nikkahnama with timeless grace."}</span>
+              </li>
+              <li>
+                <strong>{homeCms?.servicesSection?.feature3Title || "Board Games"}</strong>
+                <span>{homeCms?.servicesSection?.feature3Desc || "Handcrafted luxury wooden board games — from Ludo to Chess — built for family fun and aesthetic value."}</span>
+              </li>
+            </ul>
+
+            <div className="exquisite-actions">
+              <a href={homeCms?.servicesSection?.buttonLink || "/services"} className="btn-premium exquisite-btn">
+                {homeCms?.servicesSection?.buttonText || "EXPLORE SERVICES"}
+              </a>
+
+
+              {/* Light switch for this section's lamp */}
+              <button
+                className="light-control-panel"
+                onClick={() => setServicesLightOn(!servicesLightOn)}
+                aria-label="Toggle Light Switch"
+              >
+                <span className="light-control-label">Light <br /> Switch</span>
+                <div className={`light-switch-btn ${servicesLightOn ? 'on' : ''}`}>
+                  <span className="light-switch-knob" />
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+        </>
+      ),
+      social: (
+        <>
+      {/* ── SOCIAL MEDIA FEED SECTION ── */}
+      <section className="social-feed-section" id="social">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        {(() => {
+          const defaultReels = [
+            {
+              instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
+              caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
+              authorName: "yaadein.pk",
+            },
+            {
+              instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
+              caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
+              authorName: "yaadein.pk",
+            },
+            {
+              instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
+              caption: "Colour artistry, up close with 99% UV museum glass.",
+              authorName: "yaadein.pk",
+            },
+          ];
+
+          const rawReels = homeCms?.socialFeedSection?.reels;
+          const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
+          let reelsToRender = [];
+
+          if (rawReels !== undefined && rawReels !== null) {
+            const parsed = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
+            reelsToRender = parsed.length > 0 ? parsed : defaultReels;
+          } else if (isCustom) {
+            reelsToRender = [];
+          } else {
+            reelsToRender = defaultReels;
+          }
+
+          return (
+            <div className="social-feed-container">
+              <div className="social-feed-header">
+                <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "OUR WORK IN MOTION"}</p>
+                <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "Straight from our Instagram"}</h2>
+                <p className="social-feed-subtitle">
+                  {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
+                </p>
+              </div>
+
+              <div className="social-carousel-wrapper">
+                {reelsToRender.length > 3 && (
+                  <button
+                    className="carousel-arrow prev desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Previous Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                )}
+
+                {/* DESKTOP ONLY SOCIAL CAROUSEL */}
+                <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 28,
+                      justifyContent: "center",
+                      transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                      transform: reelsToRender.length <= 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
+                    }}
+                  >
+                    {reelsToRender.map((reel, rIdx) => (
+                      <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* MOBILE ONLY SOCIAL CAROUSEL */}
+                <div
+                  className="social-carousel-viewport mobile-only-carousel social-mobile-carousel"
+                  onTouchStart={handleSocialTouchStart}
+                  onTouchMove={handleSocialTouchMove}
+                  onTouchEnd={() => handleSocialTouchEnd(reelsToRender.length)}
+                >
+                  <div
+                    className="social-carousel-track-mobile"
+                    style={{
+                      width: `${reelsToRender.length * 100}%`,
+                      transform: `translateX(-${mobileSocialIndex * (100 / Math.max(1, reelsToRender.length))}%)`
+                    }}
+                  >
+                    {reelsToRender.map((reel, rIdx) => (
+                      <div key={rIdx} className="social-slide-mobile-wrapper" style={{ width: `${100 / Math.max(1, reelsToRender.length)}%` }}>
+                        <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {reelsToRender.length > 3 && (
+                  <button
+                    className="carousel-arrow next desktop-only-carousel"
+                    onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
+                    aria-label="Next Posts"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {reelsToRender.length > 3 && (
+                <div className="social-carousel-indicators desktop-only-carousel">
+                  {Array.from({ length: Math.ceil(reelsToRender.length / 3) }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
+                      onClick={() => setCurrentSocialSlide(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Mobile Social Carousel Controls */}
+              {reelsToRender.length > 1 ? (
+                <div
+                  className="mobile-carousel-controls mobile-only-carousel"
+                  style={{
+                    marginTop: 24,
+                    display: "flex !important",
+                    flexDirection: "row !important",
+                    flexWrap: "nowrap !important",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 20,
+                    width: "100%"
+                  }}
+                >
+                  <button
+                    className="carousel-arrow-mobile prev"
+                    onClick={() => setMobileSocialIndex((prev) => (prev - 1 + reelsToRender.length) % reelsToRender.length)}
+                    aria-label="Previous Reel"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "rgba(20, 17, 14, 0.85)",
+                      border: "1.5px solid var(--accent)",
+                      color: "var(--accent)",
+                      fontSize: 22,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                      flexShrink: 0
+                    }}
+                  >
+                    ‹
+                  </button>
+
+                  <div
+                    className="carousel-indicators-mobile"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      flexWrap: "nowrap",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 10
+                    }}
+                  >
+                    {reelsToRender.map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`carousel-dot-mobile ${mobileSocialIndex === idx ? 'active' : ''}`}
+                        onClick={() => setMobileSocialIndex(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                        style={{
+                          width: mobileSocialIndex === idx ? 12 : 8,
+                          height: mobileSocialIndex === idx ? 12 : 8,
+                          borderRadius: "50%",
+                          background: mobileSocialIndex === idx ? "var(--accent)" : "rgba(255, 255, 255, 0.25)",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.3s ease"
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    className="carousel-arrow-mobile next"
+                    onClick={() => setMobileSocialIndex((prev) => (prev + 1) % reelsToRender.length)}
+                    aria-label="Next Reel"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "rgba(20, 17, 14, 0.85)",
+                      border: "1.5px solid var(--accent)",
+                      color: "var(--accent)",
+                      fontSize: 22,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                      flexShrink: 0
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="mobile-carousel-controls mobile-only-carousel"
+                  style={{
+                    marginTop: 24,
+                    display: "flex !important",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%"
+                  }}
+                >
+                  <div className="carousel-indicators-mobile" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <button
+                      className="carousel-dot-mobile active"
+                      aria-label="Slide 1"
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "var(--accent)",
+                        border: "none"
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="social-feed-footer">
+                <span className="social-handle">@yaadein.pk</span>
+                <div className="social-links">
+                  <a href="https://www.instagram.com/yaadein.pk/" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    📸 Follow on Instagram
+                  </a>
+                  <a href="https://www.facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    👤 Follow on Facebook
+                  </a>
+                  <a href="https://www.tiktok.com/@yaadein.pk.official" target="_blank" rel="noopener noreferrer" className="social-link-btn">
+                    🎵 Follow on TikTok
+                  </a>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </section>
+
+        </>
+      ),
+    };
 
   return (
     <div className="home-root">
@@ -6875,1198 +8103,11 @@ export default function HomePage() {
         initialSearchValue={searchQuery}
       />
 
-      {/* FULLSCREEN VIDEO HERO BANNER */}
-      <section className="hero-fullscreen-frame">
-        <video
-          ref={heroVideoRef}
-          key={homeCms?.hero?.backgroundVideo?.url || homeCms?.hero?.backgroundVideoUrl || "/videos/yaadein.mp4"}
-          src={homeCms?.hero?.backgroundVideo?.url || (homeCms?.hero?.backgroundVideoUrl && homeCms.hero.backgroundVideoUrl.trim() !== "" ? homeCms.hero.backgroundVideoUrl : "/videos/yaadein.mp4")}
-          autoPlay
-          loop
-          muted={isMuted}
-          playsInline
-          className="hero-video-bg"
-        />
-
-        <div className="hero-video-overlay" />
-
-        <button
-          className="hero-volume-btn"
-          onClick={toggleMute}
-          aria-label={isMuted ? "Unmute video sound" : "Mute video sound"}
-          title={isMuted ? "Unmute Sound" : "Mute Sound"}
-        >
-          {isMuted ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <line x1="23" y1="9" x2="17" y2="15"></line>
-              <line x1="17" y1="9" x2="23" y2="15"></line>
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            </svg>
-          )}
-        </button>
-
-        <div className="hero-fullscreen-content">
-
-          <h1 className="hero-fullscreen-title">
-            {homeCms?.hero?.titleLine1 || "Turn Your"} {homeCms?.hero?.titleLine2 || "Moments Into"} <br />
-            <span>{homeCms?.hero?.titleHighlight || "Museum Art"}</span>
-          </h1>
-          <p className="hero-fullscreen-desc">
-            {homeCms?.hero?.subtitle || "Experience bespoke picture framing handcrafted for your specific style. Customize details in real-time, and let our master artisans deliver it ready to hang."}
-          </p>
-        </div>
-
-      </section>
-
-      {/* CURATED PRODUCTS CATALOG */}
-      <section className={`catalog-section ${catalogEntered ? "animate-lamps" : ""}`} id="catalog">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div id="catalog-glow" className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        {/* Hanging Lamp Left */}
-        <div className="lamp-wrapper left">
-          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
-          <div className="lamp-glow-container">
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hanging Lamp Right */}
-        <div className="lamp-wrapper right">
-          <img src="/images/lamp.png" alt="Hanging Lamp" className="lamp-img" />
-          <div className="lamp-glow-container">
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="catalog-container">
-          <div className="section-header">
-
-            <h2 className="section-title">{homeCms?.featuredProducts?.title || "Featured Products"}</h2>
-            <p className="section-desc">
-              {homeCms?.featuredProducts?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
-            </p>
-          </div>
-
-
-          {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0", fontFamily: "var(--font-typewriter)" }}>
-              Loading catalog from database...
-            </div>
-          ) : searchQuery.trim() !== "" ? (
-            <div className="catalog-grid">
-              {products.filter(p =>
-                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
-              ).map((p) => renderProductCard(p))}
-            </div>
-          ) : (
-            <>
-              <div className="carousel-wrapper desktop-only-carousel">
-                <button
-                  className="carousel-arrow prev"
-                  onClick={() => setCurrentSlide((prev) => (prev - 1 + 3) % 3)}
-                  aria-label="Previous Slide"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                  </svg>
-                </button>
-
-                <div className="carousel-viewport">
-                  <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}>
-                    <div className="carousel-slide">
-                      {portraitProducts.map((p) => renderProductCard(p))}
-                    </div>
-                    <div className="carousel-slide">
-                      {landscapeProducts.map((p) => renderProductCard(p))}
-                    </div>
-                    <div className="carousel-slide">
-                      {boardGames.map((p) => renderProductCard(p))}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  className="carousel-arrow next"
-                  onClick={() => setCurrentSlide((prev) => (prev + 1) % 3)}
-                  aria-label="Next Slide"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </div>
-
-              <div className="carousel-indicators desktop-only-carousel">
-                {[0, 1, 2].map((idx) => (
-                  <button
-                    key={idx}
-                    className={`carousel-dot ${currentSlide === idx ? 'active' : ''}`}
-                    onClick={() => setCurrentSlide(idx)}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-              {/* MOBILE ONLY CAROUSEL (1 card at a time, flat list of 9 products) */}
-              <div className="mobile-only-carousel catalog-mobile-carousel">
-                <div className="carousel-viewport-mobile">
-                  <div
-                    className="carousel-track-mobile"
-                    style={{ transform: `translateX(-${mobileCuratedIndex * (100 / 9)}%)` }}
-                  >
-                    {[...portraitProducts, ...landscapeProducts, ...boardGames].map((p) => (
-                      <div key={`mob-${p.id}`} className="carousel-slide-mobile">
-                        {renderProductCard(p)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Mobile controls centered below the card */}
-                <div className="mobile-carousel-controls">
-                  <button
-                    className="carousel-arrow-mobile prev"
-                    onClick={() => setMobileCuratedIndex((prev) => (prev - 1 + 9) % 9)}
-                    aria-label="Previous Slide"
-                  >
-                    ‹
-                  </button>
-                  <div className="carousel-indicators-mobile">
-                    {[...Array(9)].map((_, idx) => (
-                      <button
-                        key={idx}
-                        className={`carousel-dot-mobile ${mobileCuratedIndex === idx ? 'active' : ''}`}
-                        onClick={() => setMobileCuratedIndex(idx)}
-                        aria-label={`Go to slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    className="carousel-arrow-mobile next"
-                    onClick={() => setMobileCuratedIndex((prev) => (prev + 1) % 9)}
-                    aria-label="Next Slide"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* EXQUISITE SHOWCASE SECTION */}
-      <section className="exquisite-section" id="showcase">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="exquisite-container">
-          {/* Left Column: Content */}
-          <div className="exquisite-content">
-            <h2 className="exquisite-title">{homeCms?.memoriesSection?.title || "Where Memories Meet Nature's Light"}</h2>
-
-            {/* Light Switch button positioned on top above paragraph for consistency */}
-            <button
-              className="light-control-panel"
-              onClick={() => setLightOn(!lightOn)}
-              aria-label="Toggle Light Switch"
-              style={{ marginTop: 4, marginBottom: 4 }}
-            >
-              <span className="light-control-label">{homeCms?.memoriesSection?.lightSwitchText || "Light Switch"}</span>
-              <div className={`light-switch-btn ${lightOn ? 'on' : ''}`}>
-                <span className="light-switch-knob" />
-              </div>
-            </button>
-
-            <p className="exquisite-desc">
-              {homeCms?.memoriesSection?.body || "Every photograph is a story of shadows and highlights. Our bespoke frames are built to interact harmoniously with the ambient atmosphere. Watch as natural daylight from a nearby window shifts across the real-wood textures and museum matting, breathing organic life into your timeless moments."}
-            </p>
-
-            <div className="exquisite-actions">
-              <a href={homeCms?.memoriesSection?.browseButtonLink || "/catalog"} className="btn-premium exquisite-btn">
-                {homeCms?.memoriesSection?.browseButtonText || "BROWSE CATALOGUE"}
-              </a>
-            </div>
-          </div>
-
-
-          {/* Right Column: Visual */}
-          <div className="exquisite-visual">
-            <div className="exquisite-frame-component">
-              {/* Ambient wall glow behind the lamp */}
-              <div className={`exquisite-wall-glow ${lightOn ? 'on' : ''}`} />
-
-              {/* Picture light lamp */}
-              <div className="exquisite-lamp">
-                <div className="lamp-rod" />
-                <div className="lamp-mount" />
-                <div className="lamp-arm" />
-                <div className="lamp-head">
-                  <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
-                </div>
-
-                {/* Light beam */}
-                <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
-
-                {/* Copied glow & particle effect */}
-                <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-                  <div className="glow"></div>
-                  <div className="particles">
-                    <div className="rotate">
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* The frame wrapper */}
-              <div className={`exquisite-wood-frame ${lightOn ? 'light-on' : ''}`}>
-                {/* Wood Frame Texture Image */}
-                <img
-                  src="/frames/portrait/frame-01-correct-size.webp"
-                  alt="Antique Gold Frame"
-                  className="wood-frame-overlay"
-                />
-
-                {/* Inner photo area filling the frame space */}
-                <div className="exquisite-inner-photo">
-                  <img
-                    src="/images/dummyImg.jpg"
-                    alt="Exhibited B&W Artwork"
-                    className={lightOn ? 'light-active' : 'light-inactive'}
-                  />
-                  <div className="glass-reflection" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── GOOGLE REVIEWS SECTION ── */}
-      <section className="reviews-section" id="reviews">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="reviews-container">
-          <div className="reviews-header">
-
-            <h2 className="reviews-title">What Our Clients Say</h2>
-            <p className="reviews-subtitle">
-              Real reviews from our verified customers on Google. Every frame tells a story — here's what they have to say.
-            </p>
-          </div>
-
-          <div className="reviews-summary-bar">
-            <span className="reviews-google-icon">🇬</span>
-            <span className="reviews-avg-score">4.9</span>
-            <div className="reviews-avg-detail">
-              <span className="reviews-stars">★★★★★</span>
-              <span className="reviews-count">Based on 127 Google Reviews</span>
-            </div>
-          </div>
-
-          <div className="reviews-carousel-wrapper">
-            <button
-              className="carousel-arrow prev desktop-only-carousel"
-              onClick={() => setCurrentReviewSlide((prev) => (prev - 1 + 2) % 2)}
-              aria-label="Previous Reviews"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-
-            <div className="reviews-carousel-viewport desktop-only-carousel">
-              <div className="reviews-carousel-track" style={{ transform: `translateX(-${currentReviewSlide * 50}%)` }}>
-                {/* Slide 1 */}
-                <div className="reviews-carousel-slide">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">AK</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Ayesha Khan</span>
-                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
-                      </p>
-                    </div>
-                  </a>
-
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">HA</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Hassan Ali</span>
-                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
-                      </p>
-                    </div>
-
-                  </a>
-
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">SM</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Sara Malik</span>
-                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 2 */}
-                <div className="reviews-carousel-slide">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">OA</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Omar Ahmed</span>
-                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
-                      </p>
-                    </div>
-
-                  </a>
-
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">FZ</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Fatima Zahra</span>
-                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
-                      </p>
-                    </div>
-
-                  </a>
-
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">BI</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Bilal Iqbal</span>
-                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <button
-              className="carousel-arrow next desktop-only-carousel"
-              onClick={() => setCurrentReviewSlide((prev) => (prev + 1) % 2)}
-              aria-label="Next Reviews"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-
-            {/* MOBILE ONLY REVIEWS CAROUSEL */}
-            <div className="reviews-carousel-viewport mobile-only-carousel">
-              <div
-                className="reviews-carousel-track-mobile"
-                style={{ transform: `translateX(-${mobileReviewIndex * (100 / 6)}%)` }}
-              >
-                {/* Slide 1 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">AK</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Ayesha Khan</span>
-                          <span className="review-author-meta">📍 Lahore • 2 weeks ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Mashallah bohot hi pyari framing hui hai! Wood quality and finishing bilkul premium hai. Museum glass ki waja se reflection bilkul nahi aati. Delivery bhi bohot safe packing mein mili. Highly recommended!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 2 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">HA</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Hassan Ali</span>
-                          <span className="review-author-meta">📍 Islamabad • 1 month ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Bhai Nikkah Nama frame karwaya tha Yaadein se, subah order dia aur exact timing pe deliver hua. Frame ki finishing aur border detail dekh kar ghar wale bohot khush hue. JazakAllah!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 3 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">SM</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Sara Malik</span>
-                          <span className="review-author-meta">📍 Karachi • 3 weeks ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Honestly image quality and frame texture expectation se bhi zyada ache nikle. Canvas print ka color reproduction aur gold leaf finishing zabardast hai. Must try service!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 4 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">OA</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Omar Ahmed</span>
-                          <span className="review-author-meta">📍 Rawalpindi • 5 days ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Packing bohot secure thi, bubble wrap aur wooden corners k sath frames aye bilkul safe. Wall pe lagane k baad lounge ka look hi change ho gaya hai. Keep it up!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 5 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">FZ</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Fatima Zahra</span>
-                          <span className="review-author-meta">📍 Faisalabad • 2 months ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Custom size frame ka order dia tha, exact dimensions aur high quality museum glass k sath mila. Customer service bhi bohot cooperative thi. Thanks Yaadein team!
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-
-                {/* Slide 6 */}
-                <div className="review-slide-mobile-wrapper">
-                  <a href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"} target="_blank" rel="noopener noreferrer" className="review-card">
-                    <div>
-                      <div className="review-card-header">
-                        <div className="review-avatar">BI</div>
-                        <div className="review-author-info">
-                          <span className="review-author-name">Bilal Iqbal</span>
-                          <span className="review-author-meta">📍 Multan • 1 week ago</span>
-                        </div>
-                      </div>
-                      <div className="review-stars-row" style={{ marginTop: 6 }}>★★★★★</div>
-                      <p className="review-text" style={{ marginTop: 6 }}>
-                        Family portrait frame karwaya tha, solid wood frame ka weight aur feel bohot solid hai. Finishing super clean hai. Inshallah dobara bhi zaroor order karunga.
-                      </p>
-                    </div>
-
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="reviews-carousel-indicators desktop-only-carousel">
-            {[0, 1].map((idx) => (
-              <button
-                key={idx}
-                className={`carousel-dot ${currentReviewSlide === idx ? 'active' : ''}`}
-                onClick={() => setCurrentReviewSlide(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          {/* Mobile indicators for reviews */}
-          <div className="reviews-carousel-indicators mobile-only-carousel">
-            {[0, 1, 2, 3, 4, 5].map((idx) => (
-              <button
-                key={idx}
-                className={`carousel-dot ${mobileReviewIndex === idx ? 'active' : ''}`}
-                onClick={() => setMobileReviewIndex(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          <div className="reviews-cta" style={{ textAlign: "center", marginTop: 28 }}>
-            <a
-              href={googleReviewUrl || "https://g.page/r/yaadein-art-studio/review"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-review-cta"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 24px",
-                background: "rgba(20, 17, 14, 0.8)",
-                border: "1.5px solid var(--accent)",
-                borderRadius: 30,
-                color: "var(--accent)",
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: "none",
-                letterSpacing: "0.05em",
-                boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
-                transition: "all 0.2s ease"
-              }}
-            >
-              ⭐ View All Reviews on Google Profile ↗
-            </a>
-          </div>
-
-
-        </div>
-      </section>
-
-      {/* ── VINTAGE WRITTEN HERITAGE SECTION ── */}
-      <section className="vintage-written-section" id="heritage">
-        <div className="vintage-written-container">
-          {/* Left Column: Content */}
-          <div className="vintage-written-content">
-            <span className="vintage-written-tagline">{homeCms?.writtenInTimeSection?.eyebrow || "Preserving Memories"}</span>
-            <div className="vintage-heading-wrapper">
-              <h2 className="vintage-written-title">{homeCms?.writtenInTimeSection?.title || "Written in Time"}</h2>
-            </div>
-            <p className="vintage-written-desc">
-              {homeCms?.writtenInTimeSection?.body || "Every frame we build, every photo we restore, is a testament to the moments that define us. Using traditional techniques and premium materials, we craft heirlooms that bridge generations. Let us help you write your story in wood and glass."}
-            </p>
-            <div className="vintage-written-signature">
-              <span className="signature-text">{homeCms?.writtenInTimeSection?.signature || "Yaadein Art Studio"}</span>
-            </div>
-          </div>
-
-
-          {/* Right Column: Vintage Fountain Pen Visual */}
-          <div className="vintage-written-visual">
-            <img
-              src="/images/pens/pen1.png"
-              alt="Vintage Fountain Pen"
-              className="vintage-new-pen-image"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── OUR SERVICES SECTION (photo left, content right) ── */}
-      <section className="exquisite-section services-section" id="services">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="exquisite-container">
-          {/* Left Column: Visual (frame + picture light) */}
-          <div className="exquisite-visual">
-            <div className="exquisite-frame-component">
-              {/* Ambient wall glow behind the lamp */}
-              <div className={`exquisite-wall-glow ${servicesLightOn ? 'on' : ''}`} />
-
-              {/* Picture light lamp */}
-              <div className="exquisite-lamp">
-                <div className="lamp-rod" />
-                <div className="lamp-mount" />
-                <div className="lamp-arm" />
-                <div className="lamp-head">
-                  <div className={`lamp-bulb ${servicesLightOn ? 'on' : ''}`} />
-                </div>
-
-                {/* Light beam */}
-                <div className={`lamp-light-beam ${servicesLightOn ? 'on' : ''}`} />
-
-                {/* Glow & particle effect */}
-                <div className={`lamp-glow-container exquisite-glow-container ${servicesLightOn ? 'on' : ''}`}>
-                  <div className="glow"></div>
-                  <div className="particles">
-                    <div className="rotate">
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="angle">
-                        <div className="size">
-                          <div className="position">
-                            <div className="pulse">
-                              <div className="particle"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* The frame wrapper */}
-              <div className={`exquisite-wood-frame ${servicesLightOn ? 'light-on' : ''}`}>
-                {/* Wood Frame Texture Image */}
-                <img
-                  src="/frames/portrait/frame-01-correct-size.webp"
-                  alt="Handcrafted Wooden Frame"
-                  className="wood-frame-overlay"
-                />
-
-                {/* Inner photo area — swap this src for a services/workshop shot */}
-                <div className="exquisite-inner-photo">
-                  <img
-                    src="/images/dummyImg.jpg"
-                    alt="Framing Craftsmanship at Work"
-                    className={servicesLightOn ? 'light-active' : 'light-inactive'}
-                  />
-                  <div className="glass-reflection" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Content */}
-          <div className="exquisite-content">
-            <p className="exquisite-tagline">{homeCms?.servicesSection?.eyebrow || "Our Services"}</p>
-            <h2 className="exquisite-title">{homeCms?.servicesSection?.title || "Crafted With Care, Delivered With Pride"}</h2>
-            <p className="exquisite-desc">
-              {homeCms?.servicesSection?.body || "From the first cut of wood to the final placement on your wall, every step is handled by our in-house artisans. Whatever your framing need, we bring museum-grade craftsmanship to your doorstep."}
-            </p>
-
-            <ul className="services-bullet-list">
-              <li>
-                <strong>{homeCms?.servicesSection?.feature1Title || "Old Photo Restoration"}</strong>
-                <span>{homeCms?.servicesSection?.feature1Desc || "Bring damaged, faded, or torn family photographs back to life with professional digital repair and colorization."}</span>
-              </li>
-              <li>
-                <strong>{homeCms?.servicesSection?.feature2Title || "Nikkahnama Frame"}</strong>
-                <span>{homeCms?.servicesSection?.feature2Desc || "Elegant custom-built frames designed specifically to preserve and display your Nikkahnama with timeless grace."}</span>
-              </li>
-              <li>
-                <strong>{homeCms?.servicesSection?.feature3Title || "Board Games"}</strong>
-                <span>{homeCms?.servicesSection?.feature3Desc || "Handcrafted luxury wooden board games — from Ludo to Chess — built for family fun and aesthetic value."}</span>
-              </li>
-            </ul>
-
-            <div className="exquisite-actions">
-              <a href={homeCms?.servicesSection?.buttonLink || "/services"} className="btn-premium exquisite-btn">
-                {homeCms?.servicesSection?.buttonText || "EXPLORE SERVICES"}
-              </a>
-
-
-              {/* Light switch for this section's lamp */}
-              <button
-                className="light-control-panel"
-                onClick={() => setServicesLightOn(!servicesLightOn)}
-                aria-label="Toggle Light Switch"
-              >
-                <span className="light-control-label">Light <br /> Switch</span>
-                <div className={`light-switch-btn ${servicesLightOn ? 'on' : ''}`}>
-                  <span className="light-switch-knob" />
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SOCIAL MEDIA FEED SECTION ── */}
-      <section className="social-feed-section" id="social">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        {(() => {
-          const defaultReels = [
-            {
-              instagramUrl: "https://www.instagram.com/reel/DaiiHdCNkku/",
-              caption: "Behind the chair at Yaadein Studio. Handcrafted solid wood frames.",
-              authorName: "yaadein.pk",
-            },
-            {
-              instagramUrl: "https://www.instagram.com/reel/Dai-iyjNbe3/",
-              caption: "Bridal glow in the making. Handcrafted Nikkah Nama frames.",
-              authorName: "yaadein.pk",
-            },
-            {
-              instagramUrl: "https://www.instagram.com/reel/DaK9P-LqvF4/",
-              caption: "Colour artistry, up close with 99% UV museum glass.",
-              authorName: "yaadein.pk",
-            },
-          ];
-
-          const rawReels = homeCms?.socialFeedSection?.reels;
-          const isCustom = homeCms?.socialFeedSection?.isCustomInitialized;
-          let reelsToRender = [];
-
-          if (rawReels !== undefined && rawReels !== null) {
-            const parsed = Array.isArray(rawReels) ? rawReels : Object.values(rawReels);
-            reelsToRender = parsed.length > 0 ? parsed : defaultReels;
-          } else if (isCustom) {
-            reelsToRender = [];
-          } else {
-            reelsToRender = defaultReels;
-          }
-
-          return (
-            <div className="social-feed-container">
-              <div className="social-feed-header">
-                <p className="social-feed-tagline">{homeCms?.socialFeedSection?.tagline || "OUR WORK IN MOTION"}</p>
-                <h2 className="social-feed-title">{homeCms?.socialFeedSection?.title || "Straight from our Instagram"}</h2>
-                <p className="social-feed-subtitle">
-                  {homeCms?.socialFeedSection?.subtitle || "See how our customers style their spaces. Tag us to get featured in our gallery."}
-                </p>
-              </div>
-
-              <div className="social-carousel-wrapper">
-                {reelsToRender.length > 3 && (
-                  <button
-                    className="carousel-arrow prev desktop-only-carousel"
-                    onClick={() => setCurrentSocialSlide((prev) => (prev - 1 + Math.ceil(reelsToRender.length / 3)) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                    aria-label="Previous Posts"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                  </button>
-                )}
-
-                {/* DESKTOP ONLY SOCIAL CAROUSEL */}
-                <div className="social-carousel-viewport desktop-only-carousel" style={{ overflow: "hidden", width: "100%", display: "flex", justifyContent: "center" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 28,
-                      justifyContent: "center",
-                      transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-                      transform: reelsToRender.length <= 3 ? "none" : `translateX(-${currentSocialSlide * 368}px)`,
-                    }}
-                  >
-                    {reelsToRender.map((reel, rIdx) => (
-                      <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* MOBILE ONLY SOCIAL CAROUSEL */}
-                <div
-                  className="social-carousel-viewport mobile-only-carousel social-mobile-carousel"
-                  onTouchStart={handleSocialTouchStart}
-                  onTouchMove={handleSocialTouchMove}
-                  onTouchEnd={() => handleSocialTouchEnd(reelsToRender.length)}
-                >
-                  <div
-                    className="social-carousel-track-mobile"
-                    style={{
-                      width: `${reelsToRender.length * 100}%`,
-                      transform: `translateX(-${mobileSocialIndex * (100 / Math.max(1, reelsToRender.length))}%)`
-                    }}
-                  >
-                    {reelsToRender.map((reel, rIdx) => (
-                      <div key={rIdx} className="social-slide-mobile-wrapper" style={{ width: `${100 / Math.max(1, reelsToRender.length)}%` }}>
-                        <ReelVideoCard key={rIdx} reel={{ ...reel, authorName: "yaadein.pk", avatarInitial: "Y" }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {reelsToRender.length > 3 && (
-                  <button
-                    className="carousel-arrow next desktop-only-carousel"
-                    onClick={() => setCurrentSocialSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(reelsToRender.length / 3)))}
-                    aria-label="Next Posts"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {reelsToRender.length > 3 && (
-                <div className="social-carousel-indicators desktop-only-carousel">
-                  {Array.from({ length: Math.ceil(reelsToRender.length / 3) }).map((_, idx) => (
-                    <button
-                      key={idx}
-                      className={`carousel-dot ${currentSocialSlide === idx ? 'active' : ''}`}
-                      onClick={() => setCurrentSocialSlide(idx)}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Mobile Social Carousel Controls */}
-              {reelsToRender.length > 1 ? (
-                <div
-                  className="mobile-carousel-controls mobile-only-carousel"
-                  style={{
-                    marginTop: 24,
-                    display: "flex !important",
-                    flexDirection: "row !important",
-                    flexWrap: "nowrap !important",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 20,
-                    width: "100%"
-                  }}
-                >
-                  <button
-                    className="carousel-arrow-mobile prev"
-                    onClick={() => setMobileSocialIndex((prev) => (prev - 1 + reelsToRender.length) % reelsToRender.length)}
-                    aria-label="Previous Reel"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      background: "rgba(20, 17, 14, 0.85)",
-                      border: "1.5px solid var(--accent)",
-                      color: "var(--accent)",
-                      fontSize: 22,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
-                      flexShrink: 0
-                    }}
-                  >
-                    ‹
-                  </button>
-
-                  <div
-                    className="carousel-indicators-mobile"
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      flexWrap: "nowrap",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: 10
-                    }}
-                  >
-                    {reelsToRender.map((_, idx) => (
-                      <button
-                        key={idx}
-                        className={`carousel-dot-mobile ${mobileSocialIndex === idx ? 'active' : ''}`}
-                        onClick={() => setMobileSocialIndex(idx)}
-                        aria-label={`Go to slide ${idx + 1}`}
-                        style={{
-                          width: mobileSocialIndex === idx ? 12 : 8,
-                          height: mobileSocialIndex === idx ? 12 : 8,
-                          borderRadius: "50%",
-                          background: mobileSocialIndex === idx ? "var(--accent)" : "rgba(255, 255, 255, 0.25)",
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.3s ease"
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    className="carousel-arrow-mobile next"
-                    onClick={() => setMobileSocialIndex((prev) => (prev + 1) % reelsToRender.length)}
-                    aria-label="Next Reel"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      background: "rgba(20, 17, 14, 0.85)",
-                      border: "1.5px solid var(--accent)",
-                      color: "var(--accent)",
-                      fontSize: 22,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
-                      flexShrink: 0
-                    }}
-                  >
-                    ›
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className="mobile-carousel-controls mobile-only-carousel"
-                  style={{
-                    marginTop: 24,
-                    display: "flex !important",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    width: "100%"
-                  }}
-                >
-                  <div className="carousel-indicators-mobile" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <button
-                      className="carousel-dot-mobile active"
-                      aria-label="Slide 1"
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "var(--accent)",
-                        border: "none"
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="social-feed-footer">
-                <span className="social-handle">@yaadein.pk</span>
-                <div className="social-links">
-                  <a href="https://www.instagram.com/yaadein.pk/" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                    📸 Follow on Instagram
-                  </a>
-                  <a href="https://www.facebook.com/yaadein.pk" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                    👤 Follow on Facebook
-                  </a>
-                  <a href="https://www.tiktok.com/@yaadein.pk.official" target="_blank" rel="noopener noreferrer" className="social-link-btn">
-                    🎵 Follow on TikTok
-                  </a>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </section>
-
+      <SectionLayoutRenderer
+        pageId="home"
+        nodes={homeSectionNodes}
+        ctx={{ isEditor: false, lightOn: true }}
+      />
       {/* FOOTER */}
       <Footer />
 

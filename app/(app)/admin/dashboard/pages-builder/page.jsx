@@ -29,6 +29,7 @@ import {
 } from "../../../../../lib/pageBuilder/styles";
 import BlockView from "../../../../../lib/pageBuilder/BlockView";
 import Inspector from "../../../../../lib/pageBuilder/Inspector";
+import { SECTION_PAGES, resolveLayoutBlocks, LAYOUT_PREVIEW_MESSAGE } from "../../../../../lib/pageBuilder/sectionLayout";
 
 export const DEFAULT_PAGE_SETTINGS = {
   showHero: true,
@@ -41,7 +42,7 @@ export const DEFAULT_PAGE_SETTINGS = {
   headingFontSize: "52",
   headingAlign: "center",
   backdropType: "none",
-  backdropColor: "#050403",
+  backdropColor: "#0C0A08",
   backdropGradient: GRADIENT_PRESETS[0].val,
   backdropImage: "",
   backdropParallax: true,
@@ -198,6 +199,9 @@ export default function PageBuilder() {
   const [newPagePreset, setNewPagePreset] = useState("hero-features");
   const [pageToDelete, setPageToDelete] = useState(null);
   const [pagesSearch, setPagesSearch] = useState("");
+  const [codedPageId, setCodedPageId] = useState(null); // non-null = editing a coded page
+  const canvasFrameRef = useRef(null);
+  const canvasReady = useRef(false);
 
   // ---- history
   const [history, setHistory] = useState([]);
@@ -241,9 +245,29 @@ export default function PageBuilder() {
   };
 
   const openEditor = (slug) => {
+    setCodedPageId(null);
     setSelectedSlug(slug);
     loadPage(slug);
     setViewMode("editor");
+  };
+
+  /** Open a hand-coded page in the same builder, its bands as coded-section blocks. */
+  const openCodedEditor = (pageId) => {
+    const def = SECTION_PAGES[pageId];
+    if (!def) return;
+    setCodedPageId(pageId);
+    setSelectedSlug("");
+    setPageTitle(def.label);
+    setSelectedId(null);
+    setHistory([]);
+    setHistoryIndex(-1);
+    canvasReady.current = false;
+    setViewMode("editor");
+    onValue(
+      ref(db, `cms_layouts/${pageId}`),
+      (snap) => setPageBlocks(resolveLayoutBlocks(pageId, snap.val())),
+      { onlyOnce: true }
+    );
   };
 
   // ------------------------------------------------------------------ history
@@ -346,6 +370,20 @@ export default function PageBuilder() {
         return { ...b, [dev]: layer };
       })
     );
+  };
+
+  const resetCodedLayout = async () => {
+    if (!codedPageId) return;
+    if (!confirm(`Reset ${codedPageDef?.label} to the section order defined in code?`)) return;
+    try {
+      await remove(ref(db, `cms_layouts/${codedPageId}`));
+      setPageBlocks(resolveLayoutBlocks(codedPageId, null));
+      setSelectedId(null);
+      flash("Reset to the code default.");
+    } catch (err) {
+      console.error(err);
+      flash("Failed to reset layout.");
+    }
   };
 
   const resetBlockSize = () => {
@@ -494,6 +532,19 @@ export default function PageBuilder() {
 
   // ------------------------------------------------------------------- save
   const savePage = async () => {
+    if (codedPageId) {
+      setSaving(true);
+      try {
+        await set(ref(db, `cms_layouts/${codedPageId}`), { blocks: pageBlocks, updatedAt: new Date().toISOString() });
+        flash("✅ Layout published.", 3500);
+      } catch (err) {
+        console.error(err);
+        flash("❌ Failed to save layout.", 4000);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (!selectedSlug) return;
     setSaving(true);
     try {
@@ -568,6 +619,48 @@ export default function PageBuilder() {
   // ------------------------------------------------------------------ canvas
   const canvasCss = useMemo(() => buildPageCss(pageBlocks, { device, scope: ".pb-canvas" }), [pageBlocks, device]);
   const previewCss = useMemo(() => buildPageCss(pageBlocks, { device, scope: ".pb-preview-frame" }), [pageBlocks, device]);
+
+  // Coded pages preview as the real route in an iframe, fed the unsaved tree.
+  const codedPageDef = codedPageId ? SECTION_PAGES[codedPageId] : null;
+
+  useEffect(() => {
+    if (!codedPageId) return;
+    const push = () => {
+      const win = canvasFrameRef.current?.contentWindow;
+      if (!win || !canvasReady.current) return;
+      win.postMessage(
+        { type: LAYOUT_PREVIEW_MESSAGE, pageId: codedPageId, blocks: pageBlocks, editMode: !previewMode, selectedId },
+        "*"
+      );
+    };
+
+    const onMessage = (e) => {
+      const d = e.data;
+      if (!d || d.pageId !== codedPageId) return;
+
+      if (d.type === `${LAYOUT_PREVIEW_MESSAGE}-ready`) {
+        canvasReady.current = true;
+        push();
+        return;
+      }
+      // The page is the canvas: it reports clicks and toolbar actions back here.
+      if (d.type === "pb-select") {
+        setSelectedId(d.id);
+        setRightOpen(true);
+        return;
+      }
+      if (d.type === "pb-action") {
+        if (d.action === "up") nudgeBlock(d.id, -1);
+        else if (d.action === "down") nudgeBlock(d.id, 1);
+        else if (d.action === "duplicate") duplicateBlock(d.id);
+        else if (d.action === "delete") deleteBlock(d.id);
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    push();
+    return () => window.removeEventListener("message", onMessage);
+  }, [codedPageId, pageBlocks, selectedId, previewMode]);
   const deviceMeta = BREAKPOINTS.find((b) => b.id === device) || BREAKPOINTS[0];
 
   // Preview runs the blocks exactly as a visitor sees them — no selection chrome,
@@ -626,9 +719,31 @@ export default function PageBuilder() {
 
   const filteredComponents = COMPONENTS.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.category.toLowerCase().includes(searchQuery.toLowerCase())
+      c.id !== "coded-section" &&
+      (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // Bands of the coded page that aren't currently on the canvas can be put back.
+  const missingSections = codedPageDef
+    ? codedPageDef.sections.filter((sec) => !flattenBlocks(pageBlocks).some(({ block }) => block.type === "coded-section" && block.sectionId === sec.id))
+    : [];
+
+  const addCodedSection = (sec) => {
+    const block = {
+      id: `sec_${codedPageId}_${sec.id}`,
+      type: "coded-section",
+      componentId: "coded-section",
+      sectionId: sec.id,
+      sectionLabel: sec.label,
+      sectionHint: sec.hint,
+      paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0, marginBottom: 0,
+      boxWidth: "100%", displayMode: "block", positionMode: "relative",
+    };
+    setPageBlocks((prev) => insertBlock(prev, block, null, null));
+    setSelectedId(block.id);
+    flash(`Restored ${sec.label}`);
+  };
 
   const filteredPages = pagesList.filter(
     (p) => (p.title || "").toLowerCase().includes(pagesSearch.toLowerCase()) || (p.slug || "").toLowerCase().includes(pagesSearch.toLowerCase())
@@ -637,11 +752,11 @@ export default function PageBuilder() {
   // ======================================================== PAGES LIST VIEW
   if (viewMode === "list") {
     return (
-      <div style={{ minHeight: "100vh", background: "#0F0D0B", color: "#F5F0E8", padding: 32, fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "#0F0D0B", color: "#F4EFE6", padding: 32, fontFamily: "var(--font-serif)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
           <div>
             <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, margin: 0 }}>Pages &amp; CMS Builder</h1>
-            <p style={{ color: "#A8A08C", fontSize: 14, margin: "6px 0 0" }}>
+            <p style={{ color: "#C5B6A5", fontSize: 14, margin: "6px 0 0" }}>
               Build any layout from nestable sections. Every block has desktop, tablet and mobile settings.
             </p>
           </div>
@@ -654,14 +769,14 @@ export default function PageBuilder() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
           {filteredPages.map((page) => (
-            <div key={page.slug} style={{ background: "#16120E", border: "1px solid rgba(201,168,76,.2)", borderRadius: 12, padding: 18 }}>
+            <div key={page.slug} style={{ background: "#14110E", border: "1px solid rgba(181,139,92,.2)", borderRadius: 12, padding: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                 <h3 style={{ margin: 0, fontSize: 17 }}>{page.title}</h3>
-                <span style={{ fontSize: 10, background: "rgba(201,168,76,.15)", color: "#C9A84C", padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 10, background: "rgba(181,139,92,.15)", color: "#B58B5C", padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
                   {flattenBlocks(page.blocks || []).length} blocks
                 </span>
               </div>
-              <code style={{ display: "block", fontSize: 12, color: "#8b8474", margin: "8px 0 16px" }}>/{page.slug}</code>
+              <code style={{ display: "block", fontSize: 12, color: "#9A8A79", margin: "8px 0 16px" }}>/{page.slug}</code>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => openEditor(page.slug)} style={{ ...primaryBtn, flex: 1, padding: "8px 12px", fontSize: 12 }}>Edit in Builder</button>
                 <a href={`/${page.slug}`} target="_blank" rel="noreferrer" style={{ ...ghostBtn, textDecoration: "none", fontSize: 12 }}>View</a>
@@ -670,7 +785,34 @@ export default function PageBuilder() {
               </div>
             </div>
           ))}
-          {filteredPages.length === 0 && <p style={{ color: "#8b8474", fontSize: 14 }}>No pages yet — create one to get started.</p>}
+          {filteredPages.length === 0 && <p style={{ color: "#9A8A79", fontSize: 14 }}>No pages yet — create one to get started.</p>}
+        </div>
+
+        {/* Coded pages — layout editing only */}
+        <div style={{ marginTop: 44 }}>
+          <h2 style={{ fontSize: 17, margin: 0, color: "#F4EFE6" }}>Coded Pages</h2>
+          <p style={{ color: "#9A8A79", fontSize: 13.5, margin: "7px 0 18px", lineHeight: 1.6, maxWidth: 720 }}>
+            These pages are built in React so their behaviour (cart, customizer, players) keeps working.
+            You can still rearrange them: reorder or hide sections, change the spacing around each, and slot
+            page-builder blocks between them. Their wording lives under <strong>Site Content &amp; Policies</strong>.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+            {Object.entries(SECTION_PAGES).map(([id, def]) => (
+              <div key={id} style={{ background: "#14110E", border: "1px solid rgba(181,139,92,.2)", borderRadius: 12, padding: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <h3 style={{ margin: 0, fontSize: 17 }}>{def.label}</h3>
+                  <span style={{ fontSize: 10, background: "rgba(181,139,92,.15)", color: "#B58B5C", padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
+                    {def.sections.length} sections
+                  </span>
+                </div>
+                <code style={{ display: "block", fontSize: 12, color: "#9A8A79", margin: "8px 0 16px" }}>{def.route}</code>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => openCodedEditor(id)} style={{ ...primaryBtn, flex: 1, padding: "8px 12px", fontSize: 12 }}>Edit in Builder</button>
+                  <a href={def.route} target="_blank" rel="noreferrer" style={{ ...ghostBtn, textDecoration: "none", fontSize: 12 }}>View</a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {showCreateModal && <CreateModal />}
@@ -678,7 +820,7 @@ export default function PageBuilder() {
           <div style={modalOverlay}>
             <div style={modalCard}>
               <h3 style={{ marginTop: 0 }}>Delete “{pageToDelete.title}”?</h3>
-              <p style={{ color: "#A8A08C", fontSize: 13 }}>The route /{pageToDelete.slug} will stop working. This cannot be undone.</p>
+              <p style={{ color: "#C5B6A5", fontSize: 13 }}>The route /{pageToDelete.slug} will stop working. This cannot be undone.</p>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
                 <button onClick={() => setPageToDelete(null)} style={ghostBtn}>Cancel</button>
                 <button onClick={deletePage} style={{ ...primaryBtn, background: "#FF3E6C", color: "#fff" }}>Delete</button>
@@ -714,8 +856,8 @@ export default function PageBuilder() {
                     onClick={() => setNewPagePreset(s.id)}
                     style={{
                       textAlign: "left",
-                      background: newPagePreset === s.id ? "rgba(201,168,76,.18)" : "#14100B",
-                      border: `1px solid ${newPagePreset === s.id ? "#C9A84C" : "rgba(255,255,255,.1)"}`,
+                      background: newPagePreset === s.id ? "rgba(181,139,92,.18)" : "#1E1A15",
+                      border: `1px solid ${newPagePreset === s.id ? "#B58B5C" : "rgba(181,139,92,.22)"}`,
                       borderRadius: 8,
                       padding: 10,
                       cursor: "pointer",
@@ -723,7 +865,7 @@ export default function PageBuilder() {
                     }}
                   >
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
-                    <div style={{ fontSize: 11, color: "#A8A08C", marginTop: 2 }}>{s.desc}</div>
+                    <div style={{ fontSize: 11, color: "#C5B6A5", marginTop: 2 }}>{s.desc}</div>
                   </button>
                 ))}
               </div>
@@ -742,7 +884,7 @@ export default function PageBuilder() {
   const inPreview = previewMode;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#08070A", color: "#F5F0E8", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif", zIndex: 500 }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0C0A08", color: "#F4EFE6", display: "flex", flexDirection: "column", fontFamily: "var(--font-serif)", zIndex: 500 }}>
       <style dangerouslySetInnerHTML={{ __html: EDITOR_CSS }} />
 
       {/* ============================================================ TOOLBAR */}
@@ -754,17 +896,21 @@ export default function PageBuilder() {
           </button>
 
           <div className="pb-page-chip">
-            <span className="pb-page-chip-label">Editing</span>
-            <select
-              value={selectedSlug}
-              onChange={(e) => { setSelectedSlug(e.target.value); loadPage(e.target.value); }}
-              className="pb-page-select"
-            >
-              {pagesList.map((p) => (
-                <option key={p.slug} value={p.slug} style={{ background: "#15121C" }}>{p.title}</option>
-              ))}
-            </select>
-            <code className="pb-page-slug">/{selectedSlug}</code>
+            <span className="pb-page-chip-label">{codedPageId ? "Layout" : "Editing"}</span>
+            {codedPageId ? (
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{codedPageDef?.label}</span>
+            ) : (
+              <select
+                value={selectedSlug}
+                onChange={(e) => { setSelectedSlug(e.target.value); loadPage(e.target.value); }}
+                className="pb-page-select"
+              >
+                {pagesList.map((p) => (
+                  <option key={p.slug} value={p.slug} style={{ background: "#1E1A15" }}>{p.title}</option>
+                ))}
+              </select>
+            )}
+            <code className="pb-page-slug">{codedPageId ? codedPageDef?.route : `/${selectedSlug}`}</code>
           </div>
         </div>
 
@@ -798,11 +944,17 @@ export default function PageBuilder() {
             <span style={{ fontSize: 13 }}>{focusMode ? "⤡" : "⤢"}</span> {focusMode ? "Exit focus" : "Focus"}
           </button>
 
+          {codedPageId && (
+            <button onClick={resetCodedLayout} className="pb-btn pb-btn-quiet" title="Restore the section order defined in code">
+              ↺ Reset to code
+            </button>
+          )}
+
           <button onClick={() => setPreviewMode(true)} className="pb-btn pb-btn-quiet" title="Full-page preview (P)">
             <span style={{ fontSize: 13 }}>▶</span> Preview
           </button>
 
-          <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer" className="pb-btn pb-btn-quiet" style={{ textDecoration: "none" }}>
+          <a href={codedPageId ? codedPageDef?.route : `/${selectedSlug}`} target="_blank" rel="noreferrer" className="pb-btn pb-btn-quiet" style={{ textDecoration: "none" }}>
             ↗ Live
           </a>
 
@@ -863,6 +1015,30 @@ export default function PageBuilder() {
                 </div>
 
                 <div className="pb-panel-body">
+                  {codedPageDef && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div className="pb-cat-head" style={{ cursor: "default" }}>
+                        <span style={{ width: 10 }} />
+                        <span style={{ flex: 1, textAlign: "left" }}>This Page's Sections</span>
+                        <span className="pb-cat-count">{codedPageDef.sections.length}</span>
+                      </div>
+                      <p style={{ fontSize: 11, color: "#8A7B6B", margin: "2px 0 8px", lineHeight: 1.5 }}>
+                        {missingSections.length === 0
+                          ? "All of this page's coded bands are on the canvas."
+                          : "Removed from the canvas — click to put one back."}
+                      </p>
+                      {missingSections.map((sec) => (
+                        <div key={sec.id} onClick={() => addCodedSection(sec)} className="pb-widget" style={{ marginBottom: 6 }}>
+                          <span className="pb-widget-icon">⬓</span>
+                          <span style={{ minWidth: 0, flex: 1 }}>
+                            <span className="pb-widget-name">{sec.label}</span>
+                            <span className="pb-widget-desc">{sec.hint}</span>
+                          </span>
+                          <span className="pb-widget-grab">+</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {CATEGORIES.map((cat) => {
                     const items = filteredComponents.filter((c) => c.category === cat);
                     if (!items.length) return null;
@@ -873,7 +1049,7 @@ export default function PageBuilder() {
                           onClick={() => setOpenCategories((p) => ({ ...p, [cat]: isOpen ? false : true }))}
                           className="pb-cat-head"
                         >
-                          <span style={{ color: "#8b8474", fontSize: 10, transform: isOpen ? "none" : "rotate(-90deg)", transition: "transform .18s ease", display: "inline-block" }}>▾</span>
+                          <span style={{ color: "#9A8A79", fontSize: 10, transform: isOpen ? "none" : "rotate(-90deg)", transition: "transform .18s ease", display: "inline-block" }}>▾</span>
                           <span style={{ flex: 1, textAlign: "left" }}>{cat}</span>
                           <span className="pb-cat-count">{items.length}</span>
                         </button>
@@ -904,7 +1080,7 @@ export default function PageBuilder() {
                     );
                   })}
                   {filteredComponents.length === 0 && (
-                    <p style={{ fontSize: 12.5, color: "#77715f", padding: "20px 4px", lineHeight: 1.6 }}>
+                    <p style={{ fontSize: 12.5, color: "#8A7B6B", padding: "20px 4px", lineHeight: 1.6 }}>
                       Nothing matches “{searchQuery}”.
                     </p>
                   )}
@@ -920,7 +1096,7 @@ export default function PageBuilder() {
                   <button
                     onClick={() => setSelectedId(null)}
                     className="pb-layer-row"
-                    style={{ background: selectedId === null ? "rgba(201,168,76,.18)" : "transparent", borderColor: selectedId === null ? "#C9A84C" : "transparent", width: "100%", marginBottom: 6 }}
+                    style={{ background: selectedId === null ? "rgba(181,139,92,.18)" : "transparent", borderColor: selectedId === null ? "#B58B5C" : "transparent", width: "100%", marginBottom: 6 }}
                   >
                     <span style={{ fontSize: 13 }}>🎛</span>
                     <span style={{ flex: 1, textAlign: "left", fontWeight: 700 }}>Page settings</span>
@@ -932,7 +1108,7 @@ export default function PageBuilder() {
                     collapsed={collapsedLayers}
                     toggleCollapse={(id) => setCollapsedLayers((p) => ({ ...p, [id]: !p[id] }))}
                   />
-                  {pageBlocks.length === 0 && <p style={{ fontSize: 12.5, color: "#77715f", padding: "16px 4px", lineHeight: 1.6 }}>No blocks yet — add one from the Widgets tab.</p>}
+                  {pageBlocks.length === 0 && <p style={{ fontSize: 12.5, color: "#8A7B6B", padding: "16px 4px", lineHeight: 1.6 }}>No blocks yet — add one from the Widgets tab.</p>}
                 </div>
               </>
             )}
@@ -963,14 +1139,26 @@ export default function PageBuilder() {
                 <span className="pb-dot" style={{ background: "#FF5F57" }} />
                 <span className="pb-dot" style={{ background: "#FEBC2E" }} />
                 <span className="pb-dot" style={{ background: "#28C840" }} />
-                <span className="pb-url">yaadein.pk/{selectedSlug}</span>
+                <span className="pb-url">yaadein.pk{codedPageId ? codedPageDef?.route : `/${selectedSlug}`}</span>
               </div>
 
+              {codedPageId ? (
+                // The coded page itself is the canvas: it renders live and reports
+                // clicks and toolbar actions back over postMessage.
+                <div style={{ position: "relative", height: "calc(100vh - 230px)", minHeight: 440, background: "#0C0A08" }}>
+                  <iframe
+                    ref={canvasFrameRef}
+                    src={`${codedPageDef.route}${codedPageDef.route.includes("?") ? "&" : "?"}pbpreview=1`}
+                    title={`${codedPageDef.label} canvas`}
+                    style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                  />
+                </div>
+              ) : (
               <div
                 className="pb-canvas"
                 style={{
                   width: "100%",
-                  background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#080605",
+                  background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#0C0A08",
                   backgroundImage: pageSettings.backdropType === "image" && pageSettings.backdropImage ? `url(${pageSettings.backdropImage})` : undefined,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
@@ -978,7 +1166,7 @@ export default function PageBuilder() {
               >
                 <style dangerouslySetInnerHTML={{ __html: canvasCss }} />
 
-                {pageSettings.showHero !== false && (
+                {!codedPageId && pageSettings.showHero !== false && (
                   <div style={{ padding: device === "mobile" ? "40px 18px 30px" : "60px 24px 44px", textAlign: pageSettings.headingAlign || "center", background: "linear-gradient(to bottom, #14110E 0%, rgba(8,6,5,0) 100%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
                     {pageSettings.showLamp !== false && (
                       <BlockView block={{ id: "__hero_lamp__", type: "studio-lamp", lampWidth: device === "mobile" ? 220 : 380, rodHeight: 50, beamWidth: 500, beamHeight: 340, glowIntensity: 0.38, followsPageLight: true }} device={device} ctx={{ lightOn: previewLightOn }} />
@@ -986,7 +1174,7 @@ export default function PageBuilder() {
                     <h1 style={{ margin: 0, fontFamily: pageSettings.headingFontFamily, fontSize: Math.round((parseInt(pageSettings.headingFontSize || 52, 10) || 52) * (device === "mobile" ? 0.6 : 0.86)), color: pageSettings.headingColor, lineHeight: 1.15 }}>
                       {pageSettings.heading || pageTitle}
                     </h1>
-                    {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 14, color: "#A8A08C", maxWidth: 560, lineHeight: 1.6 }}>{pageSettings.subtitle}</p>}
+                    {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 14, color: "#C5B6A5", maxWidth: 560, lineHeight: 1.6 }}>{pageSettings.subtitle}</p>}
                     {pageSettings.showLightSwitch !== false && (
                       <BlockView block={{ id: "__hero_switch__", type: "light-switch", label: "Studio Light" }} device={device} ctx={{ lightOn: previewLightOn, setLightOn: setPreviewLightOn }} />
                     )}
@@ -1009,6 +1197,7 @@ export default function PageBuilder() {
                   )}
                 </div>
               </div>
+              )}
             </div>
           </div>
         </main>
@@ -1016,7 +1205,7 @@ export default function PageBuilder() {
         {/* ------------------------------------------------------ RIGHT PANEL */}
         {showRight && <div className="pb-resizer" onMouseDown={startResize("right")} title="Drag to resize" />}
         {showRight && (
-          <aside className="pb-panel" style={{ width: rightWidth, minWidth: rightWidth, borderLeft: "1px solid rgba(255,255,255,.07)", borderRight: "none" }}>
+          <aside className="pb-panel" style={{ width: rightWidth, minWidth: rightWidth, borderLeft: "1px solid rgba(181,139,92,.16)", borderRight: "none" }}>
             <div className="pb-panel-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div>
                 <h2 className="pb-panel-title">{selectedBlock ? "Block settings" : "Page settings"}</h2>
@@ -1038,7 +1227,7 @@ export default function PageBuilder() {
                   onDuplicate={() => duplicateBlock(selectedBlock.id)}
                   onDelete={() => deleteBlock(selectedBlock.id)}
                   breadcrumb={
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center", fontSize: 11, color: "#8b8474" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center", fontSize: 11, color: "#9A8A79" }}>
                       <button onClick={() => setSelectedId(null)} style={crumbBtn}>Page</button>
                       {selectedParent && (
                         <>
@@ -1047,7 +1236,7 @@ export default function PageBuilder() {
                         </>
                       )}
                       <span>›</span>
-                      <span style={{ color: "#C9A84C", fontWeight: 700 }}>{getComponent(selectedBlock.type)?.name || selectedBlock.type}</span>
+                      <span style={{ color: "#B58B5C", fontWeight: 700 }}>{getComponent(selectedBlock.type)?.name || selectedBlock.type}</span>
                     </div>
                   }
                 />
@@ -1070,8 +1259,8 @@ export default function PageBuilder() {
       {inPreview && (
         <div className="pb-preview-overlay">
           <div className="pb-preview-bar">
-            <span style={{ fontSize: 12, color: "#A8A08C" }}>
-              Previewing <strong style={{ color: "#F5F0E8" }}>{pageTitle}</strong>
+            <span style={{ fontSize: 12, color: "#C5B6A5" }}>
+              Previewing <strong style={{ color: "#F4EFE6" }}>{pageTitle}</strong>
             </span>
             <div className="pb-device-switch" style={{ margin: "0 auto" }}>
               {BREAKPOINTS.map((bp) => (
@@ -1085,11 +1274,21 @@ export default function PageBuilder() {
           </div>
 
           <div className="pb-preview-scroll">
+            {codedPageId ? (
+              // Coded pages preview as the genuine route, fed the unsaved layout.
+              <div style={{ width: deviceMeta.canvasWidth, maxWidth: "100%", height: "100%", margin: "0 auto", background: "#0C0A08", transition: "width .3s ease" }}>
+                <iframe
+                  src={`${codedPageDef.route}${codedPageDef.route.includes("?") ? "&" : "?"}pbpreview=1`}
+                  title={`${codedPageDef.label} preview`}
+                  style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                />
+              </div>
+            ) : (
             <div
               className="pb-preview-frame"
               style={{
                 width: deviceMeta.canvasWidth,
-                background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#050403",
+                background: pageSettings.backdropType === "gradient" ? pageSettings.backdropGradient : pageSettings.backdropType === "color" ? pageSettings.backdropColor : "#0C0A08",
                 backgroundImage: pageSettings.backdropType === "image" && pageSettings.backdropImage ? `url(${pageSettings.backdropImage})` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
@@ -1105,7 +1304,7 @@ export default function PageBuilder() {
                   <h1 style={{ margin: 0, fontFamily: pageSettings.headingFontFamily, fontSize: device === "mobile" ? Math.round((parseInt(pageSettings.headingFontSize || 52, 10) || 52) * 0.62) : parseInt(pageSettings.headingFontSize || 52, 10), color: pageSettings.headingColor, lineHeight: 1.15 }}>
                     {pageSettings.heading || pageTitle}
                   </h1>
-                  {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 16, color: "#A8A08C", maxWidth: 620, lineHeight: 1.7 }}>{pageSettings.subtitle}</p>}
+                  {pageSettings.subtitle && <p style={{ margin: 0, fontSize: 16, color: "#C5B6A5", maxWidth: 620, lineHeight: 1.7 }}>{pageSettings.subtitle}</p>}
                   {pageSettings.showLightSwitch !== false && (
                     <BlockView block={{ id: "__pv_switch__", type: "light-switch", label: "Studio Light" }} device={device} ctx={{ lightOn: previewLightOn, setLightOn: setPreviewLightOn }} />
                   )}
@@ -1117,6 +1316,7 @@ export default function PageBuilder() {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1147,15 +1347,15 @@ function LayerTree({ blocks, selectedId, onSelect, collapsed, toggleCollapse, de
                 paddingLeft: 7 + depth * 12,
                 borderRadius: 5,
                 cursor: "pointer",
-                background: selectedId === block.id ? "rgba(201,168,76,.22)" : "transparent",
-                border: `1px solid ${selectedId === block.id ? "#C9A84C" : "transparent"}`,
+                background: selectedId === block.id ? "rgba(181,139,92,.22)" : "transparent",
+                border: `1px solid ${selectedId === block.id ? "#B58B5C" : "transparent"}`,
                 fontSize: 11,
               }}
             >
               {kids.length > 0 ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleCollapse(block.id); }}
-                  style={{ background: "none", border: "none", color: "#8b8474", cursor: "pointer", padding: 0, fontSize: 9, width: 10 }}
+                  style={{ background: "none", border: "none", color: "#9A8A79", cursor: "pointer", padding: 0, fontSize: 9, width: 10 }}
                 >
                   {isOpen ? "▾" : "▸"}
                 </button>
@@ -1163,10 +1363,10 @@ function LayerTree({ blocks, selectedId, onSelect, collapsed, toggleCollapse, de
                 <span style={{ width: 10 }} />
               )}
               <span style={{ fontSize: 12 }}>{comp?.icon || "▪"}</span>
-              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: selectedId === block.id ? "#fff" : "#cfc7b6" }}>
+              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: selectedId === block.id ? "#fff" : "#C5B6A5" }}>
                 {comp?.name || block.type}
               </span>
-              {(block.mobile || block.tablet) && <span title="Has responsive overrides" style={{ fontSize: 8, color: "#C9A84C" }}>◐</span>}
+              {(block.mobile || block.tablet) && <span title="Has responsive overrides" style={{ fontSize: 8, color: "#B58B5C" }}>◐</span>}
             </div>
             {kids.length > 0 && isOpen && (
               <LayerTree blocks={kids} selectedId={selectedId} onSelect={onSelect} collapsed={collapsed} toggleCollapse={toggleCollapse} depth={depth + 1} />
@@ -1186,7 +1386,7 @@ function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
   const upd = (k, v) => setSettings((prev) => ({ ...prev, [k]: v }));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <p style={{ fontSize: 11, color: "#8b8474", margin: 0, lineHeight: 1.5 }}>
+      <p style={{ fontSize: 11, color: "#9A8A79", margin: 0, lineHeight: 1.5 }}>
         Applies to the whole page. Click any block on the canvas to edit that block instead.
       </p>
 
@@ -1218,7 +1418,7 @@ function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
         </select>
         <label style={labelStyle}>Heading Colour</label>
         <div style={{ display: "flex", gap: 6 }}>
-          <input type="color" value={settings.headingColor || "#FFFFFF"} onChange={(e) => upd("headingColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(201,168,76,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
+          <input type="color" value={settings.headingColor || "#FFFFFF"} onChange={(e) => upd("headingColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(181,139,92,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
           <input value={settings.headingColor || ""} onChange={(e) => upd("headingColor", e.target.value)} style={{ ...fieldStyle, flex: 1 }} />
         </div>
       </div>
@@ -1259,7 +1459,7 @@ function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
           <>
             <label style={labelStyle}>{settings.backdropType === "image" ? "Base colour" : "Fill colour"}</label>
             <div style={{ display: "flex", gap: 6 }}>
-              <input type="color" value={settings.backdropColor || "#050403"} onChange={(e) => upd("backdropColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(201,168,76,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
+              <input type="color" value={settings.backdropColor || "#0C0A08"} onChange={(e) => upd("backdropColor", e.target.value)} style={{ width: 34, height: 30, border: "1px solid rgba(181,139,92,.22)", borderRadius: 5, background: "none", padding: 2, cursor: "pointer" }} />
               <input value={settings.backdropColor || ""} onChange={(e) => upd("backdropColor", e.target.value)} style={{ ...fieldStyle, flex: 1 }} />
             </div>
           </>
@@ -1299,7 +1499,7 @@ function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
         )}
       </div>
 
-      <p style={{ fontSize: 10, color: "#6f6a5d", textAlign: "center", margin: 0, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 10, color: "#8A7B6B", textAlign: "center", margin: 0, lineHeight: 1.6 }}>
         ⌘Z undo · ⌘⇧Z redo · ⌘D duplicate · Del removes · Esc deselects
       </p>
     </div>
@@ -1312,8 +1512,8 @@ function PageSettingsPanel({ settings, setSettings, pageTitle, setPageTitle }) {
 
 const fieldStyle = {
   width: "100%",
-  background: "#14100B",
-  border: "1px solid rgba(201,168,76,.22)",
+  background: "#1E1A15",
+  border: "1px solid rgba(181,139,92,.22)",
   color: "#fff",
   padding: "7px 9px",
   borderRadius: 6,
@@ -1323,10 +1523,10 @@ const fieldStyle = {
   marginBottom: 2,
 };
 
-const labelStyle = { display: "block", fontSize: 11, color: "#A8A08C", margin: "8px 0 4px" };
+const labelStyle = { display: "block", fontSize: 11, color: "#C5B6A5", margin: "8px 0 4px" };
 
 const primaryBtn = {
-  background: "linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%)",
+  background: "linear-gradient(135deg, #B58B5C 0%, #CBA378 50%, #B58B5C 100%)",
   color: "#000",
   border: "none",
   padding: "9px 20px",
@@ -1337,8 +1537,8 @@ const primaryBtn = {
 };
 
 const ghostBtn = {
-  background: "rgba(255,255,255,.05)",
-  border: "1px solid rgba(255,255,255,.15)",
+  background: "rgba(232,216,198,.055)",
+  border: "1px solid rgba(181,139,92,.3)",
   color: "#fff",
   padding: "7px 14px",
   borderRadius: 20,
@@ -1347,23 +1547,23 @@ const ghostBtn = {
   cursor: "pointer",
 };
 
-const crumbBtn = { background: "none", border: "none", color: "#8b8474", fontSize: 10, cursor: "pointer", padding: 0, textDecoration: "underline" };
+const crumbBtn = { background: "none", border: "none", color: "#9A8A79", fontSize: 10, cursor: "pointer", padding: 0, textDecoration: "underline" };
 
-const panelBox = { background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.16)", borderRadius: 8, padding: 10 };
-const panelTitle = { fontSize: 11, color: "#C9A84C", fontWeight: 800, marginBottom: 6 };
+const panelBox = { background: "rgba(181,139,92,.06)", border: "1px solid rgba(181,139,92,.16)", borderRadius: 8, padding: 10 };
+const panelTitle = { fontSize: 11, color: "#B58B5C", fontWeight: 800, marginBottom: 6 };
 
-const noticeStyle = { background: "rgba(201,168,76,.15)", border: "1px solid #C9A84C", color: "#C9A84C", padding: "8px 18px", borderRadius: 8, marginBottom: 18, fontSize: 13, fontWeight: 600 };
+const noticeStyle = { background: "rgba(181,139,92,.15)", border: "1px solid #B58B5C", color: "#B58B5C", padding: "8px 18px", borderRadius: 8, marginBottom: 18, fontSize: 13, fontWeight: 600 };
 
 const modalOverlay = { position: "fixed", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
-const modalCard = { background: "#16120E", border: "1px solid rgba(201,168,76,.3)", borderRadius: 14, padding: 26, maxWidth: 460, width: "100%", color: "#F5F0E8" };
+const modalCard = { background: "#14110E", border: "1px solid rgba(181,139,92,.3)", borderRadius: 14, padding: 26, maxWidth: 460, width: "100%", color: "#F4EFE6" };
 
 const EDITOR_CSS = `
 /* ---------------------------------------------------------------- toolbar */
 .pb-topbar {
   display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
   padding: 14px 20px;
-  background: #100E14;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: #14110E;
+  border-bottom: 1px solid rgba(181,139,92,.16);
 }
 .pb-topbar-group { display: flex; align-items: center; gap: 10px; }
 
@@ -1374,225 +1574,227 @@ const EDITOR_CSS = `
   font-family: inherit; border: 1px solid transparent;
   transition: all .18s ease; white-space: nowrap;
 }
-.pb-btn-quiet { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.11); color: #E8E3D8; }
-.pb-btn-quiet:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+.pb-btn-quiet { background: rgba(232,216,198,.055); border-color: rgba(181,139,92,.24); color: #F4EFE6; }
+.pb-btn-quiet:hover { background: rgba(181,139,92,.22); border-color: rgba(181,139,92,.34); }
 .pb-btn-primary {
-  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%);
-  color: #17130A; font-weight: 800; box-shadow: 0 4px 16px rgba(201,168,76,.3);
+  background: linear-gradient(135deg, #B58B5C 0%, #CBA378 50%, #B58B5C 100%);
+  color: #0C0A08; font-weight: 800; box-shadow: 0 4px 16px rgba(181,139,92,.3);
 }
 .pb-btn-primary:hover { filter: brightness(1.08); }
 .pb-btn-primary:disabled { opacity: .55; cursor: default; }
 
 .pb-page-chip {
   display: flex; align-items: center; gap: 10px;
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  background: rgba(232,216,198,.045); border: 1px solid rgba(181,139,92,.22);
   padding: 7px 14px; border-radius: 12px;
 }
-.pb-page-chip-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #77715f; font-weight: 700; }
+.pb-page-chip-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #8A7B6B; font-weight: 700; }
 .pb-page-select {
-  background: transparent; border: none; color: #F5F0E8;
+  background: transparent; border: none; color: #F4EFE6;
   font-size: 14px; font-weight: 700; cursor: pointer; outline: none;
   font-family: inherit; max-width: 220px;
 }
-.pb-page-slug { font-size: 11px; color: #77715f; font-family: monospace; }
+.pb-page-slug { font-size: 11px; color: #8A7B6B; font-family: monospace; }
 
 .pb-device-switch {
   display: flex; gap: 4px; padding: 4px;
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  background: rgba(232,216,198,.045); border: 1px solid rgba(181,139,92,.22);
   border-radius: 13px;
 }
 .pb-device-btn {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 18px; border-radius: 10px; border: none;
-  background: transparent; color: #A8A08C;
+  background: transparent; color: #C5B6A5;
   font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
   transition: all .18s ease; white-space: nowrap;
 }
-.pb-device-btn:hover { color: #F5F0E8; background: rgba(255,255,255,.05); }
-.pb-device-btn.is-active { background: #C9A84C; color: #17130A; font-weight: 800; }
+.pb-device-btn:hover { color: #F4EFE6; background: rgba(232,216,198,.055); }
+.pb-device-btn.is-active { background: #B58B5C; color: #0C0A08; font-weight: 800; }
 
-.pb-seg { display: flex; gap: 2px; padding: 3px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 11px; }
+.pb-seg { display: flex; gap: 2px; padding: 3px; background: rgba(232,216,198,.045); border: 1px solid rgba(181,139,92,.22); border-radius: 11px; }
 .pb-seg-btn {
-  background: none; border: none; color: #E8E3D8; cursor: pointer;
+  background: none; border: none; color: #F4EFE6; cursor: pointer;
   padding: 7px 13px; border-radius: 8px; font-size: 15px; line-height: 1; transition: background .15s ease;
 }
-.pb-seg-btn:hover:not(:disabled) { background: rgba(255,255,255,.09); }
-.pb-seg-btn:disabled { color: rgba(255,255,255,.2); cursor: default; }
+.pb-seg-btn:hover:not(:disabled) { background: rgba(181,139,92,.2); }
+.pb-seg-btn:disabled { color: rgba(181,139,92,.34); cursor: default; }
 
 .pb-flash {
   padding: 11px 20px; text-align: center; font-size: 13px; font-weight: 600;
-  background: rgba(201,168,76,.14); color: #E8D48B;
-  border-bottom: 1px solid rgba(201,168,76,.3);
+  background: rgba(181,139,92,.14); color: #CBA378;
+  border-bottom: 1px solid rgba(181,139,92,.3);
 }
 
 /* ------------------------------------------------------------ left rail */
 .pb-rail {
-  width: 62px; min-width: 62px; background: #0C0A10;
-  border-right: 1px solid rgba(255,255,255,.07);
+  width: 62px; min-width: 62px; background: #14110E;
+  border-right: 1px solid rgba(181,139,92,.16);
   display: flex; flex-direction: column; align-items: center;
   padding: 12px 0; gap: 5px;
 }
 .pb-rail-btn {
   width: 50px; padding: 10px 0; border-radius: 11px;
-  background: transparent; border: 1px solid transparent; color: #8b8474;
+  background: transparent; border: 1px solid transparent; color: #9A8A79;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   cursor: pointer; font-family: inherit; font-weight: 600; transition: all .18s ease;
 }
-.pb-rail-btn:hover { background: rgba(255,255,255,.05); color: #E8E3D8; }
-.pb-rail-btn.is-active { background: rgba(201,168,76,.15); border-color: rgba(201,168,76,.4); color: #C9A84C; }
+.pb-rail-btn:hover { background: rgba(232,216,198,.055); color: #F4EFE6; }
+.pb-rail-btn.is-active { background: rgba(181,139,92,.15); border-color: rgba(181,139,92,.4); color: #B58B5C; }
 
 /* ---------------------------------------------------------------- panels */
 .pb-panel {
-  background: #0C0A10; border-right: 1px solid rgba(255,255,255,.07);
+  background: #14110E; border-right: 1px solid rgba(181,139,92,.16);
   display: flex; flex-direction: column; overflow: hidden;
 }
-.pb-panel-head { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
-.pb-panel-title { margin: 0; font-size: 16px; font-weight: 700; color: #F5F0E8; letter-spacing: -.01em; }
-.pb-panel-sub { margin: 6px 0 14px; font-size: 12px; color: #77715f; line-height: 1.55; }
+.pb-panel-head { padding: 20px 20px 16px; border-bottom: 1px solid rgba(232,216,198,.065); }
+.pb-panel-title { margin: 0; font-size: 16px; font-weight: 700; color: #F4EFE6; letter-spacing: -.01em; }
+.pb-panel-sub { margin: 6px 0 14px; font-size: 12px; color: #8A7B6B; line-height: 1.55; }
 .pb-panel-body { flex: 1; overflow-y: auto; padding: 18px 20px 40px; }
 .pb-panel-body::-webkit-scrollbar { width: 10px; }
-.pb-panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.09); border-radius: 6px; border: 3px solid #0C0A10; }
+.pb-panel-body::-webkit-scrollbar-thumb { background: rgba(181,139,92,.2); border-radius: 6px; border: 3px solid #14110E; }
 
 .pb-search {
   width: 100%; box-sizing: border-box;
-  background: #151109; border: 1px solid rgba(201,168,76,.2); color: #fff;
+  background: #1E1A15; border: 1px solid rgba(181,139,92,.2); color: #fff;
   padding: 11px 14px; border-radius: 10px; font-size: 13px; font-family: inherit; outline: none;
 }
-.pb-search:focus { border-color: rgba(201,168,76,.55); }
+.pb-search:focus { border-color: rgba(181,139,92,.55); }
 
 .pb-cat-head {
   width: 100%; display: flex; align-items: center; gap: 9px;
   background: none; border: none; cursor: pointer; padding: 8px 2px;
   font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
-  color: #C9A84C; font-family: inherit;
+  color: #B58B5C; font-family: inherit;
 }
-.pb-cat-count { font-size: 10px; color: #77715f; background: rgba(255,255,255,.06); padding: 2px 8px; border-radius: 9px; letter-spacing: 0; }
+.pb-cat-count { font-size: 10px; color: #8A7B6B; background: rgba(232,216,198,.065); padding: 2px 8px; border-radius: 9px; letter-spacing: 0; }
 
 .pb-widget {
   display: flex; align-items: center; gap: 13px;
-  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  background: rgba(232,216,198,.035); border: 1px solid rgba(181,139,92,.16);
   border-radius: 12px; padding: 12px 13px; cursor: grab; user-select: none;
   transition: all .16s ease;
 }
-.pb-widget:hover { background: rgba(201,168,76,.1); border-color: rgba(201,168,76,.4); transform: translateX(3px); }
+.pb-widget:hover { background: rgba(181,139,92,.1); border-color: rgba(181,139,92,.4); transform: translateX(3px); }
 .pb-widget:active { cursor: grabbing; }
 .pb-widget-icon {
   width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
-  background: rgba(201,168,76,.13); border: 1px solid rgba(201,168,76,.22);
-  display: flex; align-items: center; justify-content: center; font-size: 16px; color: #C9A84C;
+  background: rgba(181,139,92,.13); border: 1px solid rgba(181,139,92,.22);
+  display: flex; align-items: center; justify-content: center; font-size: 16px; color: #B58B5C;
 }
-.pb-widget-name { display: block; font-size: 13px; font-weight: 600; color: #EDE7DA; line-height: 1.3; }
+.pb-widget-name { display: block; font-size: 13px; font-weight: 600; color: #F4EFE6; line-height: 1.3; }
 .pb-widget-desc {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  font-size: 11px; color: #77715f; margin-top: 3px; line-height: 1.45;
+  font-size: 11px; color: #8A7B6B; margin-top: 3px; line-height: 1.45;
 }
-.pb-widget-grab { color: #4a463d; font-size: 13px; flex-shrink: 0; }
+.pb-widget-grab { color: #6B5D50; font-size: 13px; flex-shrink: 0; }
 
 .pb-layer-row {
   display: flex; align-items: center; gap: 9px;
   padding: 9px 11px; border-radius: 9px; cursor: pointer;
-  border: 1px solid transparent; font-size: 12.5px; color: #cfc7b6;
+  border: 1px solid transparent; font-size: 12.5px; color: #C5B6A5;
   background: transparent; font-family: inherit;
 }
-.pb-layer-row:hover { background: rgba(255,255,255,.05); }
+.pb-layer-row:hover { background: rgba(232,216,198,.055); }
 
 .pb-icon-btn {
   width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-  color: #A8A08C; cursor: pointer; font-size: 13px;
+  background: rgba(232,216,198,.055); border: 1px solid rgba(181,139,92,.22);
+  color: #C5B6A5; cursor: pointer; font-size: 13px;
 }
-.pb-icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.pb-icon-btn:hover { background: rgba(181,139,92,.22); color: #fff; }
 
 .pb-reopen {
   position: absolute; right: 20px; top: 20px; z-index: 60;
   width: 46px; height: 46px; border-radius: 14px;
-  background: #C9A84C; border: none; color: #17130A; font-size: 19px;
+  background: #B58B5C; border: none; color: #0C0A08; font-size: 19px;
   cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5);
 }
 
 /* ---------------------------------------------------------------- canvas */
 .pb-stage {
   flex: 1; min-width: 0; display: flex; flex-direction: column;
-  background: #08070A;
-  background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+  background: #0C0A08;
+  background-image: radial-gradient(rgba(232,216,198,.05) 1px, transparent 1px);
   background-size: 26px 26px;
 }
 .pb-stage-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 22px; border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 10px 22px; border-bottom: 1px solid rgba(232,216,198,.065);
   background: rgba(12,10,16,.75);
 }
-.pb-stage-meta { font-size: 11.5px; color: #A8A08C; font-weight: 600; }
+.pb-stage-meta { font-size: 11.5px; color: #C5B6A5; font-weight: 600; }
 .pb-stage-scroll { flex: 1; overflow-y: auto; padding: 20px 20px 80px; }
 .pb-stage-scroll::-webkit-scrollbar { width: 12px; }
-.pb-stage-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 7px; border: 3px solid #08070A; }
+.pb-stage-scroll::-webkit-scrollbar-thumb { background: rgba(181,139,92,.22); border-radius: 7px; border: 3px solid #0C0A08; }
 
 .pb-device-frame {
   max-width: 100%; margin: 0 auto;
   border-radius: 16px; overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.07);
+  box-shadow: 0 30px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(181,139,92,.16);
   transition: width .3s cubic-bezier(.22,.61,.36,1);
 }
 .pb-browser-chrome {
   display: flex; align-items: center; gap: 7px;
-  padding: 11px 16px; background: #17151D; border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 11px 16px; background: #1E1A15; border-bottom: 1px solid rgba(232,216,198,.065);
 }
 .pb-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
 .pb-url {
-  margin-left: 12px; flex: 1; font-size: 11px; color: #6f6a5d; font-family: monospace;
+  margin-left: 12px; flex: 1; font-size: 11px; color: #8A7B6B; font-family: monospace;
   background: rgba(0,0,0,.35); padding: 5px 12px; border-radius: 7px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .pb-empty {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 90px 32px; text-align: center; color: #6f6a5d;
+  padding: 90px 32px; text-align: center; color: #8A7B6B;
 }
-.pb-empty h3 { margin: 6px 0 0; color: #C9A84C; font-size: 19px; }
+.pb-empty h3 { margin: 6px 0 0; color: #B58B5C; font-size: 19px; }
 .pb-empty p { margin: 0; font-size: 13.5px; max-width: 400px; line-height: 1.65; }
 
 /* ------------------------------------------------------- editing affordances */
 .pb-canvas .pb-editable { cursor: pointer; }
-.pb-canvas .pb-editable:hover { outline: 1px dashed rgba(201,168,76,.5); outline-offset: 2px; }
-.pb-canvas .pb-selected { outline: 2px solid #C9A84C !important; outline-offset: 2px; }
+.pb-canvas .pb-editable:hover { outline: 1px dashed rgba(181,139,92,.5); outline-offset: 2px; }
+.pb-canvas .pb-selected { outline: 2px solid #B58B5C !important; outline-offset: 2px; }
 .pb-canvas .pb-drop-inside { outline: 2px dashed #7CE0A0 !important; outline-offset: -4px; background-image: linear-gradient(rgba(124,224,160,.08), rgba(124,224,160,.08)); }
 .pb-canvas .pb-drop-before { box-shadow: 0 -3px 0 0 #7CE0A0; }
 .pb-canvas .pb-drop-after { box-shadow: 0 3px 0 0 #7CE0A0; }
 .pb-toolbar {
   position: absolute; top: -30px; right: 0; z-index: 999;
   display: flex; align-items: center; gap: 2px;
-  background: #C9A84C; color: #17130A;
+  background: #B58B5C; color: #0C0A08;
   border-radius: 9px 9px 0 0; padding: 4px 9px;
   font-size: 11px; font-weight: 700; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif; box-shadow: 0 -3px 12px rgba(0,0,0,.35);
+  font-family: var(--font-serif); box-shadow: 0 -3px 12px rgba(0,0,0,.35);
 }
 .pb-toolbar-name { padding-right: 8px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
-.pb-toolbar button { background: none; border: none; cursor: pointer; font-size: 12px; padding: 3px 6px; color: #17130A; border-radius: 5px; }
+.pb-toolbar button { background: none; border: none; cursor: pointer; font-size: 12px; padding: 3px 6px; color: #0C0A08; border-radius: 5px; }
 .pb-toolbar button:hover { background: rgba(0,0,0,.18); }
-.pb-canvas .pb-rich a { color: #C9A84C; }
+.pb-canvas .pb-rich a { color: #B58B5C; }
+@keyframes pb-pulse { 0%,100% { opacity: .35; } 50% { opacity: .7; } }
+.pb-live-card:hover { transform: translateY(-4px); border-color: rgba(181,139,92,.6) !important; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
 
 /* --------------------------------------------------------- full-page preview */
 .pb-preview-overlay {
   position: fixed; inset: 0; z-index: 900;
-  background: #050403; display: flex; flex-direction: column;
+  background: #0C0A08; display: flex; flex-direction: column;
   animation: pb-preview-in .22s ease;
 }
 @keyframes pb-preview-in { from { opacity: 0; } to { opacity: 1; } }
 .pb-preview-bar {
   display: flex; align-items: center; gap: 18px;
-  padding: 12px 22px; background: #100E14;
-  border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap;
+  padding: 12px 22px; background: #14110E;
+  border-bottom: 1px solid rgba(181,139,92,.18); flex-wrap: wrap;
 }
 .pb-preview-scroll { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 0; }
 .pb-preview-frame {
   max-width: 100%; min-height: 100%;
   transition: width .3s cubic-bezier(.22,.61,.36,1);
   box-shadow: 0 0 60px rgba(0,0,0,.6);
-  color: #E0D7CD;
+  color: #C5B6A5;
 }
 .pb-preview-main { width: 100%; margin: 0 auto; padding: 40px 20px 90px; box-sizing: border-box; }
 .pb-preview-scroll::-webkit-scrollbar { width: 12px; }
-.pb-preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 7px; border: 3px solid #050403; }
+.pb-preview-scroll::-webkit-scrollbar-thumb { background: rgba(181,139,92,.26); border-radius: 7px; border: 3px solid #0C0A08; }
 
 /* Drag handle between a panel and the canvas */
 .pb-resizer {
@@ -1604,9 +1806,9 @@ const EDITOR_CSS = `
   content: ''; position: absolute; inset: 0 2px;
   border-radius: 3px; background: transparent; transition: background .15s ease;
 }
-.pb-resizer:hover::after, .pb-resizer:active::after { background: rgba(201,168,76,.55); }
+.pb-resizer:hover::after, .pb-resizer:active::after { background: rgba(181,139,92,.55); }
 
 .pb-btn-on {
-  background: rgba(201,168,76,.18); border-color: #C9A84C; color: #C9A84C;
+  background: rgba(181,139,92,.18); border-color: #B58B5C; color: #B58B5C;
 }
 `;

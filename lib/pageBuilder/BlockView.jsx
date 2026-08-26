@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { ICON_LIBRARY, isContainerBlock } from "./schema";
 import { resolveValue, blockClassName } from "./styles";
+import { AppSection, APP_SECTION_TYPES } from "./AppSections";
 
 const normalizeIgUrl = (u) => {
   if (!u) return "";
@@ -57,7 +58,7 @@ function iconShellStyle(shape, color, size) {
     width: size * 2.1,
     height: size * 2.1,
     borderRadius: shape === "circle" ? "50%" : Math.round(size * 0.5),
-    background: "rgba(201, 168, 76, 0.12)",
+    background: "rgba(181, 139, 92, 0.12)",
     border: `1px solid ${color}44`,
   };
 }
@@ -71,7 +72,7 @@ function buttonStyleFor(style, color, textColor) {
   }
   if (style === "gradient") {
     return {
-      background: `linear-gradient(135deg, ${color} 0%, #E8D48B 50%, ${color} 100%)`,
+      background: `linear-gradient(135deg, ${color} 0%, #CBA378 50%, ${color} 100%)`,
       color: textColor || "#000",
       border: "none",
     };
@@ -80,7 +81,7 @@ function buttonStyleFor(style, color, textColor) {
 }
 
 function InlineButton({ text, link, style, color, textColor, icon, iconPosition, newTab }) {
-  const skin = buttonStyleFor(style, color || "#C9A84C", textColor);
+  const skin = buttonStyleFor(style, color || "#B58B5C", textColor);
   return (
     <a
       href={link || "#"}
@@ -201,7 +202,7 @@ function Accordion({ block, accent }) {
 }
 
 function SingleFaq({ block, ctx, index }) {
-  const accent = block.textColor || "#C9A84C";
+  const accent = block.textColor || "#B58B5C";
   const key = block.id || index;
   const isOpen = ctx.faqState ? !!ctx.faqState[key] : !!block.initialOpen;
   const marker = block.iconStyle === "chevron" ? (isOpen ? "⌃" : "⌄") : block.iconStyle === "arrow" ? (isOpen ? "↓" : "→") : isOpen ? "−" : "+";
@@ -285,13 +286,13 @@ function LightSwitch({ block, ctx }) {
         alignItems: "center",
         gap: 14,
         background: "rgba(20, 15, 10, 0.8)",
-        border: "1px solid rgba(201, 168, 76, 0.3)",
+        border: "1px solid rgba(181, 139, 92, 0.3)",
         padding: "8px 20px",
         borderRadius: 30,
         boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)",
       }}
     >
-      <span style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.15em", color: "var(--accent, #C9A84C)", textTransform: "uppercase", fontWeight: 700 }}>
+      <span style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.15em", color: "var(--accent, #B58B5C)", textTransform: "uppercase", fontWeight: 700 }}>
         {block.label || "Studio Light"}
       </span>
       <button
@@ -304,8 +305,8 @@ function LightSwitch({ block, ctx }) {
         style={{
           width: 44,
           height: 22,
-          background: on ? "var(--accent, #C9A84C)" : "#1c150c",
-          border: "1px solid var(--border2, rgba(201,168,76,0.35))",
+          background: on ? "var(--accent, #B58B5C)" : "#1c150c",
+          border: "1px solid var(--border2, rgba(181,139,92,0.35))",
           borderRadius: 12,
           position: "relative",
           cursor: "pointer",
@@ -335,7 +336,7 @@ function LightSwitch({ block, ctx }) {
 function ReelsGallery({ block, device, isEditor }) {
   const reels = Array.isArray(block.reels) ? block.reels : [];
   const cols = parseInt(resolveValue(block, "columns", device) || 3, 10);
-  const accent = block.textColor || "#C9A84C";
+  const accent = block.textColor || "#B58B5C";
   const isCarousel = (block.layout || "carousel") === "carousel";
 
   return (
@@ -401,7 +402,7 @@ function ReelsGallery({ block, device, isEditor }) {
 
 function BlockInner({ block, device, ctx, index }) {
   const type = block.type || block.blockType;
-  const accent = block.accentColor || block.textColor || "#C9A84C";
+  const accent = block.accentColor || block.textColor || "#B58B5C";
   const isEditor = !!ctx.isEditor;
 
   switch (type) {
@@ -459,7 +460,7 @@ function BlockInner({ block, device, ctx, index }) {
               width: block.lineWidth || "100%",
               borderTopWidth: parseInt(block.lineThickness || 1, 10),
               borderTopStyle: block.lineStyle || "solid",
-              borderTopColor: block.lineColor || "rgba(201,168,76,.5)",
+              borderTopColor: block.lineColor || "rgba(181,139,92,.5)",
             }}
           />
         </div>
@@ -611,7 +612,7 @@ function BlockInner({ block, device, ctx, index }) {
       const textNode = (
         <div style={{ minWidth: 0 }}>
           {block.title && (
-            <h4 style={{ margin: "0 0 8px", fontSize: parseInt(resolveValue(block, "titleSize", device) || 18, 10), color: block.titleColor || "#F5F0E8", fontFamily: "inherit", fontWeight: 700 }}>
+            <h4 style={{ margin: "0 0 8px", fontSize: parseInt(resolveValue(block, "titleSize", device) || 18, 10), color: block.titleColor || "#F4EFE6", fontFamily: "inherit", fontWeight: 700 }}>
               {block.title}
             </h4>
           )}
@@ -691,7 +692,7 @@ function BlockInner({ block, device, ctx, index }) {
               {block.showValue !== false && <span style={{ color: accent, fontWeight: 700 }}>{pct}%</span>}
             </div>
           )}
-          <div style={{ width: "100%", height: parseInt(block.barHeight || 10, 10), background: block.trackColor || "rgba(255,255,255,.08)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ width: "100%", height: parseInt(block.barHeight || 10, 10), background: block.trackColor || "rgba(181,139,92,.18)", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${pct}%`, height: "100%", background: block.barColor || accent, borderRadius: 999, transition: "width .6s ease" }} />
           </div>
         </div>
@@ -717,9 +718,9 @@ function BlockInner({ block, device, ctx, index }) {
             )}
             <tbody>
               {rows.map((row, ri) => (
-                <tr key={ri} style={{ background: block.striped && ri % 2 ? "rgba(255,255,255,.03)" : "transparent" }}>
+                <tr key={ri} style={{ background: block.striped && ri % 2 ? "rgba(232,216,198,.035)" : "transparent" }}>
                   {(Array.isArray(row) ? row : []).map((cell, ci) => (
-                    <td key={ci} style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+                    <td key={ci} style={{ padding: "12px 14px", borderBottom: "1px solid rgba(181,139,92,.16)" }}>
                       {cell}
                     </td>
                   ))}
@@ -740,7 +741,7 @@ function BlockInner({ block, device, ctx, index }) {
               {block.ribbonBadge}
             </span>
           )}
-          <h3 style={{ margin: "0 0 8px", fontSize: 22, color: "#F5F0E8", fontFamily: "inherit" }}>{block.title}</h3>
+          <h3 style={{ margin: "0 0 8px", fontSize: 22, color: "#F4EFE6", fontFamily: "inherit" }}>{block.title}</h3>
           <div style={{ fontSize: 38, fontWeight: 800, color: accent, lineHeight: 1.1 }}>
             {block.currency} {block.price}
           </div>
@@ -764,7 +765,7 @@ function BlockInner({ block, device, ctx, index }) {
       return (
         <div>
           <div style={{ color: accent, fontSize: 18, marginBottom: 10, letterSpacing: 2 }}>{"★".repeat(parseInt(block.rating || 5, 10))}</div>
-          <p style={{ margin: "0 0 16px", fontStyle: "italic", fontSize: 16, color: "#F5F0E8", lineHeight: 1.65 }}>“{block.quote}”</p>
+          <p style={{ margin: "0 0 16px", fontStyle: "italic", fontSize: 16, color: "#F4EFE6", lineHeight: 1.65 }}>“{block.quote}”</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {block.avatarUrl && <img src={block.avatarUrl} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />}
             <div style={{ fontSize: 13, fontWeight: 700, color: accent }}>
@@ -862,6 +863,30 @@ function BlockInner({ block, device, ctx, index }) {
     case "video-reels":
       return <ReelsGallery block={block} device={device} isEditor={isEditor} />;
 
+    case "coded-section": {
+      // On the real page the section's React lives in ctx.sectionNodes; in the
+      // editor there is nothing to mount, so show what it is and where it sits.
+      const node = ctx.sectionNodes ? ctx.sectionNodes[block.sectionId] : null;
+      if (node) return node;
+      const label = block.sectionLabel || block.sectionId || "Coded section";
+      return (
+        <div style={{ border: "1px dashed rgba(181,139,92,.5)", borderRadius: 12, background: "linear-gradient(160deg, rgba(181,139,92,.09), rgba(181,139,92,.02))", padding: "26px 22px", display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 11, background: "rgba(181,139,92,.16)", border: "1px solid rgba(181,139,92,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#B58B5C" }}>⬓</span>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 16, fontWeight: 700, color: "#F4EFE6" }}>{label}</span>
+            <span style={{ display: "block", fontSize: 12.5, color: "#9A8A79", marginTop: 4, lineHeight: 1.55 }}>
+              {block.sectionHint || "Built in React — renders live on the page. Drag to reorder, or style its wrapper from the inspector."}
+            </span>
+          </span>
+        </div>
+      );
+    }
+
+    case "product-grid":
+    case "services-grid":
+    case "category-tiles":
+      return <AppSection block={block} device={device} ctx={ctx} />;
+
     case "studio-lamp":
       return <StudioLamp block={block} ctx={ctx} device={device} />;
 
@@ -877,7 +902,7 @@ function BlockInner({ block, device, ctx, index }) {
           {Array.from({ length: count }).map((_, i) => {
             const n = i + 1;
             return (
-              <div key={n} style={{ background: "rgba(20,12,6,.6)", border: "1px solid rgba(201,168,76,.2)", borderRadius: 12, padding: 22, minHeight: block.colMinHeight || undefined }}>
+              <div key={n} style={{ background: "rgba(20,12,6,.6)", border: "1px solid rgba(181,139,92,.2)", borderRadius: 12, padding: 22, minHeight: block.colMinHeight || undefined }}>
                 {block[`col${n}Type`] === "image" ? (
                   <img src={block[`col${n}Image`] || "/images/bespoke_framing.png"} alt="" style={{ width: "100%", borderRadius: 8, display: "block" }} />
                 ) : (
@@ -959,7 +984,7 @@ export default function BlockView({ block, device = "desktop", ctx = {}, index =
         <BlockInner block={block} device={device} ctx={ctx} index={index} />
       )}
       {isContainer && ctx.isEditor && (block.children || []).length === 0 && (
-        <div style={{ flex: 1, minHeight: 90, border: "1px dashed rgba(201,168,76,.45)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "rgba(201,168,76,.75)", gridColumn: "1 / -1" }}>
+        <div style={{ flex: 1, minHeight: 90, border: "1px dashed rgba(181,139,92,.45)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "rgba(181,139,92,.75)", gridColumn: "1 / -1" }}>
           Drop widgets here
         </div>
       )}

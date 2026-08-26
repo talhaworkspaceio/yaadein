@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CardDescription from "../components/CardDescription";
 import { useCatalogPageContent } from "../../lib/cms";
+import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -265,6 +266,540 @@ export default function CatalogPage() {
       </div>
     );
   };
+
+  // ---- Section registry (see lib/pageBuilder/sectionLayout) ------------
+  const catalogSectionNodes = {
+      hero: (
+        <>
+      <div className="hero-banner">
+        {/* Suspended Brass Lamp on top of Our Catalog heading */}
+        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
+          <div className="lamp-rod" />
+          <div className="lamp-mount" />
+          <div className="lamp-arm" />
+          <div className="lamp-head">
+            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
+          </div>
+
+          {/* Light beam */}
+          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
+
+          {/* Lamp glow & particle system */}
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
+            <div className="glow"></div>
+            <div className="particles">
+              <div className="rotate">
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="angle">
+                  <div className="size">
+                    <div className="position">
+                      <div className="pulse">
+                        <div className="particle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+
+        {catalogCms?.bannerEyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{catalogCms.bannerEyebrow}</span>}
+        <h1 className="hero-title">{catalogCms?.bannerTitle || catalogCms?.title || "Our Catalog"}</h1>
+        <p className="hero-desc">
+          {catalogCms?.bannerSubtitle || catalogCms?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
+        </p>
+
+
+
+        {/* Toggle switch panel */}
+        <div className="light-control-panel">
+          <span className="light-control-label">Studio Light</span>
+          <button
+            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
+            onClick={() => setLightOn(!lightOn)}
+            aria-label="Toggle Studio Light"
+          >
+            <span className="light-switch-knob" />
+          </button>
+        </div>
+      </div>
+
+        </>
+      ),
+      content: (
+        <>
+      <section className="exhibition-section">
+        {/* Dynamic liquid backdrop elements */}
+        <div className="catalog-glass-bg">
+          <div className="liquid-blob-1" />
+          <div className="liquid-blob-2" />
+          <div className="catalog-glow" />
+        </div>
+
+        {/* Frosted Glass overlay sheet */}
+        <div className="catalog-glass-pane" />
+
+        <div className="exhibition-container">
+          {products.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
+              Loading frame catalog...
+            </div>
+          ) : (
+            <div className="carousels-container">
+              {/* NEW ARRIVALS SECTION */}
+              {newArrivalsProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">New Arrivals</h2>
+                    </div>
+                    <p className="carousel-section-desc">Handcrafted items fresh from our workshops, added within the last 7 days.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {newArrivalsIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setNewArrivalsIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${newArrivalsTranslation})` }}>
+                          {newArrivalsProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {newArrivalsIndex < newArrivalsProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setNewArrivalsIndex(p => Math.min(newArrivalsProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PORTRAIT SECTION */}
+              {portraitProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Portrait Frames</h2>
+                      <a href="/catalog/portrait" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {portraitIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setPortraitIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${portraitTranslation})` }}>
+                          {portraitProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {portraitIndex < portraitProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setPortraitIndex(p => Math.min(portraitProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* LANDSCAPE SECTION */}
+              {landscapeProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Landscape Frames</h2>
+                      <a href="/catalog/landscape" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Timeless horizontal borders crafted for panoramas, landscapes, and wide memories.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {landscapeIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setLandscapeIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${landscapeTranslation})` }}>
+                          {landscapeProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {landscapeIndex < landscapeProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setLandscapeIndex(p => Math.min(landscapeProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BOARD GAMES SECTION */}
+              {boardGamesProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Board Games</h2>
+                      <a href="/catalog/board-games" className="carousel-view-all-link">
+                        View All &rarr;
+                      </a>
+                    </div>
+                    <p className="carousel-section-desc">Luxury wooden board games crafted for family fun and timeless aesthetic value.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {boardGamesIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setBoardGamesIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${boardGamesTranslation})` }}>
+                          {boardGamesProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {boardGamesIndex < boardGamesProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setBoardGamesIndex(p => Math.min(boardGamesProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+        </>
+      ),
+    };
 
   return (
     <div className="catalog-root">
@@ -1459,528 +1994,7 @@ export default function CatalogPage() {
 
       <Navbar onCartOpen={() => setCartOpen(true)} />
 
-      <div className="hero-banner">
-        {/* Suspended Brass Lamp on top of Our Catalog heading */}
-        <div className={`exquisite-lamp catalog-lamp ${lightOn ? 'on' : ''}`}>
-          <div className="lamp-rod" />
-          <div className="lamp-mount" />
-          <div className="lamp-arm" />
-          <div className="lamp-head">
-            <div className={`lamp-bulb ${lightOn ? 'on' : ''}`} />
-          </div>
-
-          {/* Light beam */}
-          <div className={`lamp-light-beam ${lightOn ? 'on' : ''}`} />
-
-          {/* Lamp glow & particle system */}
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={`lamp-glow-container exquisite-glow-container ${lightOn ? 'on' : ''}`}>
-            <div className="glow"></div>
-            <div className="particles">
-              <div className="rotate">
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="angle">
-                  <div className="size">
-                    <div className="position">
-                      <div className="pulse">
-                        <div className="particle"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-        </div>
-
-        {catalogCms?.bannerEyebrow && <span className="hero-eyebrow" style={{ color: "var(--accent)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", display: "block", marginBottom: "8px" }}>{catalogCms.bannerEyebrow}</span>}
-        <h1 className="hero-title">{catalogCms?.bannerTitle || catalogCms?.title || "Our Catalog"}</h1>
-        <p className="hero-desc">
-          {catalogCms?.bannerSubtitle || catalogCms?.subtitle || "Choose from our bespoke frame profiles. Select a style to launch it instantly in our interactive studio builder."}
-        </p>
-
-
-
-        {/* Toggle switch panel */}
-        <div className="light-control-panel">
-          <span className="light-control-label">Studio Light</span>
-          <button
-            className={`light-switch-btn ${lightOn ? 'on' : ''}`}
-            onClick={() => setLightOn(!lightOn)}
-            aria-label="Toggle Studio Light"
-          >
-            <span className="light-switch-knob" />
-          </button>
-        </div>
-      </div>
-
-      <section className="exhibition-section">
-        {/* Dynamic liquid backdrop elements */}
-        <div className="catalog-glass-bg">
-          <div className="liquid-blob-1" />
-          <div className="liquid-blob-2" />
-          <div className="catalog-glow" />
-        </div>
-
-        {/* Frosted Glass overlay sheet */}
-        <div className="catalog-glass-pane" />
-
-        <div className="exhibition-container">
-          {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-              Loading frame catalog...
-            </div>
-          ) : (
-            <div className="carousels-container">
-              {/* NEW ARRIVALS SECTION */}
-              {newArrivalsProducts.length > 0 && (
-                <div className="carousel-section">
-                  <div className="carousel-section-header">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <h2 className="carousel-section-title">New Arrivals</h2>
-                    </div>
-                    <p className="carousel-section-desc">Handcrafted items fresh from our workshops, added within the last 7 days.</p>
-                  </div>
-                  <div className="carousel-row">
-                    <div className="carousel-viewport-wrapper">
-                      {newArrivalsIndex > 0 && (
-                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setNewArrivalsIndex(p => Math.max(0, p - 1))}>
-                          &larr;
-                        </button>
-                      )}
-                      <div className="carousel-viewport">
-                        <div className="carousel-track" style={{ transform: `translateX(${newArrivalsTranslation})` }}>
-                          {newArrivalsProducts.map((p) => (
-                            <div className="carousel-slide" key={p.id}>
-                              {renderProductCard(p)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {newArrivalsIndex < newArrivalsProducts.length - itemsPerPage && (
-                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setNewArrivalsIndex(p => Math.min(newArrivalsProducts.length - itemsPerPage, p + 1))}>
-                          &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* PORTRAIT SECTION */}
-              {portraitProducts.length > 0 && (
-                <div className="carousel-section">
-                  <div className="carousel-section-header">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <h2 className="carousel-section-title">Portrait Frames</h2>
-                      <a href="/catalog/portrait" className="carousel-view-all-link">
-                        View All &rarr;
-                      </a>
-                    </div>
-                    <p className="carousel-section-desc">Bespoke vertical wood profiles designed for portraits, headshots, and vertical moments.</p>
-                  </div>
-                  <div className="carousel-row">
-                    <div className="carousel-viewport-wrapper">
-                      {portraitIndex > 0 && (
-                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setPortraitIndex(p => Math.max(0, p - 1))}>
-                          &larr;
-                        </button>
-                      )}
-                      <div className="carousel-viewport">
-                        <div className="carousel-track" style={{ transform: `translateX(${portraitTranslation})` }}>
-                          {portraitProducts.map((p) => (
-                            <div className="carousel-slide" key={p.id}>
-                              {renderProductCard(p)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {portraitIndex < portraitProducts.length - itemsPerPage && (
-                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setPortraitIndex(p => Math.min(portraitProducts.length - itemsPerPage, p + 1))}>
-                          &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* LANDSCAPE SECTION */}
-              {landscapeProducts.length > 0 && (
-                <div className="carousel-section">
-                  <div className="carousel-section-header">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <h2 className="carousel-section-title">Landscape Frames</h2>
-                      <a href="/catalog/landscape" className="carousel-view-all-link">
-                        View All &rarr;
-                      </a>
-                    </div>
-                    <p className="carousel-section-desc">Timeless horizontal borders crafted for panoramas, landscapes, and wide memories.</p>
-                  </div>
-                  <div className="carousel-row">
-                    <div className="carousel-viewport-wrapper">
-                      {landscapeIndex > 0 && (
-                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setLandscapeIndex(p => Math.max(0, p - 1))}>
-                          &larr;
-                        </button>
-                      )}
-                      <div className="carousel-viewport">
-                        <div className="carousel-track" style={{ transform: `translateX(${landscapeTranslation})` }}>
-                          {landscapeProducts.map((p) => (
-                            <div className="carousel-slide" key={p.id}>
-                              {renderProductCard(p)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {landscapeIndex < landscapeProducts.length - itemsPerPage && (
-                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setLandscapeIndex(p => Math.min(landscapeProducts.length - itemsPerPage, p + 1))}>
-                          &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* BOARD GAMES SECTION */}
-              {boardGamesProducts.length > 0 && (
-                <div className="carousel-section">
-                  <div className="carousel-section-header">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <h2 className="carousel-section-title">Board Games</h2>
-                      <a href="/catalog/board-games" className="carousel-view-all-link">
-                        View All &rarr;
-                      </a>
-                    </div>
-                    <p className="carousel-section-desc">Luxury wooden board games crafted for family fun and timeless aesthetic value.</p>
-                  </div>
-                  <div className="carousel-row">
-                    <div className="carousel-viewport-wrapper">
-                      {boardGamesIndex > 0 && (
-                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setBoardGamesIndex(p => Math.max(0, p - 1))}>
-                          &larr;
-                        </button>
-                      )}
-                      <div className="carousel-viewport">
-                        <div className="carousel-track" style={{ transform: `translateX(${boardGamesTranslation})` }}>
-                          {boardGamesProducts.map((p) => (
-                            <div className="carousel-slide" key={p.id}>
-                              {renderProductCard(p)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {boardGamesIndex < boardGamesProducts.length - itemsPerPage && (
-                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setBoardGamesIndex(p => Math.min(boardGamesProducts.length - itemsPerPage, p + 1))}>
-                          &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
+      <SectionLayoutRenderer pageId="catalog" nodes={catalogSectionNodes} ctx={{ isEditor: false, lightOn: true }} />
       <Footer />
 
       {/* CART DRAWER SLIDE-OVER */}
