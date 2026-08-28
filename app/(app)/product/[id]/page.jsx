@@ -7,6 +7,7 @@ import { ref, onValue } from "firebase/database";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import FrameLoader from "../../components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -107,27 +108,7 @@ const ProductPageLoader = () => (
     justifyContent: "center",
     fontFamily: "var(--font-serif)"
   }}>
-    <style dangerouslySetInnerHTML={{
-      __html: `
-      @keyframes loaderSpin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `}} />
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ animation: "loaderSpin 1.2s linear infinite" }}
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-    <span style={{ fontSize: "12px", letterSpacing: "0.08em", color: "var(--text2)", textTransform: "uppercase" }}>Loading product details...</span>
+<FrameLoader variant="page" label="Loading product details" />
   </div>
 );
 

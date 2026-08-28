@@ -8,6 +8,7 @@ import Footer from "../components/Footer";
 import CardDescription from "../components/CardDescription";
 import { useCatalogPageContent } from "../../lib/cms";
 import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
+import FrameLoader from "../components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -639,9 +640,7 @@ export default function CatalogPage() {
 
         <div className="exhibition-container">
           {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-              Loading frame catalog...
-            </div>
+            <FrameLoader variant="page" label="Loading frame catalog" />
           ) : (
             <div className="carousels-container">
               {/* NEW ARRIVALS SECTION */}

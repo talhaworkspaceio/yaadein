@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useTrackPageContent } from "../../lib/cms";
 import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
+import FrameLoader from "../components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -539,7 +540,12 @@ export default function TrackOrderPage() {
                 className="order-search-input"
               />
               <button type="submit" className="btn-premium btn-track" disabled={loading}>
-                {loading ? "Searching..." : (trackCms?.buttonText || "Track Status")}
+                {loading ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                    <FrameLoader variant="button" label="Searching" />
+                    Searching
+                  </span>
+                ) : (trackCms?.buttonText || "Track Status")}
               </button>
             </form>
 

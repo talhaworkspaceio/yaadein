@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
+import FrameLoader from "../../../components/FrameLoader";
 
 export const normalizeIgUrl = (u) => {
   if (!u) return "";
@@ -171,7 +172,7 @@ export default function AdminReelsPage() {
   };
 
   if (loading) {
-    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Instagram Reels...</div>;
+    return <FrameLoader variant="page" label="Loading Instagram reels" />;
   }
 
   return (

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas";
 import { db } from "../../lib/firebase";
 import { ref, onValue } from "firebase/database";
+import FrameLoader from "../components/FrameLoader";
 
 // Local Storage Helper Methods
 const getCart = () => {
@@ -1355,7 +1356,7 @@ function FrameCustomizer() {
               <p className="section-label">Choose Frame</p>
 
               {frames.length === 0 ? (
-                <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text2)", fontSize: "12px" }}>Loading frames...</div>
+                <FrameLoader label="Loading frames" size={44} />
               ) : (
                 <div className="frame-grid">
                   {frames.map((f) => (
@@ -1662,16 +1663,8 @@ function FrameCustomizer() {
 export default function CustomizePage() {
   return (
     <Suspense fallback={
-      <div style={{
-        minHeight: "100vh",
-        background: "#0F0D0B",
-        color: "#A09880",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "'DM Sans', sans-serif"
-      }}>
-        Loading Frame Customizer...
+      <div style={{ minHeight: "100vh", background: "#0F0D0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <FrameLoader variant="page" label="Loading frame customizer" />
       </div>
     }>
       <FrameCustomizer />

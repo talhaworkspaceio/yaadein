@@ -8,6 +8,7 @@ import { ref, onValue } from "firebase/database";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import BeforeAfterSlider from "../../components/BeforeAfterSlider";
+import FrameLoader from "../../components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -465,6 +466,10 @@ export default function ServiceDetailPage({ params }) {
   // Active slide index for restoration swiper
   const [activeSlide, setActiveSlide] = useState(0);
 
+  // Wall gallery slider (the same showcase the product pages use), seeded from
+  // the service's own photos so each service shows its own work.
+  const [wallSlides, setWallSlides] = useState([]);
+
   // Frame currently shown on the studio stage. On framed services the swiper
   // arrows walk this through every available frame while the photo stays put.
   // Purely visual — pricing still follows the "Choose Frame" picker below.
@@ -581,10 +586,12 @@ export default function ServiceDetailPage({ params }) {
   // ----- Photo & Frame preview -----
   const currentPhoto = userUploadedImage || selectedGalleryPhoto || service?.image;
 
-  // Photo Editing and the Instagram Mirror are presented without a wooden frame,
-  // so their arrows keep swiping through the photos themselves.
-  const isFramelessService = slug === "photo-editing" || slug === "instagram-mirror-selfie";
-  const isFramedService = !isFramelessService;
+  // Whether this service is presented in a frame follows the CMS toggle: if the
+  // admin has turned off "Choose Frame", there is nothing to pick, so the studio
+  // image is shown bare. A frame picked by hand always wins.
+  const framingEnabled = service?.enableChooseFrame !== false;
+  const isFramedService = framingEnabled || !!selectedCustomFrame;
+  const isFramelessService = !isFramedService;
 
   const frameOrientation = service?.orientation === "landscape" ? "landscape" : "portrait";
 
@@ -666,6 +673,31 @@ export default function ServiceDetailPage({ params }) {
   const photosCyclable =
     (slug === "photo-restoration" || slug === "photo-editing") ||
     (service?.enableMultipleImages !== false && Array.isArray(service?.images) && service.images.length > 1);
+
+  // Re-seed the wall slider whenever the service's photo list changes.
+  useEffect(() => {
+    const imgs = (service?.images || []).filter(Boolean);
+    if (imgs.length === 0) {
+      setWallSlides([]);
+      return;
+    }
+    setWallSlides(
+      imgs.map((img, i) => ({
+        id: `${i}-${img}`,
+        title: `${service.title} #${i + 1}`,
+        description: service.tagline || "Handcrafted in our studio.",
+        imageUrl: img,
+      }))
+    );
+  }, [service?.images?.join("|"), service?.title, service?.tagline]);
+
+  const nextWallSlide = () => setWallSlides((prev) => (prev.length < 2 ? prev : [...prev.slice(1), prev[0]]));
+  const prevWallSlide = () => setWallSlides((prev) => (prev.length < 2 ? prev : [prev[prev.length - 1], ...prev.slice(0, -1)]));
+  const clickWallSlide = (index) => {
+    if (index <= 1) return;
+    const shift = index - 1;
+    setWallSlides((prev) => [...prev.slice(shift), ...prev.slice(0, shift)]);
+  };
 
   // ----- Upload handlers -----
   const handleImageUpload = (e) => {
@@ -785,33 +817,7 @@ export default function ServiceDetailPage({ params }) {
     return (
       <div className="services-root" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
         <Navbar onCartOpen={() => setCartOpen(true)} />
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "120px 20px",
-          gap: "20px"
-        }}>
-          <div style={{
-            width: 48,
-            height: 48,
-            border: "2px solid rgba(201, 168, 76, 0.15)",
-            borderTopColor: "var(--accent)",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-          }} />
-          <span style={{
-            fontFamily: "var(--font-typewriter)",
-            fontSize: "12px",
-            color: "var(--accent)",
-            letterSpacing: "0.15em",
-            textTransform: "uppercase"
-          }}>
-            Preparing Studio Experience...
-          </span>
-        </div>
+        <FrameLoader variant="page" label="Preparing studio experience" style={{ flex: 1 }} />
         <Footer />
       </div>
     );
@@ -2219,6 +2225,260 @@ export default function ServiceDetailPage({ params }) {
           transform: none !important;
         }
 
+        .wall-gallery-slider-section {
+          position: relative;
+          width: 100%;
+          height: 650px;
+          background: #090706;
+          border-top: 2px solid #1C0F07;
+          border-bottom: 2px solid #1C0F07;
+          overflow: hidden;
+          margin-top: 60px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .wall-slider-title-header {
+          position: absolute;
+          top: 30px;
+          left: 40px;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .wall-slider-heading {
+          font-family: var(--font-display);
+          font-size: 28px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: -0.01em;
+          text-shadow: 0 4px 10px rgba(0,0,0,0.9);
+          margin-bottom: 4px;
+        }
+
+        .wall-slider-subheading {
+          font-family: var(--font-serif);
+          font-size: 14px;
+          color: var(--text2);
+          text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+        }
+
+        .wall-slider-track {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .wall-slider-item {
+          width: 200px;
+          height: 300px;
+          position: absolute;
+          top: 55%;
+          transform: translateY(-50%);
+          z-index: 1;
+          background-position: center;
+          background-size: cover;
+          border-radius: 12px;
+          border: 3px solid #1C0F07;
+          outline: 1.5px solid rgba(212, 175, 55, 0.45);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.8);
+          transition: transform 0.2s, left 0.75s, top 0.75s, width 0.75s, height 0.75s, opacity 0.75s;
+          cursor: pointer;
+        }
+
+        .wall-slider-item:nth-child(1), .wall-slider-item:nth-child(2) {
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          transform: none;
+          border-radius: 0;
+          border: none;
+          outline: none;
+          box-shadow: none;
+          opacity: 1;
+          cursor: default;
+        }
+
+        .wall-slider-item:nth-child(3) { left: 50%; }
+        .wall-slider-item:nth-child(4) { left: calc(50% + 220px); }
+        .wall-slider-item:nth-child(5) { left: calc(50% + 440px); }
+        .wall-slider-item:nth-child(6) { left: calc(50% + 660px); opacity: 0; }
+        .wall-slider-item:nth-child(n+7) { left: calc(50% + 880px); opacity: 0; }
+
+        /* Dark overlay on background items */
+        .wall-slider-item::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to right, rgba(9, 7, 6, 0.75) 0%, rgba(9, 7, 6, 0.3) 40%, transparent 100%);
+          z-index: 2;
+          opacity: 0;
+          transition: opacity 0.75s ease;
+        }
+        .wall-slider-item:nth-child(1)::before, .wall-slider-item:nth-child(2)::before {
+          opacity: 1;
+        }
+
+        .wall-slider-content {
+          width: min(85vw, 420px);
+          position: absolute;
+          top: 50%;
+          left: 5%;
+          transform: translateY(-50%);
+          color: white;
+          z-index: 5;
+          opacity: 0;
+          display: none;
+        }
+
+        .wall-slider-item:nth-of-type(2) .wall-slider-content {
+          display: block;
+          animation: showWallContent 0.75s ease-in-out 0.3s forwards;
+        }
+
+        @keyframes showWallContent {
+          0% {
+            filter: blur(8px);
+            transform: translateY(calc(-50% + 75px));
+            opacity: 0;
+          }
+          100% {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(-50%);
+          }
+        }
+
+        .wall-slider-content-title {
+          font-family: var(--font-display);
+          font-size: 36px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: -0.01em;
+          color: #dfc38a;
+          margin-bottom: 12px;
+          text-shadow: 0 4px 8px rgba(0,0,0,0.8);
+        }
+
+        .wall-slider-content-description {
+          font-family: var(--font-serif);
+          font-size: 14.5px;
+          line-height: 1.6;
+          color: var(--text);
+          text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+          margin-bottom: 20px;
+        }
+
+        .wall-slider-content-btn {
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          background: rgba(212, 175, 55, 0.1);
+          color: var(--accent);
+          border: 1.5px solid var(--accent);
+          border-radius: 4px;
+          padding: 10px 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .wall-slider-content-btn:hover {
+          background: var(--accent);
+          color: #1A1100;
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .wall-slider-nav {
+          position: absolute;
+          bottom: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+          user-select: none;
+          display: flex;
+          gap: 12px;
+        }
+
+        .wall-slider-nav-btn {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: rgba(12, 10, 8, 0.9);
+          border: 1.5px solid rgba(212, 175, 55, 0.35);
+          color: var(--accent);
+          font-size: 20px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .wall-slider-nav-btn:hover {
+          background: var(--accent);
+          color: #0C0A08;
+          border-color: var(--accent);
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Responsive Media Queries */
+        @media (max-width: 900px) {
+          .wall-gallery-slider-section {
+            height: 550px;
+          }
+          .wall-slider-item {
+            width: 150px;
+            height: 220px;
+            top: 60%;
+          }
+          .wall-slider-item:nth-child(3) { left: 50%; }
+          .wall-slider-item:nth-child(4) { left: calc(50% + 170px); }
+          .wall-slider-item:nth-child(5) { left: calc(50% + 340px); }
+          .wall-slider-item:nth-child(6) { left: calc(50% + 510px); opacity: 0; }
+          .wall-slider-item:nth-child(n+7) { left: calc(50% + 680px); opacity: 0; }
+
+          .wall-slider-content-title {
+            font-size: 28px;
+          }
+          .wall-slider-content-description {
+            font-size: 13px;
+          }
+        }
+
+        @media (max-width: 650px) {
+          .wall-gallery-slider-section {
+            height: 480px;
+          }
+          .wall-slider-item {
+            width: 100px;
+            height: 150px;
+            top: 65%;
+          }
+          .wall-slider-item:nth-child(3) { left: 45%; }
+          .wall-slider-item:nth-child(4) { left: calc(45% + 120px); }
+          .wall-slider-item:nth-child(5) { left: calc(45% + 240px); }
+          .wall-slider-item:nth-child(6) { left: calc(45% + 360px); opacity: 0; }
+          .wall-slider-item:nth-child(n+7) { left: calc(45% + 480px); opacity: 0; }
+
+          .wall-slider-title-header {
+            top: 20px;
+            left: 20px;
+          }
+          .wall-slider-heading {
+            font-size: 22px;
+          }
+          .wall-slider-content {
+            left: 20px;
+          }
+          .wall-slider-content-title {
+            font-size: 24px;
+          }
+        }
+
         /* Frame variation caption under the studio stage */
         .frame-variant-caption {
           position: absolute;
@@ -2448,9 +2708,9 @@ export default function ServiceDetailPage({ params }) {
 
               {/* Picture Frame Shell (Dynamic Portrait / Landscape Orientation from CMS) */}
               <div className="restoration-frame-shell">
-                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${service.orientation === "portrait" ? "service-orientation-portrait" : "service-orientation-landscape"} ${(slug === "photo-restoration" || slug === "photo-editing") ? "restoration-frame" : ""} ${(slug === "photo-editing" || slug === "instagram-mirror-selfie") ? "no-frame-border" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-frame" : ""} ${slug === "instagram-mirror-selfie" ? "instagram-mirror-frame" : ""}`}>
+                <div className={`exquisite-wood-frame ${lightOn ? "light-on" : ""} ${service.orientation === "portrait" ? "service-orientation-portrait" : "service-orientation-landscape"} ${(slug === "photo-restoration" || slug === "photo-editing") ? "restoration-frame" : ""} ${isFramelessService ? "no-frame-border" : ""} ${slug === "nikkahnama-framing" ? "nikkahnama-frame" : ""} ${slug === "instagram-mirror-selfie" ? "instagram-mirror-frame" : ""}`}>
 
-                  {slug === "photo-editing" || (slug === "instagram-mirror-selfie" && !selectedCustomFrame) ? null : (
+                  {isFramedService && (
                     <img
                       key={displayFrame.id}
                       src={displayFrame.imageUrl}
@@ -3020,70 +3280,30 @@ export default function ServiceDetailPage({ params }) {
         </section>
       )}
 
-      {/* SERVICE PHOTOS GALLERY SECTION */}
-      {service.enableMultipleImages !== false && Array.isArray(service.images) && service.images.length > 0 && slug !== "photo-restoration" && slug !== "photo-editing" && (
-        <section className="services-section">
-          <div className="services-container">
-            <div className="service-gallery-section">
-              <h3 className="gallery-title">{service.title} Gallery & Craftsmanship</h3>
-              <p style={{ color: "var(--text2)", marginBottom: "32px", fontSize: "14px", fontFamily: "var(--font-serif)", lineHeight: "1.6" }}>
-                Explore authentic client showcases and craftsmanship details for our {service.title}. Click any photo to view in main studio frame.
-              </p>
-              <div className="previews-grid" style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: "28px"
-              }}>
-                {service.images.map((imgUrl, idx) => {
-                  const isCover = (imgUrl === service.image);
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        setSelectedGalleryPhoto(imgUrl);
-                        setActiveSlide(idx);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="preview-card"
-                      style={{
-                        background: "var(--surface2)",
-                        borderRadius: "var(--radius)",
-                        border: `1.5px solid ${imgUrl === currentPhoto ? "var(--accent)" : "var(--border)"}`,
-                        padding: "16px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "14px",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-                        cursor: "pointer",
-                        transition: "all 0.25s ease",
-                      }}
-                    >
-                      <div style={{ position: "relative", width: "100%", height: "280px", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
-                        <img
-                          src={imgUrl}
-                          alt={`${service.title} Photo ${idx + 1}`}
-                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                        />
-                        {isCover && (
-                          <span style={{ position: "absolute", top: 10, right: 10, background: "var(--accent)", color: "#000", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em" }}>
-                            FEATURED COVER
-                          </span>
-                        )}
-                      </div>
-                      <div className="preview-info" style={{ textAlign: "left" }}>
-                        <h4 className="preview-title" style={{ fontFamily: "var(--font-display)", color: "var(--accent)", fontSize: "15px", marginBottom: "4px", fontWeight: "600" }}>
-                          Showcase Photo #{idx + 1}
-                        </h4>
-                        <p className="preview-desc" style={{ fontSize: "12px", color: "var(--text2)", margin: 0, fontFamily: "var(--font-serif)" }}>
-                          Click to preview this piece on the top studio lamp stage.
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+      {/* WALL GALLERY SLIDER — the same showcase the product pages use */}
+      {wallSlides.length > 0 && (
+        <section className="wall-gallery-slider-section">
+          <ul className="wall-slider-track">
+            {wallSlides.map((item, index) => (
+              <li
+                key={item.id}
+                className="wall-slider-item"
+                style={{ backgroundImage: `url('${item.imageUrl}')` }}
+                onClick={() => clickWallSlide(index)}
+              >
+                <div className="wall-slider-content">
+                  <h2 className="wall-slider-content-title">"{item.title}"</h2>
+                  <p className="wall-slider-content-description">{item.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {wallSlides.length > 1 && (
+            <nav className="wall-slider-nav">
+              <button className="wall-slider-nav-btn prev" onClick={prevWallSlide} aria-label="Previous">&larr;</button>
+              <button className="wall-slider-nav-btn next" onClick={nextWallSlide} aria-label="Next">&rarr;</button>
+            </nav>
+          )}
         </section>
       )}
 
@@ -3104,7 +3324,7 @@ export default function ServiceDetailPage({ params }) {
           </div>
           <div className="frame-modal-body">
             {frames.length === 0 ? (
-              <div className="frame-modal-empty">Loading frames...</div>
+              <div className="frame-modal-empty"><FrameLoader label="Loading frames" size={44} /></div>
             ) : (
               <div className="frame-modal-grid">
                 {frames.map((f) => (

@@ -30,6 +30,7 @@ import {
 import BlockView from "../../../../../lib/pageBuilder/BlockView";
 import Inspector from "../../../../../lib/pageBuilder/Inspector";
 import { SECTION_PAGES, resolveLayoutBlocks, LAYOUT_PREVIEW_MESSAGE } from "../../../../../lib/pageBuilder/sectionLayout";
+import FrameLoader from "../../../components/FrameLoader";
 
 export const DEFAULT_PAGE_SETTINGS = {
   showHero: true,
@@ -116,6 +117,7 @@ function buildStarter(id) {
 export default function PageBuilder() {
   // ---- page data
   const [pagesList, setPagesList] = useState([]);
+  const [pagesLoaded, setPagesLoaded] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState("");
   const [pageTitle, setPageTitle] = useState("");
   const [pageBlocks, setPageBlocks] = useState([]);
@@ -222,6 +224,7 @@ export default function PageBuilder() {
       const val = snapshot.val();
       const list = val ? Object.values(val) : [];
       setPagesList(list);
+      setPagesLoaded(true);
       const active = list.find((p) => p.slug === selectedSlug);
       if (active && hydratedSlugRef.current !== selectedSlug) {
         hydratedSlugRef.current = selectedSlug;
@@ -785,7 +788,11 @@ export default function PageBuilder() {
               </div>
             </div>
           ))}
-          {filteredPages.length === 0 && <p style={{ color: "#9A8A79", fontSize: 14 }}>No pages yet — create one to get started.</p>}
+          {filteredPages.length === 0 && (
+            pagesLoaded
+              ? <p style={{ color: "#9A8A79", fontSize: 14 }}>No pages yet — create one to get started.</p>
+              : <FrameLoader label="Loading pages" />
+          )}
         </div>
 
         {/* Coded pages — layout editing only */}

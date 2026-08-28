@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { db } from "../../../../lib/firebase";
 import { ref, onValue, set, remove } from "firebase/database";
+import FrameLoader from "../../../components/FrameLoader";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPayment, setFilterPayment] = useState("All");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -22,6 +24,7 @@ export default function OrdersPage() {
       } else {
         setOrders([]);
       }
+      setLoadingOrders(false);
     });
     return () => unsub();
   }, []);
@@ -64,6 +67,8 @@ export default function OrdersPage() {
           <p className="content-header-sub">Track, manage and fulfill incoming orders</p>
         </div>
       </div>
+
+      {loadingOrders && <FrameLoader variant="page" label="Loading orders" />}
 
       {/* ── FILTER BAR ── */}
       <div className="order-filters-bar animate-in animate-in-1">

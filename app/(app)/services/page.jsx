@@ -8,6 +8,7 @@ import { useServicesPageContent } from "../../lib/cms";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../lib/firebase";
 import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
+import FrameLoader from "../components/FrameLoader";
 
 export const INITIAL_DEFAULT_SERVICES = [
   {
@@ -238,32 +239,7 @@ export default function ServicesPage() {
       <section className="services-section">
         <div className="services-container">
           {loading ? (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "100px 20px",
-              gap: "20px"
-            }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                border: "2px solid rgba(201, 168, 76, 0.15)",
-                borderTopColor: "var(--accent)",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }} />
-              <span style={{
-                fontFamily: "var(--font-typewriter)",
-                fontSize: "12px",
-                color: "var(--accent)",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase"
-              }}>
-                Loading Studio Services...
-              </span>
-            </div>
+            <FrameLoader variant="page" label="Loading studio services" />
           ) : servicesList && servicesList.length > 0 ? (
             servicesList.map((srv, idx) => {
               const rawSlug = srv.slug || "";

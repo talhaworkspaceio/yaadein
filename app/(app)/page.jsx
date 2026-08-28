@@ -3773,6 +3773,7 @@ import Footer from "./components/Footer";
 import CardDescription from "./components/CardDescription";
 import { useHomePageContent } from "../lib/cms";
 import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
+import FrameLoader from "./components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -4504,9 +4505,7 @@ export default function HomePage() {
 
 
           {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "40px 0", fontFamily: "var(--font-typewriter)" }}>
-              Loading catalog from database...
-            </div>
+            <FrameLoader label="Loading catalog" />
           ) : searchQuery.trim() !== "" ? (
             <div className="catalog-grid">
               {products.filter(p =>

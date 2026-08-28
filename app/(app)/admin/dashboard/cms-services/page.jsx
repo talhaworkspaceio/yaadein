@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
+import FrameLoader from "../../../components/FrameLoader";
 
 export const INITIAL_DEFAULT_SERVICES = [
   {
@@ -425,7 +426,7 @@ export default function AdminServicesPage() {
   };
 
   if (loading) {
-    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Services Manager...</div>;
+    return <FrameLoader variant="page" label="Loading services manager" />;
   }
 
   return (

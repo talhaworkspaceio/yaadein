@@ -19,8 +19,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
-import { ref, onValue } from "firebase/database";
-import { db } from "../firebase";
+import { useCachedNode } from "../cms";
 import BlockView from "./BlockView";
 import { buildPageCss } from "./styles";
 
@@ -100,34 +99,14 @@ export const SECTION_PAGES = {
 export const getSectionPage = (pageId) => SECTION_PAGES[pageId] || null;
 export const defaultOrder = (pageId) => (SECTION_PAGES[pageId]?.sections || []).map((s) => s.id);
 
-/** Subscribe to the saved layout for a page. */
+/**
+ * Subscribe to the saved layout for a page.
+ * Cached like the rest of the CMS so a reload does not render the code's default
+ * section order and then visibly reshuffle when the saved layout arrives.
+ */
 export function useSectionLayout(pageId) {
-  const [layout, setLayout] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!pageId) return;
-    let alive = true;
-    try {
-      const unsub = onValue(
-        ref(db, `cms_layouts/${pageId}`),
-        (snap) => {
-          if (!alive) return;
-          setLayout(snap.val() || null);
-          setLoading(false);
-        },
-        () => alive && setLoading(false)
-      );
-      return () => {
-        alive = false;
-        unsub();
-      };
-    } catch {
-      setLoading(false);
-    }
-  }, [pageId]);
-
-  return { layout, loading };
+  const { data, loading } = useCachedNode(`cms_layouts/${pageId}`, `layout:${pageId}`);
+  return { layout: data, loading };
 }
 
 /**

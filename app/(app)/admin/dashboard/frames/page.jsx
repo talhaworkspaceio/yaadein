@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { db } from "../../../../lib/firebase";
 import { ref, onValue, set, push, remove } from "firebase/database";
+import FrameLoader from "../../../components/FrameLoader";
 
 const AVAILABLE_FRAME_IMAGES = [
   { value: "/frames/portrait/frame-01-correct-size.webp", label: "Portrait - Frame 01 (Oak)", orientation: "portrait", top: 8.97, left: 12.04, bottom: 9.03, right: 12.33, ratio: 0.6667 },
@@ -45,6 +46,7 @@ const IconPackage = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill=
 
 export default function FramesPage() {
   const [frames, setFrames] = useState([]);
+  const [loadingFrames, setLoadingFrames] = useState(true);
   const [categories, setCategories] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -72,6 +74,7 @@ export default function FramesPage() {
     const unsubFrames = onValue(ref(db, "frames"), (snap) => {
       const data = snap.val();
       setFrames(data ? Object.entries(data).map(([k, v]) => ({ docId: k, ...v })) : []);
+      setLoadingFrames(false);
     });
     const unsubCats = onValue(ref(db, "categories"), (snap) => {
       const data = snap.val();
@@ -790,7 +793,9 @@ export default function FramesPage() {
           )}
 
           <div className="fp-list-body">
-            {filteredFrames.length === 0 ? (
+            {loadingFrames ? (
+              <FrameLoader variant="page" label="Loading frame catalog" />
+            ) : filteredFrames.length === 0 ? (
               <div className="fp-empty">
                 <div className="fp-empty-icon"><IconFrame /></div>
                 <p style={{ fontSize: "13px" }}>{frames.length === 0 ? "No frames yet." : "No results."}</p>

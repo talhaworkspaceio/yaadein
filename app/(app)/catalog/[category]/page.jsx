@@ -6,6 +6,7 @@ import { ref, onValue } from "firebase/database";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import CardDescription from "../../components/CardDescription";
+import FrameLoader from "../../components/FrameLoader";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -1395,9 +1396,7 @@ export default function CategoryPage({ params }) {
 
         <div className="exhibition-container">
           {products.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: "80px 0", fontFamily: "var(--font-typewriter)" }}>
-              Loading frame catalog...
-            </div>
+            <FrameLoader variant="page" label="Loading frame catalog" />
           ) : (
             <div className="gallery-grid">
               {filteredProducts.map((p) => (

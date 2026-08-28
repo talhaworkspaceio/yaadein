@@ -7,6 +7,7 @@ import { ref, onValue, set } from "firebase/database";
 import { db } from "../../lib/firebase";
 import BlockView from "../../lib/pageBuilder/BlockView";
 import { buildPageCss } from "../../lib/pageBuilder/styles";
+import FrameLoader from "../components/FrameLoader";
 
 const normalizeIgUrl = (u) => {
   if (!u) return "";
@@ -142,8 +143,8 @@ export default function CustomRootPage({ params }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-serif)" }}>
-        <p style={{ fontSize: "18px", letterSpacing: "0.1em" }}>Loading Studio Page...</p>
+      <div style={{ minHeight: "100vh", background: "#050403", color: "#E0D7CD", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <FrameLoader variant="page" label="Loading studio page" />
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
+import FrameLoader from "../../../components/FrameLoader";
 
 export default function AdminSiteContentPage() {
   const [activeTab, setActiveTab] = useState("homepage");
@@ -217,7 +218,7 @@ export default function AdminSiteContentPage() {
   };
 
   if (loading) {
-    return <div style={{ padding: 40, color: "var(--text2)" }}>Loading Site Content & Policies...</div>;
+    return <FrameLoader variant="page" label="Loading site content" />;
   }
 
   return (

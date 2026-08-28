@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { db } from "../../../../lib/firebase";
 import { ref, onValue } from "firebase/database";
+import FrameLoader from "../../../components/FrameLoader";
 
 export default function SalesAnalyticsPage() {
   const [orders, setOrders] = useState([]);
@@ -441,17 +442,7 @@ export default function SalesAnalyticsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flex: 1, height: "60vh", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" style={{ animation: "spin 1s linear infinite" }}>
-              <circle cx="12" cy="12" r="10" stroke="rgba(201,168,76,0.15)" strokeWidth="3" />
-              <path d="M12 2 a 10 10 0 0 1 10 10" />
-            </svg>
-          </div>
-          <p style={{ fontSize: "14px", letterSpacing: "0.05em" }}>Analyzing sales records...</p>
-        </div>
-      </div>
+      <FrameLoader variant="page" label="Analyzing sales records" />
     );
   }
 
