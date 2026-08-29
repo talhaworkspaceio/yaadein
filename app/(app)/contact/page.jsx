@@ -26,6 +26,25 @@ const saveCart = (cart) => {
 
 export default function ContactPage() {
   const { data: contactCms } = useContactPageContent();
+
+  // Where the studio map points, in order of precedence:
+  //   1. a full embed URL pasted into the CMS (advanced override)
+  //   2. latitude / longitude from the CMS
+  //   3. the studio's default location
+  // Coordinates are the usual case, so a wrong address no longer means editing code.
+  const studioMapSrc = (() => {
+    const custom = String(contactCms?.mapEmbedUrl || "").trim();
+    if (custom) return custom;
+
+    const lat = parseFloat(contactCms?.mapLat);
+    const lng = parseFloat(contactCms?.mapLng);
+    const zoom = parseInt(contactCms?.mapZoom, 10);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const z = Number.isFinite(zoom) ? Math.min(21, Math.max(1, zoom)) : 15;
+      return `https://maps.google.com/maps?q=${lat},${lng}&t=&z=${z}&ie=UTF8&iwloc=&output=embed`;
+    }
+    return "https://maps.google.com/maps?q=Johar%20Town,%20Lahore,%20Pakistan&t=&z=14&ie=UTF8&iwloc=&output=embed";
+  })();
   const [cartItems, setCartItems] = useState([]);
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -560,7 +579,7 @@ export default function ContactPage() {
 
           <div className="map-container">
             <iframe
-              src={contactCms?.mapEmbedUrl || "https://maps.google.com/maps?q=Johar%20Town,%20Lahore,%20Pakistan&t=&z=14&ie=UTF8&iwloc=&output=embed"}
+              src={studioMapSrc}
               className="map-iframe"
               allowFullScreen=""
               loading="lazy"

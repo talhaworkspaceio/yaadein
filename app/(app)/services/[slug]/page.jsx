@@ -829,26 +829,39 @@ export default function ServiceDetailPage({ params }) {
       }
     }
 
+    const payload = {
+      reference,
+      status: "New",
+      createdAt: Date.now(),
+      service: { slug, title: service?.title || slug },
+      dimensions: {
+        width: String(customWidth),
+        height: String(customHeight),
+        unit: customUnit,
+      },
+      frame: selectedCustomFrame
+        ? { id: selectedCustomFrame.id, name: selectedCustomFrame.name, price: selectedCustomFrame.price || "" }
+        : null,
+      startingPrice: servicePriceNum,
+      customer: { name, phone, email },
+      notes: quoteForm.notes.trim(),
+      photo: attachedPhoto,
+    };
+
     try {
-      const entry = await push(ref(db, "quote_requests"));
-      await set(entry, {
-        reference,
-        status: "New",
-        createdAt: Date.now(),
-        service: { slug, title: service?.title || slug },
-        dimensions: {
-          width: String(customWidth),
-          height: String(customHeight),
-          unit: customUnit,
-        },
-        frame: selectedCustomFrame
-          ? { id: selectedCustomFrame.id, name: selectedCustomFrame.name, price: selectedCustomFrame.price || "" }
-          : null,
-        startingPrice: servicePriceNum,
-        customer: { name, phone, email },
-        notes: quoteForm.notes.trim(),
-        photo: attachedPhoto,
-      });
+      await set(push(ref(db, "quote_requests")), payload);
+
+      // Same alert path the checkout uses, so a quote request reaches the
+      // studio's phone rather than waiting to be noticed in the admin. The
+      // photo is a base64 data URL and the alert only shows text, so it is
+      // left out rather than posted for nothing.
+      const { photo, ...alertData } = payload;
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "query", queryData: alertData }),
+      }).catch((err) => console.error("ntfy notification error:", err));
+
       setQuoteRef(reference);
     } catch (err) {
       console.error("Failed to send the quote request:", err);

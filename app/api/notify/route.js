@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { sendOrderNotification, sendTestNotification } from '../../../lib/ntfy';
+import { sendOrderNotification, sendQueryNotification, sendTestNotification } from '../../../lib/ntfy';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { action, orderData, topic, serverUrl } = body || {};
+    const { action, orderData, queryData, topic, serverUrl } = body || {};
 
     if (action === 'test') {
       const result = await sendTestNotification({ topic, serverUrl });
@@ -16,6 +16,23 @@ export async function POST(request) {
           { status: 400 }
         );
       }
+    }
+
+    // Custom-size quote request from a service page
+    if (action === 'query') {
+      if (!queryData) {
+        return NextResponse.json({ success: false, error: 'Missing queryData in request body' }, { status: 400 });
+      }
+
+      const result = await sendQueryNotification(queryData, { topic, serverUrl });
+
+      if (result.success) {
+        return NextResponse.json({ success: true, data: result.data });
+      }
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to dispatch ntfy alert' },
+        { status: 500 }
+      );
     }
 
     // Default action: send order notification

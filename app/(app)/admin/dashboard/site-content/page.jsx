@@ -114,6 +114,9 @@ export default function AdminSiteContentPage() {
     phone1: "+92 300 1234567",
     email: "team@yaadein.com",
     workingHours: "Monday – Saturday: 10:00 AM – 8:00 PM",
+    mapLat: "",
+    mapLng: "",
+    mapZoom: "15",
     mapEmbedUrl: "",
   });
 
@@ -640,9 +643,27 @@ export default function AdminSiteContentPage() {
               </div>
             </div>
 
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Map Latitude</label>
+                <input type="text" value={contactPage.mapLat || ""} onChange={(e) => setContactPage({ ...contactPage, mapLat: e.target.value })} placeholder="e.g. 24.9204" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Map Longitude</label>
+                <input type="text" value={contactPage.mapLng || ""} onChange={(e) => setContactPage({ ...contactPage, mapLng: e.target.value })} placeholder="e.g. 67.1300" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Zoom</label>
+                <input type="text" value={contactPage.mapZoom || ""} onChange={(e) => setContactPage({ ...contactPage, mapZoom: e.target.value })} placeholder="15" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+              </div>
+            </div>
+
             <div>
-              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Google Maps Embed URL</label>
-              <input type="text" value={contactPage.mapEmbedUrl || ""} onChange={(e) => setContactPage({ ...contactPage, mapEmbedUrl: e.target.value })} placeholder="Leave blank to use the default studio location" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Google Maps Embed URL (optional override)</label>
+              <input type="text" value={contactPage.mapEmbedUrl || ""} onChange={(e) => setContactPage({ ...contactPage, mapEmbedUrl: e.target.value })} placeholder="Leave blank to use the coordinates above" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+              <p style={{ fontSize: 11, color: "var(--text2)", opacity: 0.75, marginTop: 6 }}>
+                Tip: right-click your studio in Google Maps and choose the coordinates at the top of the menu to copy them.
+              </p>
             </div>
 
             <div>
