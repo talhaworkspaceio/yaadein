@@ -4,7 +4,7 @@ import { use, useState, useEffect, useCallback, useRef } from "react";
 
 
 import { db } from "../../../lib/firebase";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, push, set } from "firebase/database";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import BeforeAfterSlider from "../../components/BeforeAfterSlider";
@@ -352,6 +352,38 @@ const SERVICE_DEFAULT_SIZES = [
   { label: "custom", displayLabel: 'Custom Dimensions (Custom Quote)', priceDelta: 0 },
 ];
 
+/**
+ * The size dropdown is admin-editable per service. Options saved in the CMS win;
+ * services that were never edited keep the built-in list, so nothing changes for
+ * them until someone opens the modal.
+ *
+ * Saved options carry an absolute `price`; the built-in ones carry a `priceDelta`
+ * added to the service's starting price. Both are flattened to a final price here
+ * so the rest of the page only deals with one shape.
+ */
+function resolveSizeOptions(service, basePrice) {
+  const saved = Array.isArray(service?.sizeOptions) ? service.sizeOptions.filter(Boolean) : null;
+
+  if (saved && saved.length > 0) {
+    return saved.map((opt, i) => {
+      const kind = opt.kind || "fixed";
+      return {
+        value: opt.id || `size_${i}`,
+        displayLabel: opt.label || `Option ${i + 1}`,
+        kind,
+        price: kind === "custom" ? basePrice : (parseInt(String(opt.price).replace(/[^0-9]/g, ""), 10) || 0),
+      };
+    });
+  }
+
+  return SERVICE_DEFAULT_SIZES.map((s) => ({
+    value: s.label,
+    displayLabel: s.displayLabel,
+    kind: s.label === "custom" ? "custom" : s.label === "digital_only" ? "digital" : "fixed",
+    price: basePrice + (parseInt(s.priceDelta) || 0),
+  }));
+}
+
 export default function ServiceDetailPage({ params }) {
   const resolvedParams = use(params);
   const rawSlug = resolvedParams?.slug || "";
@@ -431,6 +463,8 @@ export default function ServiceDetailPage({ params }) {
     enableUploadPhoto: cmsService?.enableUploadPhoto !== undefined ? cmsService.enableUploadPhoto : (slug !== "instagram-mirror-selfie"),
     enableChooseFrame: cmsService?.enableChooseFrame !== undefined ? cmsService.enableChooseFrame : (slug !== "photo-editing" && slug !== "instagram-mirror-selfie"),
     enableSelectSize: cmsService?.enableSelectSize !== undefined ? cmsService.enableSelectSize : true,
+    // Admin-defined dropdown options; absent means fall back to the built-in list.
+    sizeOptions: Array.isArray(cmsService?.sizeOptions) ? cmsService.sizeOptions : null,
     enableMultipleImages: cmsService?.enableMultipleImages !== undefined ? cmsService.enableMultipleImages : true,
     enableNavigationButton: cmsService?.enableNavigationButton !== undefined ? cmsService.enableNavigationButton : true,
     gallery: fallbackService?.gallery || [
@@ -445,9 +479,18 @@ export default function ServiceDetailPage({ params }) {
 
   // Size Selector States
   const [selectedSize, setSelectedSize] = useState("12x18");
+  const [sizeInitialised, setSizeInitialised] = useState(false);
   const [customWidth, setCustomWidth] = useState("");
   const [customHeight, setCustomHeight] = useState("");
   const [customUnit, setCustomUnit] = useState("inches");
+
+  // Custom-size quote request. A custom size has no price, so it never enters
+  // the cart — it becomes an enquiry the studio answers by hand.
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({ name: "", phone: "", email: "", notes: "" });
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteSending, setQuoteSending] = useState(false);
+  const [quoteRef, setQuoteRef] = useState("");
 
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -484,7 +527,7 @@ export default function ServiceDetailPage({ params }) {
   // Lock background page scroll while a modal (frame picker or cart drawer) is open.
   // The page scrolls via <html>, not <body>, so both must be locked.
   useEffect(() => {
-    const shouldLock = frameModalOpen || cartOpen;
+    const shouldLock = frameModalOpen || cartOpen || quoteModalOpen;
     document.documentElement.style.overflow = shouldLock ? "hidden" : "";
     document.body.style.overflow = shouldLock ? "hidden" : "";
     // Pause the always-on lamp glow/particle CSS animations while a modal covers
@@ -496,7 +539,7 @@ export default function ServiceDetailPage({ params }) {
       document.body.style.overflow = "";
       document.body.classList.remove("modal-open");
     };
-  }, [frameModalOpen, cartOpen]);
+  }, [frameModalOpen, cartOpen, quoteModalOpen]);
 
   // Fetch all frames from Firebase database (for the optional frame picker)
   useEffect(() => {
@@ -576,11 +619,14 @@ export default function ServiceDetailPage({ params }) {
   };
 
   // ----- Size and Pricing Calculation -----
-  const sizeObj = SERVICE_DEFAULT_SIZES.find(s => s.label === selectedSize);
-  const sizeDelta = sizeObj ? (parseInt(sizeObj.priceDelta) || 0) : 0;
+  // The starting price from the CMS is the floor; each size option resolves to a
+  // final price (admin-set, or base + the built-in delta).
   const servicePriceNum = extractServicePrice(service?.priceInfo);
+  const sizeOptions = resolveSizeOptions(service, servicePriceNum);
+  const sizeObj = sizeOptions.find((s) => s.value === selectedSize) || sizeOptions[0];
+  const sizePrice = sizeObj ? sizeObj.price : servicePriceNum;
   const framePriceNum = selectedCustomFrame ? parsePriceNum(selectedCustomFrame.price) : 0;
-  const totalPriceNum = servicePriceNum + sizeDelta + (slug === "instagram-mirror-selfie" ? 0 : framePriceNum);
+  const totalPriceNum = sizePrice + (slug === "instagram-mirror-selfie" ? 0 : framePriceNum);
   const totalPriceStr = formatPrice(totalPriceNum);
 
   // ----- Photo & Frame preview -----
@@ -699,6 +745,17 @@ export default function ServiceDetailPage({ params }) {
     setWallSlides((prev) => [...prev.slice(shift), ...prev.slice(0, shift)]);
   };
 
+  // A service with custom options may not contain "12x18", so settle on a valid
+  // choice once the options are known.
+  useEffect(() => {
+    if (sizeInitialised || sizeOptions.length === 0) return;
+    if (!sizeOptions.some((o) => o.value === selectedSize)) {
+      const firstFixed = sizeOptions.find((o) => o.kind === "fixed") || sizeOptions[0];
+      setSelectedSize(firstFixed.value);
+    }
+    setSizeInitialised(true);
+  }, [sizeOptions, selectedSize, sizeInitialised]);
+
   // ----- Upload handlers -----
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -726,6 +783,81 @@ export default function ServiceDetailPage({ params }) {
     setFrameModalOpen(false);
   };
 
+  // ----- Custom-size quote request -----
+  // A custom size has no price, so instead of going to the cart it is sent to
+  // the studio as an enquiry with the customer's contact details.
+  const isCustomSize = sizeObj?.kind === "custom";
+
+  const openQuoteModal = () => {
+    setQuoteError("");
+    setQuoteRef("");
+    setQuoteModalOpen(true);
+  };
+
+  const closeQuoteModal = () => {
+    setQuoteModalOpen(false);
+    // Clear the form only once a request has actually gone through, so a
+    // validation slip does not cost the customer everything they typed.
+    if (quoteRef) setQuoteForm({ name: "", phone: "", email: "", notes: "" });
+  };
+
+  const handleSubmitQuote = async (e) => {
+    e.preventDefault();
+    if (quoteSending) return;
+
+    const name = quoteForm.name.trim();
+    const phone = quoteForm.phone.trim();
+    const email = quoteForm.email.trim();
+
+    if (!name) return setQuoteError("Please enter your name so we know who to contact.");
+    if (phone.replace(/\D/g, "").length < 7) return setQuoteError("Please enter a valid contact number.");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setQuoteError("That email address does not look right.");
+    if (!customWidth || !customHeight) return setQuoteError("Please enter both the width and the height you need.");
+
+    setQuoteError("");
+    setQuoteSending(true);
+
+    // A short human-readable handle the customer can quote back to us.
+    const reference = `QR-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+
+    let attachedPhoto = null;
+    if (userUploadedImage) {
+      try {
+        attachedPhoto = await resizeImage(userUploadedImage, 320, 320);
+      } catch (err) {
+        console.error("Could not attach the uploaded photo to the quote:", err);
+      }
+    }
+
+    try {
+      const entry = await push(ref(db, "quote_requests"));
+      await set(entry, {
+        reference,
+        status: "New",
+        createdAt: Date.now(),
+        service: { slug, title: service?.title || slug },
+        dimensions: {
+          width: String(customWidth),
+          height: String(customHeight),
+          unit: customUnit,
+        },
+        frame: selectedCustomFrame
+          ? { id: selectedCustomFrame.id, name: selectedCustomFrame.name, price: selectedCustomFrame.price || "" }
+          : null,
+        startingPrice: servicePriceNum,
+        customer: { name, phone, email },
+        notes: quoteForm.notes.trim(),
+        photo: attachedPhoto,
+      });
+      setQuoteRef(reference);
+    } catch (err) {
+      console.error("Failed to send the quote request:", err);
+      setQuoteError("We could not send your request just now. Please try again, or reach us from the Contact page.");
+    } finally {
+      setQuoteSending(false);
+    }
+  };
+
   // ----- Add to Cart -----
   const handleAddToCart = async () => {
     if (!service) return;
@@ -739,15 +871,15 @@ export default function ServiceDetailPage({ params }) {
       }
     }
 
-    const sizeDisplay = selectedSize === "digital_only"
-      ? "Digital Copy Only (Digital Delivery)"
-      : selectedSize === "custom"
-      ? `Custom Size (${customWidth || "0"} x ${customHeight || "0"} ${customUnit})`
+    // A custom size carries the starting price only — flag it so the caveat
+    // travels with the item into the cart, checkout and the order record.
+    const sizeDisplay = sizeObj?.kind === "custom"
+      ? `Custom Size (${customWidth || "0"} x ${customHeight || "0"} ${customUnit}) \u2014 price to be quoted`
       : (sizeObj?.displayLabel || selectedSize);
 
     const frameDisplay = selectedCustomFrame
       ? selectedCustomFrame.name
-      : (selectedSize === "digital_only" ? "No Physical Frame (Digital Delivery)" : "Standard Studio Frame");
+      : (sizeObj?.kind === "digital" ? "No Physical Frame (Digital Delivery)" : "Standard Studio Frame");
 
     const item = {
       id: `service-${slug}${selectedCustomFrame ? `-${selectedCustomFrame.id}` : ""}-${selectedSize}`,
@@ -1373,6 +1505,63 @@ export default function ServiceDetailPage({ params }) {
           letter-spacing: 0.05em;
         }
 
+        /* Custom-size quote notice, stamped on the paper card in the same
+           vintage red ink as the price it is qualifying. */
+        .custom-quote-note {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 12px;
+          padding: 10px 11px;
+          background: rgba(139, 30, 30, 0.07);
+          border: 1px solid rgba(139, 30, 30, 0.28);
+          border-left: 3px solid #8b1e1e;
+          border-radius: 5px;
+        }
+
+        .custom-quote-note > svg {
+          flex-shrink: 0;
+          margin-top: 1px;
+          color: #8b1e1e;
+        }
+
+        .custom-quote-note strong {
+          display: block;
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          font-weight: 700;
+          color: #8b1e1e;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 3px;
+        }
+
+        .custom-quote-note p {
+          margin: 0;
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          line-height: 1.55;
+          color: #2c1e11;
+        }
+
+        .custom-quote-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 7px;
+          font-family: var(--font-typewriter);
+          font-size: 11px;
+          font-weight: 700;
+          color: #8b1e1e;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          transition: opacity 0.2s ease;
+        }
+
+        .custom-quote-link:hover {
+          opacity: 0.72;
+        }
+
         .product-desc-text {
           font-family: var(--font-typewriter);
           font-size: 13px;
@@ -1605,6 +1794,157 @@ export default function ServiceDetailPage({ params }) {
         .frame-modal-overlay.open .frame-modal {
           transform: translateY(0) scale(1);
         }
+        /* ── CUSTOM SIZE QUOTE MODAL ── */
+        .quote-modal { max-width: 560px; }
+
+        .quote-form, .quote-done { padding: 22px 24px 24px; }
+
+        .quote-summary {
+          background: rgba(181,139,92,0.07);
+          border: 1px solid var(--border2);
+          border-radius: 10px;
+          padding: 14px 16px;
+          margin-bottom: 16px;
+        }
+        .quote-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 16px;
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+        }
+        .quote-summary-row + .quote-summary-row { margin-top: 8px; }
+        .quote-summary-row span {
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          font-size: 10px;
+          white-space: nowrap;
+        }
+        .quote-summary-row strong { color: var(--accent2); text-align: right; }
+
+        .quote-intro {
+          font-family: var(--font-typewriter);
+          font-size: 12.5px;
+          line-height: 1.6;
+          color: var(--text2);
+          margin-bottom: 18px;
+        }
+
+        .quote-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .quote-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .quote-field label {
+          font-family: var(--font-typewriter);
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          color: var(--text2);
+        }
+        .quote-field label em { color: #E06A6A; font-style: normal; }
+        .quote-optional { text-transform: none; letter-spacing: 0; opacity: 0.7; }
+
+        .quote-field input,
+        .quote-field textarea {
+          width: 100%;
+          background: rgba(0,0,0,0.28);
+          border: 1px solid var(--border2);
+          border-radius: 8px;
+          padding: 10px 12px;
+          color: var(--text);
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          outline: none;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          resize: vertical;
+        }
+        .quote-field input::placeholder,
+        .quote-field textarea::placeholder { color: var(--text2); opacity: 0.55; }
+        .quote-field input:focus,
+        .quote-field textarea:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px rgba(181,139,92,0.15);
+        }
+
+        .quote-error {
+          background: rgba(224,106,106,0.1);
+          border: 1px solid rgba(224,106,106,0.4);
+          border-left: 3px solid #E06A6A;
+          border-radius: 6px;
+          padding: 9px 12px;
+          margin-bottom: 14px;
+          font-family: var(--font-typewriter);
+          font-size: 12px;
+          color: #F0A8A8;
+        }
+
+        .quote-actions { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; }
+        .quote-actions .btn-premium { flex: 1; min-width: 150px; }
+
+        .quote-privacy {
+          margin-top: 12px;
+          font-family: var(--font-typewriter);
+          font-size: 10.5px;
+          color: var(--text2);
+          opacity: 0.75;
+        }
+
+        /* Confirmation state */
+        .quote-done { text-align: center; }
+        .quote-done-mark {
+          width: 56px; height: 56px;
+          margin: 6px auto 16px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--accent);
+          background: rgba(181,139,92,0.12);
+          border: 1px solid var(--border2);
+        }
+        .quote-done h4 {
+          font-family: var(--font-display);
+          font-size: 21px;
+          color: var(--accent);
+          margin-bottom: 10px;
+        }
+        .quote-done p {
+          font-family: var(--font-typewriter);
+          font-size: 13px;
+          line-height: 1.65;
+          color: var(--text2);
+          max-width: 400px;
+          margin: 0 auto;
+        }
+        .quote-done p strong { color: var(--text); }
+        .quote-reference {
+          display: inline-flex;
+          flex-direction: column;
+          gap: 4px;
+          margin: 20px 0;
+          padding: 12px 26px;
+          border: 1px dashed var(--border2);
+          border-radius: 8px;
+          background: rgba(181,139,92,0.06);
+        }
+        .quote-reference span {
+          font-family: var(--font-typewriter);
+          font-size: 9.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: var(--text2);
+        }
+        .quote-reference strong {
+          font-family: var(--font-typewriter);
+          font-size: 19px;
+          letter-spacing: 0.06em;
+          color: var(--accent);
+        }
+        .quote-done .btn-premium { display: block; width: 100%; }
+
+        @media (max-width: 520px) {
+          .quote-field-row { grid-template-columns: 1fr; gap: 0; }
+        }
+
         .frame-modal-header {
           padding: 20px 24px;
           border-bottom: 2px solid #1C0F07;
@@ -2877,9 +3217,11 @@ export default function ServiceDetailPage({ params }) {
                 <div className="product-price-row">
                   <span className="product-price-val">{totalPriceStr}</span>
                   <span className="price-note">
-                    {selectedCustomFrame
-                      ? `Service + ${selectedCustomFrame.name}`
-                      : "Starting price"}
+                    {sizeObj?.kind === "custom"
+                      ? "Starting price \u2014 custom sizes are quoted separately"
+                      : selectedCustomFrame
+                        ? `Service + ${selectedCustomFrame.name}`
+                        : "Starting price"}
                   </span>
                 </div>
               </div>
@@ -2923,28 +3265,38 @@ export default function ServiceDetailPage({ params }) {
                         outline: "none"
                       }}
                     >
-                      {SERVICE_DEFAULT_SIZES.map((s) => {
-                        if (s.label === "custom") {
-                          return (
-                            <option key={s.label} value={s.label}>
-                              Custom Dimensions (Custom Quote)
-                            </option>
-                          );
-                        }
-                        const delta = parseInt(s.priceDelta) || 0;
-                        const calculatedTotal = servicePriceNum + delta;
-                        return (
-                          <option key={s.label} value={s.label}>
-                            {s.displayLabel} - {formatPrice(calculatedTotal)}
-                          </option>
-                        );
-                      })}
+                      {sizeOptions.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.kind === "custom" ? s.displayLabel : `${s.displayLabel} - ${formatPrice(s.price)}`}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Custom Dimensions Form */}
-                  {selectedSize === "custom" && (
+                  {sizeObj?.kind === "custom" && (
                     <div style={{ marginTop: "12px", background: "rgba(255, 255, 255, 0.45)", border: "1px dashed rgba(139, 94, 60, 0.5)", borderRadius: "6px", padding: "12px" }}>
+                      {/* A custom size has no fixed price, so say so up front rather
+                          than letting the starting price read as the final one. */}
+                      <div className="custom-quote-note">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="13" />
+                          <line x1="12" y1="16.5" x2="12" y2="16.5" />
+                        </svg>
+                        <div>
+                          <strong>This size needs a personal quote.</strong>
+                          <p>
+                            {`${totalPriceStr} is our starting price only. Share your exact measurements
+                            and our studio will confirm the final price for your custom dimensions.`}
+                          </p>
+                          <button type="button" className="custom-quote-link" onClick={openQuoteModal}>
+                            Request your quote
+                            <span aria-hidden="true">&rsaquo;</span>
+                          </button>
+                        </div>
+                      </div>
+
                       <span style={{ display: "block", fontFamily: "var(--font-typewriter)", fontSize: "10px", fontWeight: "700", color: "#8b5e3c", textTransform: "uppercase", marginBottom: "8px" }}>
                         Enter Custom Dimensions
                       </span>
@@ -3012,11 +3364,18 @@ export default function ServiceDetailPage({ params }) {
                 </div>
               )}
 
-              {/* CTA Actions (Add to Cart is always present) */}
+              {/* CTA Actions. A custom size has no price yet, so it is sent to the
+                  studio as an enquiry instead of going into the cart. */}
               <div className="action-row">
-                <button className="btn-premium" onClick={handleAddToCart}>
-                  Add to Cart
-                </button>
+                {isCustomSize ? (
+                  <button className="btn-premium" onClick={openQuoteModal}>
+                    Request a Quote
+                  </button>
+                ) : (
+                  <button className="btn-premium" onClick={handleAddToCart}>
+                    Add to Cart
+                  </button>
+                )}
                 {service.enableUploadPhoto !== false && (
                   <button className="btn-premium-ghost" onClick={triggerFileUpload}>
                     Upload Photo
@@ -3308,6 +3667,141 @@ export default function ServiceDetailPage({ params }) {
       )}
 
       <Footer />
+
+      {/* CUSTOM SIZE QUOTE REQUEST MODAL */}
+      <div
+        className={`frame-modal-overlay ${quoteModalOpen ? "open" : ""}`}
+        data-lenis-prevent
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeQuoteModal();
+        }}
+      >
+        <div className="frame-modal quote-modal">
+          <div className="frame-modal-header">
+            <h3>{quoteRef ? "Request Received" : "Request a Custom Quote"}</h3>
+            <button className="frame-modal-close" onClick={closeQuoteModal}>&times;</button>
+          </div>
+
+          {quoteRef ? (
+            /* Confirmation — the studio replies by hand, so set that expectation. */
+            <div className="frame-modal-body quote-done">
+              <div className="quote-done-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <h4>Thank you, {quoteForm.name.trim().split(" ")[0] || "friend"}.</h4>
+              <p>
+                Your request is with our studio. We will check availability for
+                your dimensions and call you on <strong>{quoteForm.phone}</strong> with
+                the exact price.
+              </p>
+              <div className="quote-reference">
+                <span>Your reference</span>
+                <strong>{quoteRef}</strong>
+              </div>
+              <button className="btn-premium" onClick={closeQuoteModal}>Done</button>
+            </div>
+          ) : (
+            <form className="frame-modal-body quote-form" onSubmit={handleSubmitQuote}>
+              {/* What is being quoted, so the customer can check it before sending. */}
+              <div className="quote-summary">
+                <div className="quote-summary-row">
+                  <span>Service</span>
+                  <strong>{service?.title}</strong>
+                </div>
+                <div className="quote-summary-row">
+                  <span>Your size</span>
+                  <strong>
+                    {customWidth || "\u2014"} &times; {customHeight || "\u2014"} {customUnit}
+                  </strong>
+                </div>
+                {selectedCustomFrame && (
+                  <div className="quote-summary-row">
+                    <span>Frame</span>
+                    <strong>{selectedCustomFrame.name}</strong>
+                  </div>
+                )}
+                {userUploadedImage && (
+                  <div className="quote-summary-row">
+                    <span>Your photo</span>
+                    <strong>Attached to this request</strong>
+                  </div>
+                )}
+              </div>
+
+              <p className="quote-intro">
+                Leave your name and number and our studio will confirm availability
+                and the final price for this size.
+              </p>
+
+              <div className="quote-field">
+                <label htmlFor="quote-name">Your Name <em>*</em></label>
+                <input
+                  id="quote-name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="e.g. Ayesha Khan"
+                  value={quoteForm.name}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, name: e.target.value })}
+                />
+              </div>
+
+              <div className="quote-field-row">
+                <div className="quote-field">
+                  <label htmlFor="quote-phone">Contact Number <em>*</em></label>
+                  <input
+                    id="quote-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="e.g. 0300 1234567"
+                    value={quoteForm.phone}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, phone: e.target.value })}
+                  />
+                </div>
+                <div className="quote-field">
+                  <label htmlFor="quote-email">Email <span className="quote-optional">(optional)</span></label>
+                  <input
+                    id="quote-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={quoteForm.email}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="quote-field">
+                <label htmlFor="quote-notes">Anything else? <span className="quote-optional">(optional)</span></label>
+                <textarea
+                  id="quote-notes"
+                  rows={3}
+                  placeholder="Matting, glass type, deadline, or anything else we should know."
+                  value={quoteForm.notes}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
+                />
+              </div>
+
+              {quoteError && <div className="quote-error" role="alert">{quoteError}</div>}
+
+              <div className="quote-actions">
+                <button type="submit" className="btn-premium" disabled={quoteSending}>
+                  {quoteSending ? "Sending\u2026" : "Send Request"}
+                </button>
+                <button type="button" className="btn-premium-ghost" onClick={closeQuoteModal}>
+                  Cancel
+                </button>
+              </div>
+
+              <p className="quote-privacy">
+                We use your number only to discuss this enquiry.
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
 
       {/* FRAME SELECTION MODAL */}
       <div

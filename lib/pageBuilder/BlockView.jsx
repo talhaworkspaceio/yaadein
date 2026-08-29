@@ -9,7 +9,7 @@
 // the inner markup for each component type.
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ICON_LIBRARY, isContainerBlock } from "./schema";
 import { resolveValue, blockClassName } from "./styles";
 import { AppSection, APP_SECTION_TYPES } from "./AppSections";
@@ -333,11 +333,117 @@ function LightSwitch({ block, ctx }) {
   );
 }
 
+// A published page always renders at device="desktop" and lets the generated
+// media queries do the responsive work. The paged carousel has to size its
+// columns in JS, though, so it resolves the breakpoint from the viewport
+// instead — matching BREAKPOINTS in schema.js. Inside the builder the selected
+// device wins, because there the canvas is a fixed-width frame.
+function useResponsiveColumns(block, device) {
+  const base = parseInt(resolveValue(block, "columns", device) || 3, 10) || 3;
+  const [vw, setVw] = useState(null);
+
+  useEffect(() => {
+    if (device && device !== "desktop") return;
+    const read = () => setVw(window.innerWidth);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, [device]);
+
+  // Builder canvas, or before the first client measurement (keeps the server
+  // and first client render identical).
+  if ((device && device !== "desktop") || vw === null) return base;
+
+  const at = (bp) => {
+    const v = block?.[bp]?.columns;
+    return v === undefined || v === "" ? null : parseInt(v, 10) || null;
+  };
+  if (vw <= 767) return at("mobile") ?? at("tablet") ?? base;
+  if (vw <= 1024) return at("tablet") ?? base;
+  return base;
+}
+
 function ReelsGallery({ block, device, isEditor }) {
   const reels = Array.isArray(block.reels) ? block.reels : [];
-  const cols = parseInt(resolveValue(block, "columns", device) || 3, 10);
+  const cols = useResponsiveColumns(block, device);
   const accent = block.textColor || "#B58B5C";
   const isCarousel = (block.layout || "carousel") === "carousel";
+
+  const GAP = 16;
+  // Only page when there is more than one screenful; below that the reels just
+  // sit side by side and the arrows would have nothing to do.
+  const pageable = isCarousel && reels.length > cols;
+  const maxIndex = Math.max(0, reels.length - cols);
+  const [index, setIndex] = useState(0);
+
+  // Columns change with the breakpoint, so an index that was valid on desktop
+  // can point past the end on mobile.
+  useEffect(() => {
+    setIndex((i) => Math.min(i, maxIndex));
+  }, [maxIndex]);
+
+  const at = Math.min(index, maxIndex);
+
+  // Sit under the strip rather than over it — side overlays clipped the outer
+  // reels. Both stay mounted and disable at the ends so the bar never shifts.
+  const arrow = (enabled) => ({
+    width: 42,
+    height: 42,
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: enabled ? "pointer" : "default",
+    background: "rgba(12,10,8,0.82)",
+    border: `1px solid ${accent}${enabled ? "66" : "22"}`,
+    color: accent,
+    opacity: enabled ? 1 : 0.35,
+    fontSize: 18,
+    lineHeight: 1,
+    padding: 0,
+    transition: "opacity 0.2s ease, border-color 0.2s ease",
+  });
+
+  const reelCard = (reel, i) => (
+    <div
+      key={reel.id || i}
+      style={{
+        position: "relative",
+        // Inside a paged carousel every reel is exactly one column wide, so the
+        // track can be shifted by whole columns.
+        flex: isCarousel
+          ? pageable
+            ? `0 0 calc((100% - ${(cols - 1) * GAP}px) / ${cols})`
+            : "0 0 min(300px, 78vw)"
+          : undefined,
+        aspectRatio: "9 / 16",
+        background: "#000",
+        borderRadius: 12,
+        overflow: "hidden",
+        border: `1px solid ${accent}33`,
+      }}
+    >
+      {isEditor || !reel.instagramUrl ? (
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, textAlign: "center" }}>
+          <span style={{ fontSize: 22, color: accent }}>❖</span>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Instagram Reel</span>
+          <span style={{ fontSize: 9, opacity: 0.6, wordBreak: "break-all" }}>{reel.instagramUrl || "No URL set"}</span>
+        </div>
+      ) : (
+        <iframe
+          src={getIgEmbedUrl(reel.instagramUrl)}
+          title={`Reel ${i + 1}`}
+          loading="lazy"
+          allowFullScreen
+          scrolling="no"
+          style={{ width: "100%", height: "100%", border: "none" }}
+        />
+      )}
+      {reel.featured && (
+        <span style={{ position: "absolute", top: 8, right: 8, background: accent, color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 10 }}>FEATURED</span>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ width: "100%" }}>
@@ -349,49 +455,58 @@ function ReelsGallery({ block, device, isEditor }) {
           {block.sectionSubtitle && <p style={{ fontSize: 14, opacity: 0.7, margin: "6px 0 0" }}>{block.sectionSubtitle}</p>}
         </div>
       )}
-      <div
-        style={
-          isCarousel
-            ? { display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8, scrollSnapType: "x mandatory" }
-            : { display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 16 }
-        }
-      >
-        {reels.map((reel, i) => (
-          <div
-            key={reel.id || i}
-            style={{
-              position: "relative",
-              flex: isCarousel ? "0 0 min(300px, 78vw)" : undefined,
-              scrollSnapAlign: isCarousel ? "start" : undefined,
-              aspectRatio: "9 / 16",
-              background: "#000",
-              borderRadius: 12,
-              overflow: "hidden",
-              border: `1px solid ${accent}33`,
-            }}
-          >
-            {isEditor || !reel.instagramUrl ? (
-              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, textAlign: "center" }}>
-                <span style={{ fontSize: 22, color: accent }}>❖</span>
-                <span style={{ fontSize: 12, fontWeight: 600 }}>Instagram Reel</span>
-                <span style={{ fontSize: 9, opacity: 0.6, wordBreak: "break-all" }}>{reel.instagramUrl || "No URL set"}</span>
-              </div>
-            ) : (
-              <iframe
-                src={getIgEmbedUrl(reel.instagramUrl)}
-                title={`Reel ${i + 1}`}
-                loading="lazy"
-                allowFullScreen
-                scrolling="no"
-                style={{ width: "100%", height: "100%", border: "none" }}
-              />
-            )}
-            {reel.featured && (
-              <span style={{ position: "absolute", top: 8, right: 8, background: accent, color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 10 }}>FEATURED</span>
-            )}
+
+      {pageable ? (
+        // Paged by arrows: the strip is clipped, so there is no scrollbar under it.
+        <div>
+          <div style={{ overflow: "hidden" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: GAP,
+                // One column step is the column width plus one gap, which works
+                // out to (100% + gap) / cols of the visible strip.
+                transform: `translateX(calc(-1 * ${at} * (100% + ${GAP}px) / ${cols}))`,
+                transition: "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
+            >
+              {reels.map(reelCard)}
+            </div>
           </div>
-        ))}
-      </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 20 }}>
+            <button
+              type="button"
+              aria-label="Previous reels"
+              disabled={at === 0}
+              style={arrow(at > 0)}
+              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+            >
+              ‹
+            </button>
+
+            <button
+              type="button"
+              aria-label="Next reels"
+              disabled={at >= maxIndex}
+              style={arrow(at < maxIndex)}
+              onClick={() => setIndex((i) => Math.min(maxIndex, i + 1))}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={
+            isCarousel
+              ? { display: "flex", gap: GAP }
+              : { display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: GAP }
+          }
+        >
+          {reels.map(reelCard)}
+        </div>
+      )}
     </div>
   );
 }

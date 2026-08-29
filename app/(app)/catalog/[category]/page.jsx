@@ -100,9 +100,8 @@ export default function CategoryPage({ params }) {
     return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
   };
 
-  const isFeatured = (id) => {
-    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
-  };
+  // Curated by the studio from the Frame Catalog admin.
+  const isFeatured = (p) => !!(p && p.featured);
 
   const isBoardGame = (p) => {
     const cat = p?.category || "";
@@ -110,12 +109,18 @@ export default function CategoryPage({ params }) {
   };
 
   // Filter products by category
-  const filteredProducts = products.filter(p => {
+  const inCategory = products.filter(p => {
     if (category === "portrait") return !isBoardGame(p) && p.orientation !== "landscape";
     if (category === "landscape") return !isBoardGame(p) && p.orientation === "landscape";
     if (category === "board-games") return isBoardGame(p);
     return false;
   });
+
+  // Studio picks lead the collection; everything else keeps its original order.
+  const filteredProducts = [
+    ...inCategory.filter(p => isFeatured(p)),
+    ...inCategory.filter(p => !isFeatured(p)),
+  ];
 
   const categoryTitle =
     category === "portrait" ? "Portrait Collection" :
@@ -1403,7 +1408,7 @@ export default function CategoryPage({ params }) {
                 <div key={p.id} className={`arrival-card ${p.orientation === "landscape" ? "landscape-card" : isBoardGame(p) ? "square-card" : ""}`}>
                   {isNewArrival(p) ? (
                     <div className="ribbon">New Arrival</div>
-                  ) : isFeatured(p.id) ? (
+                  ) : isFeatured(p) ? (
                     <div className="ribbon">Featured</div>
                   ) : null}
 

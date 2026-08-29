@@ -5,6 +5,23 @@ import { ref, onValue, set } from "firebase/database";
 import { db } from "../../../../../lib/firebase";
 import FrameLoader from "../../../components/FrameLoader";
 
+// Mirrors the list the service page used to hardcode. Seeded into the editor so
+// an admin starts from the current live behaviour instead of a blank slate.
+export const DEFAULT_SIZE_OPTIONS = [
+  { id: "digital_only", label: "Digital Copy Only (Digital Delivery)", price: 0, kind: "digital" },
+  { id: "12x18", label: '12" x 18" (Standard)', price: 0, kind: "fixed" },
+  { id: "16x24", label: '16" x 24"', price: 1500, kind: "fixed" },
+  { id: "20x30", label: '20" x 30" (Large)', price: 3500, kind: "fixed" },
+  { id: "24x36", label: '24" x 36" (Statement)', price: 6000, kind: "fixed" },
+  { id: "custom", label: "Custom Dimensions (Custom Quote)", price: 0, kind: "custom" },
+];
+
+/** Seed the editor from the built-in list, priced off this service's base. */
+export const seedSizeOptions = (priceInfo) => {
+  const base = parseInt(String(priceInfo || "").match(/Rs\.?\s*([\d,]+)/)?.[1]?.replace(/,/g, "") || "0", 10) || 0;
+  return DEFAULT_SIZE_OPTIONS.map((o) => ({ ...o, price: o.kind === "fixed" ? base + o.price : 0 }));
+};
+
 export const INITIAL_DEFAULT_SERVICES = [
   {
     id: "instagram-mirror-selfie",
@@ -22,6 +39,7 @@ export const INITIAL_DEFAULT_SERVICES = [
     enableUploadPhoto: false,
     enableChooseFrame: false,
     enableSelectSize: true,
+    sizeOptions: [],
     enableMultipleImages: true,
     enableNavigationButton: true,
     features: [
@@ -201,6 +219,45 @@ export default function AdminServicesPage() {
     }
   };
 
+  // ----- Frame size dropdown options -----
+  const sizeList = () => (Array.isArray(serviceForm.sizeOptions) ? serviceForm.sizeOptions : []);
+
+  const updateSizeOption = (idx, field, value) => {
+    setServiceForm((prev) => {
+      const next = [...(prev.sizeOptions || [])];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...prev, sizeOptions: next };
+    });
+  };
+
+  const addSizeOption = () => {
+    setServiceForm((prev) => ({
+      ...prev,
+      sizeOptions: [
+        ...(prev.sizeOptions || []),
+        { id: `size_${Date.now().toString(36)}`, label: "", price: 0, kind: "fixed" },
+      ],
+    }));
+  };
+
+  const removeSizeOption = (idx) => {
+    setServiceForm((prev) => ({ ...prev, sizeOptions: (prev.sizeOptions || []).filter((_, i) => i !== idx) }));
+  };
+
+  const moveSizeOption = (idx, dir) => {
+    setServiceForm((prev) => {
+      const next = [...(prev.sizeOptions || [])];
+      const t = idx + dir;
+      if (t < 0 || t >= next.length) return prev;
+      [next[idx], next[t]] = [next[t], next[idx]];
+      return { ...prev, sizeOptions: next };
+    });
+  };
+
+  const resetSizeOptions = () => {
+    setServiceForm((prev) => ({ ...prev, sizeOptions: seedSizeOptions(prev.priceInfo) }));
+  };
+
   // ----- Video list helpers (order here is the carousel order on the service page) -----
   const addVideoUrl = () => {
     const url = videoUrlInput.trim();
@@ -348,6 +405,11 @@ export default function AdminServicesPage() {
       enableUploadPhoto: item.enableUploadPhoto !== undefined ? !!item.enableUploadPhoto : true,
       enableChooseFrame: item.enableChooseFrame !== undefined ? !!item.enableChooseFrame : true,
       enableSelectSize: item.enableSelectSize !== undefined ? !!item.enableSelectSize : true,
+      // Existing services have no saved options — seed the built-in list so the
+      // admin edits what the page is already showing.
+      sizeOptions: Array.isArray(item.sizeOptions) && item.sizeOptions.length > 0
+        ? item.sizeOptions
+        : seedSizeOptions(item.priceInfo),
       enableMultipleImages: item.enableMultipleImages !== undefined ? !!item.enableMultipleImages : true,
       enableNavigationButton: item.enableNavigationButton !== undefined ? !!item.enableNavigationButton : true,
       features: Array.isArray(item.features) ? item.features : [],
@@ -395,12 +457,24 @@ export default function AdminServicesPage() {
     e.preventDefault();
     const cleanSlug = serviceForm.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || serviceForm.title.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     const cleanVideos = (serviceForm.videos || []).filter(Boolean);
+
+    // Drop unlabelled rows and coerce prices, so the service page never has to
+    // guess at half-filled options.
+    const cleanSizeOptions = (serviceForm.sizeOptions || [])
+      .filter((o) => o && String(o.label || "").trim())
+      .map((o, i) => ({
+        id: o.id || `size_${i}`,
+        label: String(o.label).trim(),
+        kind: o.kind || "fixed",
+        price: o.kind === "custom" ? 0 : (parseInt(String(o.price).replace(/[^0-9]/g, ""), 10) || 0),
+      }));
     const updatedItem = {
       ...serviceForm,
       id: cleanSlug,
       slug: cleanSlug,
       imageUrl: serviceForm.featuredImage || serviceForm.imageUrl,
       videos: cleanVideos,
+      sizeOptions: cleanSizeOptions,
       // Kept in sync so anything still reading the old single field keeps working.
       videoUrl: cleanVideos[0] || "",
     };
@@ -693,12 +767,105 @@ export default function AdminServicesPage() {
                 </div>
               </div>
 
+              {/* Options for the frame-size dropdown — only relevant when it is on */}
+              {serviceForm.enableSelectSize && (
+                <div style={{ background: "rgba(201, 168, 76, 0.05)", border: "1px solid rgba(201, 168, 76, 0.2)", borderRadius: 8, padding: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 4 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700 }}>
+                        Frame Size Options &amp; Prices
+                      </label>
+                      <p style={{ fontSize: 11, color: "var(--text2)", margin: "4px 0 0", lineHeight: 1.55, maxWidth: 520 }}>
+                        These are the choices in the size dropdown on the service page. The price you enter is the
+                        <strong> final price</strong> customers see for that size (a chosen frame is added on top).
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={resetSizeOptions}
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", color: "#fff", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      ↺ Reset to defaults
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                    {sizeList().length === 0 && (
+                      <p style={{ fontSize: 11, color: "var(--text2)", fontStyle: "italic", margin: 0 }}>
+                        No options yet — the service page will fall back to the standard sizes until you add some.
+                      </p>
+                    )}
+
+                    {sizeList().map((opt, idx) => (
+                      <div
+                        key={opt.id || idx}
+                        style={{ display: "grid", gridTemplateColumns: "1fr 130px 150px auto", gap: 8, alignItems: "center", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}
+                      >
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 3 }}>Label shown to customer</label>
+                          <input
+                            type="text"
+                            placeholder={'e.g. 12" x 18" (Standard)'}
+                            value={opt.label || ""}
+                            onChange={(e) => updateSizeOption(idx, "label", e.target.value)}
+                            style={{ width: "100%", background: "#14100B", border: "1px solid var(--border)", color: "#fff", padding: 7, borderRadius: 5, fontSize: 12, boxSizing: "border-box" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 3 }}>Price (Rs.)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            disabled={opt.kind === "custom"}
+                            placeholder={opt.kind === "custom" ? "Quote" : "4000"}
+                            value={opt.kind === "custom" ? "" : (opt.price ?? "")}
+                            onChange={(e) => updateSizeOption(idx, "price", e.target.value === "" ? "" : Number(e.target.value))}
+                            style={{ width: "100%", background: "#14100B", border: "1px solid var(--border)", color: "#fff", padding: 7, borderRadius: 5, fontSize: 12, boxSizing: "border-box", opacity: opt.kind === "custom" ? 0.45 : 1 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--text2)", marginBottom: 3 }}>Type</label>
+                          <select
+                            value={opt.kind || "fixed"}
+                            onChange={(e) => updateSizeOption(idx, "kind", e.target.value)}
+                            style={{ width: "100%", background: "#14100B", border: "1px solid var(--border)", color: "#fff", padding: 7, borderRadius: 5, fontSize: 12, boxSizing: "border-box" }}
+                          >
+                            <option value="fixed">Fixed size</option>
+                            <option value="digital">Digital delivery</option>
+                            <option value="custom">Custom dimensions</option>
+                          </select>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 4, paddingTop: 14 }}>
+                          <button type="button" onClick={() => moveSizeOption(idx, -1)} disabled={idx === 0} title="Move up"
+                            style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "4px 8px", borderRadius: 4, fontSize: 10, cursor: idx === 0 ? "not-allowed" : "pointer", opacity: idx === 0 ? 0.4 : 1 }}>▲</button>
+                          <button type="button" onClick={() => moveSizeOption(idx, 1)} disabled={idx === sizeList().length - 1} title="Move down"
+                            style={{ background: "none", border: "1px solid var(--border)", color: "#fff", padding: "4px 8px", borderRadius: 4, fontSize: 10, cursor: idx === sizeList().length - 1 ? "not-allowed" : "pointer", opacity: idx === sizeList().length - 1 ? 0.4 : 1 }}>▼</button>
+                          <button type="button" onClick={() => removeSizeOption(idx)} title="Remove"
+                            style={{ background: "rgba(255,62,108,0.15)", border: "1px solid rgba(255,62,108,0.4)", color: "#ff6b8b", padding: "4px 9px", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={addSizeOption}
+                      style={{ background: "rgba(201,168,76,0.16)", border: "1px dashed var(--accent)", color: "var(--accent)", padding: "10px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}
+                    >
+                      + Add Size Option
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Multiple Photos & Featured Image Management */}
               <div>
                 <label style={{ display: "block", fontSize: 12, color: "var(--accent)", fontWeight: 700, marginBottom: 6 }}>
                   Service Photos Gallery & Featured Image
                 </label>
-                
+
                 <div style={{ background: "var(--surface2)", border: "1px dashed var(--border)", borderRadius: 8, padding: 14, marginBottom: 12 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
                     <input
@@ -795,7 +962,7 @@ export default function AdminServicesPage() {
                 </label>
 
                 <p style={{ fontSize: 11, color: "var(--text2)", margin: "0 0 10px 0" }}>
-                  Upload MP4/WebM files or paste video URLs. Videos are hosted on Cloudinary CDN for instant smooth streaming.
+                  Upload MP4/WebM files. Videos are hosted on Cloudinary CDN for instant smooth streaming.
                   Add <strong>one</strong> video and the service page plays it full-width as before; add <strong>two or more</strong>
                   {" "}and the page shows them in a carousel, in the order listed below.
                 </p>
@@ -816,7 +983,7 @@ export default function AdminServicesPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {/* <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
                     type="text"
                     placeholder="Or paste video direct link (e.g. /videos/mirror-showcase.mp4 or https://...)"
@@ -838,7 +1005,7 @@ export default function AdminServicesPage() {
                   >
                     + Add Video
                   </button>
-                </div>
+                </div> */}
 
                 {/* Added videos — this order is the carousel order */}
                 {Array.isArray(serviceForm.videos) && serviceForm.videos.length > 0 ? (

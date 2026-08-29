@@ -35,6 +35,7 @@ export default function CatalogPage() {
   const [lightOn, setLightOn] = useState(true);
 
   // Carousel slider indices
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [newArrivalsIndex, setNewArrivalsIndex] = useState(0);
   const [portraitIndex, setPortraitIndex] = useState(0);
   const [landscapeIndex, setLandscapeIndex] = useState(0);
@@ -117,9 +118,8 @@ export default function CatalogPage() {
     return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak" || id === "1" || id === "17" || id === "18";
   };
 
-  const isFeatured = (id) => {
-    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
-  };
+  // Curated by the studio from the Frame Catalog admin.
+  const isFeatured = (p) => !!(p && p.featured);
 
   // Categorize products
   const isBoardGame = (p) => {
@@ -127,14 +127,27 @@ export default function CatalogPage() {
     return cat.toLowerCase().includes("board game");
   };
 
-  const newArrivalsProducts = products.filter(p => isNewArrival(p));
-  const portraitProducts = products.filter(p => !isBoardGame(p) && p.orientation !== "landscape");
-  const landscapeProducts = products.filter(p => !isBoardGame(p) && p.orientation === "landscape");
-  const boardGamesProducts = products.filter(p => isBoardGame(p));
+  // Featured frames lead every row, not just their own section — a studio pick
+  // should be the first thing seen in Portrait, Landscape and Board Games too.
+  // Stable: everything else keeps the order it came back from Firebase in.
+  const featuredFirst = (list) => [
+    ...list.filter(p => isFeatured(p)),
+    ...list.filter(p => !isFeatured(p)),
+  ];
+
+  const featuredProducts = products.filter(p => isFeatured(p));
+  const newArrivalsProducts = featuredFirst(products.filter(p => isNewArrival(p)));
+  const portraitProducts = featuredFirst(products.filter(p => !isBoardGame(p) && p.orientation !== "landscape"));
+  const landscapeProducts = featuredFirst(products.filter(p => !isBoardGame(p) && p.orientation === "landscape"));
+  const boardGamesProducts = featuredFirst(products.filter(p => isBoardGame(p)));
 
   const itemsPerPage = isMobile ? 1 : 3;
 
   // Translation values
+  const featuredTranslation = isMobile
+    ? `calc(-${featuredIndex} * (100% + 24px))`
+    : `calc(-${featuredIndex} * (100% / 3 + 8px))`;
+
   const newArrivalsTranslation = isMobile
     ? `calc(-${newArrivalsIndex} * (100% + 24px))`
     : `calc(-${newArrivalsIndex} * (100% / 3 + 8px))`;
@@ -164,7 +177,7 @@ export default function CatalogPage() {
       <div className={`arrival-card ${isLandscape ? "landscape-card" : isGame ? "square-card" : ""}`}>
         {isNewArrival(p) ? (
           <div className="ribbon">New Arrival</div>
-        ) : isFeatured(p.id) ? (
+        ) : isFeatured(p) ? (
           <div className="ribbon">Featured</div>
         ) : null}
 
@@ -643,6 +656,41 @@ export default function CatalogPage() {
             <FrameLoader variant="page" label="Loading frame catalog" />
           ) : (
             <div className="carousels-container">
+              {/* FEATURED SECTION — the studio's own picks, flagged in the admin */}
+              {featuredProducts.length > 0 && (
+                <div className="carousel-section">
+                  <div className="carousel-section-header">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <h2 className="carousel-section-title">Featured Frames</h2>
+                    </div>
+                    <p className="carousel-section-desc">Hand-picked by our studio — the pieces we are proudest of this season.</p>
+                  </div>
+                  <div className="carousel-row">
+                    <div className="carousel-viewport-wrapper">
+                      {featuredIndex > 0 && (
+                        <button className="carousel-arrow carousel-arrow-prev" onClick={() => setFeaturedIndex(p => Math.max(0, p - 1))}>
+                          &larr;
+                        </button>
+                      )}
+                      <div className="carousel-viewport">
+                        <div className="carousel-track" style={{ transform: `translateX(${featuredTranslation})` }}>
+                          {featuredProducts.map((p) => (
+                            <div className="carousel-slide" key={p.id}>
+                              {renderProductCard(p)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {featuredIndex < featuredProducts.length - itemsPerPage && (
+                        <button className="carousel-arrow carousel-arrow-next" onClick={() => setFeaturedIndex(p => Math.min(featuredProducts.length - itemsPerPage, p + 1))}>
+                          &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* NEW ARRIVALS SECTION */}
               {newArrivalsProducts.length > 0 && (
                 <div className="carousel-section">

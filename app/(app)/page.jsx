@@ -3774,6 +3774,7 @@ import CardDescription from "./components/CardDescription";
 import { useHomePageContent } from "../lib/cms";
 import { SectionLayoutRenderer } from "@/lib/pageBuilder/sectionLayout";
 import FrameLoader from "./components/FrameLoader";
+import ScratchReveal from "./components/ScratchReveal";
 
 // Persistent Cart LocalStorage Helpers
 const getCart = () => {
@@ -4209,9 +4210,17 @@ export default function HomePage() {
     return cat.toLowerCase().includes("board game");
   };
 
-  const portraitProducts = products.filter(p => !isBoardGame(p) && p.orientation === 'portrait').slice(0, 3);
-  const landscapeProducts = products.filter(p => !isBoardGame(p) && p.orientation === 'landscape').slice(0, 3);
-  const boardGames = products.filter(p => isBoardGame(p)).slice(0, 3);
+  // Featured frames lead each row. These rows only show three, so without this
+  // a studio pick further down the catalogue would never reach the home page.
+  // Stable: everything else keeps the order Firebase returned.
+  const featuredFirst = (list) => [
+    ...list.filter(p => p?.featured),
+    ...list.filter(p => !p?.featured),
+  ];
+
+  const portraitProducts = featuredFirst(products.filter(p => !isBoardGame(p) && p.orientation === 'portrait')).slice(0, 3);
+  const landscapeProducts = featuredFirst(products.filter(p => !isBoardGame(p) && p.orientation === 'landscape')).slice(0, 3);
+  const boardGames = featuredFirst(products.filter(p => isBoardGame(p))).slice(0, 3);
 
   const isNewArrival = (p) => {
     if (!p) return false;
@@ -4224,9 +4233,8 @@ export default function HomePage() {
     return id === "antique-gold" || id === "gallery-landscape" || id === "landscape-oak";
   };
 
-  const isFeatured = (id) => {
-    return id === "modern-black" || id === "classic-walnut" || id === "royal-gilt" || id === "colonial-pine";
-  };
+  // Curated by the studio from the Frame Catalog admin.
+  const isFeatured = (p) => !!(p && p.featured);
 
   const renderProductCard = (p) => {
     const isLandscape = p.orientation === "landscape";
@@ -4241,7 +4249,7 @@ export default function HomePage() {
       <div key={p.id} className={`arrival-card ${isLandscape ? "landscape-card" : isGame ? "square-card" : ""}`}>
         {isNewArrival(p) ? (
           <div className="ribbon">New Arrival</div>
-        ) : isFeatured(p.id) ? (
+        ) : isFeatured(p) ? (
           <div className="ribbon">Featured</div>
         ) : null}
 
@@ -8107,6 +8115,9 @@ export default function HomePage() {
         nodes={homeSectionNodes}
         ctx={{ isEditor: false, lightOn: true }}
       />
+
+      {/* Lottery-style scratch-off over the artwork inside each frame */}
+      <ScratchReveal />
       {/* FOOTER */}
       <Footer />
 
