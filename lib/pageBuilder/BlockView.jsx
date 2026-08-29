@@ -240,6 +240,170 @@ function SingleFaq({ block, ctx, index }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Ambient light blobs — the drifting glow behind the catalog and home sections,
+// packaged so any page can use it. Fills its nearest positioned ancestor and
+// sits behind the content, so it is dropped straight into a Section.
+// ---------------------------------------------------------------------------
+
+let blobKeyframesInjected = false;
+
+const BLOB_KEYFRAMES = `
+@keyframes pb-blob-a {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg);        border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%; }
+  33%  { transform: translate(80px,-60px) scale(1.15) rotate(45deg);  border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%; }
+  66%  { transform: translate(-40px,80px) scale(0.9) rotate(90deg);   border-radius: 35% 65% 60% 40% / 50% 35% 65% 50%; }
+  100% { transform: translate(0,0) scale(1) rotate(180deg);      border-radius: 43% 57% 51% 49% / 57% 40% 60% 43%; }
+}
+@keyframes pb-blob-b {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg);          border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%; }
+  50%  { transform: translate(-100px,50px) scale(1.2) rotate(120deg); border-radius: 38% 62% 62% 38% / 68% 48% 52% 32%; }
+  100% { transform: translate(60px,-70px) scale(0.9) rotate(-60deg);  border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%; }
+}
+@keyframes pb-blob-drift {
+  0%   { transform: translate(-20%,-20%) scale(1); }
+  25%  { transform: translate(100%,10%) scale(1.2); }
+  50%  { transform: translate(40%,40%) scale(0.9); }
+  75%  { transform: translate(-10%,30%) scale(1.1); }
+  100% { transform: translate(-20%,-20%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-blob { animation: none !important; }
+}
+`;
+
+function AmbientBlobs({ block, device }) {
+  // One shared stylesheet however many blob blocks a page has.
+  useEffect(() => {
+    if (blobKeyframesInjected || typeof document === "undefined") return;
+    const tag = document.createElement("style");
+    tag.setAttribute("data-pb-blobs", "");
+    tag.textContent = BLOB_KEYFRAMES;
+    document.head.appendChild(tag);
+    blobKeyframesInjected = true;
+  }, []);
+
+  const colorA = block.blobColorA || "#B58B5C";
+  const colorB = block.blobColorB || "#8B5E3C";
+  const glowColor = block.glowColor || "#B58B5C";
+  const intensity = Math.min(1, Math.max(0, parseFloat(block.blobIntensity ?? 0.2)));
+  // Blobs are lit haze, not shapes — they need real blur or their gradient
+  // edge reads as a hard rim.
+  const blur = Math.max(0, parseInt(block.blobBlur ?? 70, 10));
+  // Sizes and speed are inline styles, not CSS, so they need the real breakpoint.
+  const bp = useBreakpoint(device);
+  const speed = Math.max(1, parseInt(resolveValue(block, "blobSpeed", bp) || 25, 10));
+  const sizeA = Math.max(80, parseInt(resolveValue(block, "blobSizeA", bp) || 500, 10));
+  const sizeB = Math.max(80, parseInt(resolveValue(block, "blobSizeB", bp) || 550, 10));
+  const showGlow = block.showGlow !== false;
+  // The frosted sheet the real pages lay over these. It is what actually makes
+  // the effect subtle — without it the raw blobs sit on the page at full strength.
+  const showPane = block.showPane !== false;
+  const paneBlur = Math.max(0, parseInt(block.paneBlur ?? 35, 10));
+  const paneTint = block.paneTint || "#0C0A08";
+  const paneOpacity = Math.min(1, Math.max(0, parseFloat(block.paneOpacity ?? 0.45)));
+  // A page backdrop should reach both edges of the screen. Left at its parent's
+  // width, the frosted tint stops mid-page and that straight edge is visible —
+  // especially next to a full-bleed block.
+  const stretch = block.stretchToScreen !== false;
+
+  const soft = (hex, alpha) => {
+    const h = String(hex).replace("#", "");
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    const n = parseInt(full, 16);
+    if (Number.isNaN(n)) return `rgba(181,139,92,${alpha})`;
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  };
+
+  // Extra mid stops so the falloff is gradual instead of ending in a ring.
+  const haze = (hex, a) =>
+    `radial-gradient(circle, ${soft(hex, a)} 0%, ${soft(hex, a * 0.6)} 30%, ${soft(hex, a * 0.22)} 52%, ${soft(hex, a * 0.06)} 70%, ${soft(hex, 0)} 85%)`;
+
+  const base = {
+    position: "absolute",
+    pointerEvents: "none",
+    filter: blur ? `blur(${blur}px)` : undefined,
+    willChange: "transform",
+  };
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        ...(stretch
+          ? { left: "50%", right: "auto", width: "100vw", transform: "translateX(-50%)" }
+          : null),
+        // Deliberately NOT clipped: clipping cuts a blob off mid-drift and the
+        // straight cut is far more visible than the blob itself. The app already
+        // hides horizontal overflow globally.
+        pointerEvents: "none",
+        // Negative, so this always paints behind its siblings no matter where
+        // the block sits in the section. At z-index 0 it would cover any block
+        // added before it, and the frosted pane would blur that content instead
+        // of the backdrop. Negative children still paint above the parent's own
+        // background, so the blobs stay visible.
+        zIndex: -1,
+      }}
+    >
+      <div
+        className="pb-blob"
+        style={{
+          ...base,
+          top: "-10%",
+          left: "10%",
+          width: sizeA,
+          height: sizeA,
+          background: haze(colorA, intensity),
+          borderRadius: "43% 57% 51% 49% / 57% 40% 60% 43%",
+          animation: `pb-blob-a ${speed}s infinite alternate ease-in-out`,
+        }}
+      />
+      <div
+        className="pb-blob"
+        style={{
+          ...base,
+          bottom: "-15%",
+          right: "5%",
+          width: sizeB,
+          height: sizeB,
+          background: haze(colorB, intensity * 0.86),
+          borderRadius: "50% 50% 30% 70% / 50% 60% 40% 50%",
+          animation: `pb-blob-b ${Math.round(speed * 1.2)}s infinite alternate ease-in-out`,
+        }}
+      />
+      {showGlow && (
+        <div
+          className="pb-blob"
+          style={{
+            ...base,
+            top: 0,
+            left: 0,
+            width: "60%",
+            height: "60%",
+            background: haze(glowColor, intensity * 0.9),
+            borderRadius: "50%",
+            animation: `pb-blob-drift ${Math.round(speed * 0.4)}s infinite ease-in-out`,
+          }}
+        />
+      )}
+      {showPane && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background: soft(paneTint, paneOpacity),
+            backdropFilter: `blur(${paneBlur}px) saturate(140%)`,
+            WebkitBackdropFilter: `blur(${paneBlur}px) saturate(140%)`,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function StudioLamp({ block, ctx, device }) {
   const lit = block.followsPageLight === false ? block.defaultOn !== false : ctx.lightOn !== false;
   const headW = Math.max(60, parseInt(resolveValue(block, "lampWidth", device) || 440, 10));
@@ -334,12 +498,11 @@ function LightSwitch({ block, ctx }) {
 }
 
 // A published page always renders at device="desktop" and lets the generated
-// media queries do the responsive work. The paged carousel has to size its
-// columns in JS, though, so it resolves the breakpoint from the viewport
-// instead — matching BREAKPOINTS in schema.js. Inside the builder the selected
-// device wins, because there the canvas is a fixed-width frame.
-function useResponsiveColumns(block, device) {
-  const base = parseInt(resolveValue(block, "columns", device) || 3, 10) || 3;
+// media queries do the responsive work. Blocks that must resolve a responsive
+// value in JS (rather than in CSS) need the real breakpoint, so this reads it
+// from the viewport — matching BREAKPOINTS in schema.js. Inside the builder the
+// selected device wins, because there the canvas is a fixed-width frame.
+function useBreakpoint(device) {
   const [vw, setVw] = useState(null);
 
   useEffect(() => {
@@ -352,15 +515,16 @@ function useResponsiveColumns(block, device) {
 
   // Builder canvas, or before the first client measurement (keeps the server
   // and first client render identical).
-  if ((device && device !== "desktop") || vw === null) return base;
+  if (device && device !== "desktop") return device;
+  if (vw === null) return "desktop";
+  if (vw <= 767) return "mobile";
+  if (vw <= 1024) return "tablet";
+  return "desktop";
+}
 
-  const at = (bp) => {
-    const v = block?.[bp]?.columns;
-    return v === undefined || v === "" ? null : parseInt(v, 10) || null;
-  };
-  if (vw <= 767) return at("mobile") ?? at("tablet") ?? base;
-  if (vw <= 1024) return at("tablet") ?? base;
-  return base;
+function useResponsiveColumns(block, device) {
+  const bp = useBreakpoint(device);
+  return parseInt(resolveValue(block, "columns", bp) || 3, 10) || 3;
 }
 
 function ReelsGallery({ block, device, isEditor }) {
@@ -1001,6 +1165,9 @@ function BlockInner({ block, device, ctx, index }) {
     case "services-grid":
     case "category-tiles":
       return <AppSection block={block} device={device} ctx={ctx} />;
+
+    case "ambient-blobs":
+      return <AmbientBlobs block={block} device={device} />;
 
     case "studio-lamp":
       return <StudioLamp block={block} ctx={ctx} device={device} />;
