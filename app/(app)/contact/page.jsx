@@ -544,7 +544,7 @@ export default function ContactPage() {
               </div>
               <div className="info-item">
                 <span className="info-label">Call Us</span>
-                <span className="info-val">{contactCms?.phone1 || contactCms?.phone || "+92 300 9876543"}{contactCms?.phone2 ? ` / ${contactCms.phone2}` : ""}</span>
+                <span className="info-val">{contactCms?.phone1 || contactCms?.phone || "+92 300 9876543"}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Address</span>
@@ -560,7 +560,7 @@ export default function ContactPage() {
 
           <div className="map-container">
             <iframe
-              src="https://maps.google.com/maps?q=Johar%20Town,%20Lahore,%20Pakistan&t=&z=14&ie=UTF8&iwloc=&output=embed"
+              src={contactCms?.mapEmbedUrl || "https://maps.google.com/maps?q=Johar%20Town,%20Lahore,%20Pakistan&t=&z=14&ie=UTF8&iwloc=&output=embed"}
               className="map-iframe"
               allowFullScreen=""
               loading="lazy"

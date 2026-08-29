@@ -2349,11 +2349,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!paymentReceipt) {
-      setErrorMsg("Please upload your payment receipt screenshot before placing the order.");
-      return;
-    }
-
     setIsSubmitting(true);
     const randomId = "FS-" + Math.floor(100000 + Math.random() * 900000);
 
@@ -2513,6 +2508,11 @@ export default function CheckoutPage() {
           inset: 0;
           z-index: 1;
           pointer-events: none;
+          /* The drifting blobs sit at bottom: -15%, so they hang past the end of
+             the page and added ~370px of empty space under the footer. This
+             backdrop already spans the whole page, so clipping it costs nothing
+             visually and stops the overflow. */
+          overflow: hidden;
         }
 
         .catalog-glass-pane {
@@ -4615,7 +4615,7 @@ export default function CheckoutPage() {
                   {/* Receipt screenshot uploader */}
                   <div style={{ marginTop: "18px", padding: "16px", background: "rgba(20, 16, 12, 0.4)", border: "1px dashed rgba(181, 139, 92, 0.3)", borderRadius: "var(--radius)", textAlign: "left" }}>
                     <p style={{ fontSize: "12px", lineHeight: "1.6", color: "var(--text2)", marginBottom: "12px" }}>
-                      💡 <strong>Verification Receipt:</strong> Upload your transfer screenshot below. Alternatively, if you are ordering from a PC, you can transfer from your phone and send the receipt screenshot to our WhatsApp at <strong>+92 311 8372465</strong> along with your name.
+                      💡 <strong>Verification Receipt (optional):</strong> Uploading your transfer screenshot here helps us confirm your payment faster, but you can place the order without it. You can also send the screenshot to our WhatsApp at <strong>+92 311 8372465</strong> along with your name.
                     </p>
                     {!paymentReceipt ? (
                       <>
@@ -4672,7 +4672,7 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <button type="submit" className="btn-order" disabled={isSubmitting || !paymentReceipt}>
+                  <button type="submit" className="btn-order" disabled={isSubmitting}>
                     {isSubmitting ? "Placing Order..." : "Place Order"}
                   </button>
                 </div>

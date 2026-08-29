@@ -101,10 +101,8 @@ export default function AdminSiteContentPage() {
   const [trackPage, setTrackPage] = useState({
     title: "Track Your Order",
     subtitle: "Enter your unique Order Reference ID (e.g. YDN-1092) below to view real-time crafting status and courier dispatch details.",
-    instruction1: "Check your SMS confirmation or invoice email for your Order ID.",
-    instruction2: "For urgent modifications, contact our studio support helpline directly.",
-    supportPhone: "+92 300 1234567",
-    supportEmail: "team@yaadein.com",
+    inputPlaceholder: "Enter Reference ID (e.g. YAADEIN-XXXXXX)",
+    buttonText: "Track Status",
   });
 
   // 5. CONTACT PAGE
@@ -114,7 +112,6 @@ export default function AdminSiteContentPage() {
     addressLine1: "Yaadein Craft Studio, Gulberg III",
     addressLine2: "Lahore, Punjab, Pakistan",
     phone1: "+92 300 1234567",
-    phone2: "+92 321 7654321",
     email: "team@yaadein.com",
     workingHours: "Monday – Saturday: 10:00 AM – 8:00 PM",
     mapEmbedUrl: "",
@@ -128,10 +125,8 @@ export default function AdminSiteContentPage() {
 
   // 7. HEADER & FOOTER NAVIGATION
   const [navigation, setNavigation] = useState({
-    brandName: "Yaadein",
     tagline: "Masterpiece picture framing handcrafted for your unique memories.",
     supportEmail: "team@yaadein.com",
-    phone: "+92 300 1234567",
     studioHours: "Mon - Fri: 9:00 AM - 6:00 PM",
     location: "Designed & Handcrafted in Pakistan",
     developerLink: "https://linkedin.com",
@@ -588,14 +583,15 @@ export default function AdminSiteContentPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Support Phone Number</label>
-                <input type="text" value={trackPage.supportPhone || ""} onChange={(e) => setTrackPage({ ...trackPage, supportPhone: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Search Box Placeholder</label>
+                <input type="text" value={trackPage.inputPlaceholder || ""} onChange={(e) => setTrackPage({ ...trackPage, inputPlaceholder: e.target.value })} placeholder="Enter Reference ID (e.g. YAADEIN-XXXXXX)" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Support Email Address</label>
-                <input type="text" value={trackPage.supportEmail || ""} onChange={(e) => setTrackPage({ ...trackPage, supportEmail: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Search Button Label</label>
+                <input type="text" value={trackPage.buttonText || ""} onChange={(e) => setTrackPage({ ...trackPage, buttonText: e.target.value })} placeholder="Track Status" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
             </div>
+
 
             <div style={{ marginTop: 10 }}>
               <button onClick={() => handleSaveSection("site_content/track-page", trackPage, "Track Order Page Settings")} disabled={saving} style={{ background: "var(--accent)", color: "#000", border: "none", padding: "12px 28px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
@@ -633,19 +629,20 @@ export default function AdminSiteContentPage() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Phone 1</label>
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Phone</label>
                 <input type="text" value={contactPage.phone1 || ""} onChange={(e) => setContactPage({ ...contactPage, phone1: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Phone 2</label>
-                <input type="text" value={contactPage.phone2 || ""} onChange={(e) => setContactPage({ ...contactPage, phone2: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
               <div>
                 <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Email</label>
                 <input type="text" value={contactPage.email || ""} onChange={(e) => setContactPage({ ...contactPage, email: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Google Maps Embed URL</label>
+              <input type="text" value={contactPage.mapEmbedUrl || ""} onChange={(e) => setContactPage({ ...contactPage, mapEmbedUrl: e.target.value })} placeholder="Leave blank to use the default studio location" style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
             </div>
 
             <div>
@@ -734,18 +731,14 @@ export default function AdminSiteContentPage() {
           <h3 style={{ fontSize: 18, color: "var(--accent)", marginBottom: 20 }}>Header & Footer Brand Info</h3>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Brand Name</label>
-                <input type="text" value={navigation.brandName || ""} onChange={(e) => setNavigation({ ...navigation, brandName: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
-              </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
                 <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Support Email</label>
                 <input type="text" value={navigation.supportEmail || ""} onChange={(e) => setNavigation({ ...navigation, supportEmail: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Support Phone Number</label>
-                <input type="text" value={navigation.phone || ""} onChange={(e) => setNavigation({ ...navigation, phone: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
+                <label style={{ display: "block", fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>Copyright Line</label>
+                <input type="text" value={navigation.copyrightText || ""} onChange={(e) => setNavigation({ ...navigation, copyrightText: e.target.value })} style={{ width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", color: "#fff", padding: 10, borderRadius: 6 }} />
               </div>
             </div>
 
