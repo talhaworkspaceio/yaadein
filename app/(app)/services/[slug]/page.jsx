@@ -491,6 +491,7 @@ export default function ServiceDetailPage({ params }) {
   const [quoteError, setQuoteError] = useState("");
   const [quoteSending, setQuoteSending] = useState(false);
   const [quoteRef, setQuoteRef] = useState("");
+  const [dimensionPrompt, setDimensionPrompt] = useState(false);
 
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -787,8 +788,18 @@ export default function ServiceDetailPage({ params }) {
   // A custom size has no price, so instead of going to the cart it is sent to
   // the studio as an enquiry with the customer's contact details.
   const isCustomSize = sizeObj?.kind === "custom";
+  // The studio cannot price a custom size without the measurements, so they are
+  // required before the request form will open — not just before it submits.
+  const hasCustomDimensions =
+    String(customWidth).trim() !== "" && String(customHeight).trim() !== "" &&
+    Number(customWidth) > 0 && Number(customHeight) > 0;
 
   const openQuoteModal = () => {
+    if (isCustomSize && !hasCustomDimensions) {
+      setDimensionPrompt(true);
+      return;
+    }
+    setDimensionPrompt(false);
     setQuoteError("");
     setQuoteRef("");
     setQuoteModalOpen(true);
@@ -3351,23 +3362,41 @@ export default function ServiceDetailPage({ params }) {
                       </span>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>Width</label>
+                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>
+                            Width <em style={{ color: "#8b1e1e", fontStyle: "normal" }}>*</em>
+                          </label>
                           <input
                             type="number"
+                            min="1"
+                            required
                             placeholder="e.g. 18"
                             value={customWidth}
-                            onChange={(e) => setCustomWidth(e.target.value)}
-                            style={{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" }}
+                            onChange={(e) => { setCustomWidth(e.target.value); setDimensionPrompt(false); }}
+                            style={{
+                              ...{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" },
+                              border: dimensionPrompt && !String(customWidth).trim()
+                                ? "1px solid #8b1e1e"
+                                : "1px solid rgba(139,94,60,0.4)",
+                            }}
                           />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>Height</label>
+                          <label style={{ display: "block", fontSize: "9px", fontFamily: "var(--font-typewriter)", color: "#2c1e11", marginBottom: "2px" }}>
+                            Height <em style={{ color: "#8b1e1e", fontStyle: "normal" }}>*</em>
+                          </label>
                           <input
                             type="number"
+                            min="1"
+                            required
                             placeholder="e.g. 28"
                             value={customHeight}
-                            onChange={(e) => setCustomHeight(e.target.value)}
-                            style={{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" }}
+                            onChange={(e) => { setCustomHeight(e.target.value); setDimensionPrompt(false); }}
+                            style={{
+                              ...{ width: "100%", padding: "6px 8px", background: "rgba(255,255,255,0.8)", border: "1px solid rgba(139,94,60,0.4)", borderRadius: "4px", fontSize: "11px", fontFamily: "var(--font-typewriter)" },
+                              border: dimensionPrompt && !String(customHeight).trim()
+                                ? "1px solid #8b1e1e"
+                                : "1px solid rgba(139,94,60,0.4)",
+                            }}
                           />
                         </div>
                         <div>
@@ -3383,6 +3412,19 @@ export default function ServiceDetailPage({ params }) {
                           </select>
                         </div>
                       </div>
+
+                      {dimensionPrompt && (
+                        <p role="alert" style={{
+                          margin: "10px 0 0",
+                          fontFamily: "var(--font-typewriter)",
+                          fontSize: "11px",
+                          lineHeight: 1.5,
+                          color: "#8b1e1e",
+                          fontWeight: 700,
+                        }}>
+                          Please enter your width and height first — we need them to quote your size.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
