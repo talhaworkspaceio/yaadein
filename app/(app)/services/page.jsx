@@ -572,50 +572,60 @@ export default function ServicesPage() {
         }
 
         .light-control-panel {
-          display: inline-flex;
+          display: flex;
           align-items: center;
-          gap: 14px;
-          background: rgba(20, 15, 10, 0.8);
-          border: 1px solid rgba(201, 168, 76, 0.3);
-          padding: 8px 20px;
-          border-radius: 30px;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+          gap: 12px;
+          background: rgba(20, 17, 14, 0.6);
+          border: 1.5px solid rgba(212, 175, 55, 0.25);
+          padding: 8px 18px;
+          border-radius: 999px;
+          z-index: 30;
           margin-top: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: border-color 0.3s ease;
+        }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
         }
         .light-control-label {
-          font-family: var(--font-display);
+          font-family: var(--font-typewriter);
           font-size: 11px;
-          letter-spacing: 0.15em;
-          color: var(--accent);
           text-transform: uppercase;
-          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: #dfc38a;
+          user-select: none;
         }
         .light-switch-btn {
-          width: 44px;
-          height: 22px;
-          background: #1c150c;
-          border: 1px solid var(--border2);
-          border-radius: 12px;
+          width: 46px;
+          height: 24px;
+          background: #1a1205;
+          border: 1.5px solid #5e461b;
+          border-radius: 999px;
           position: relative;
           cursor: pointer;
-          transition: background 0.3s ease;
           padding: 0;
+          outline: none;
+          transition: all 0.3s ease;
         }
-        .light-switch-btn.on { background: var(--accent); }
+        .light-switch-btn.on {
+          background: #5e461b;
+          border-color: #dfc38a;
+          box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
         .light-switch-knob {
           width: 16px;
           height: 16px;
-          background: #fff;
+          background: linear-gradient(135deg, #8f723b, #dfc38a);
+          border: 1px solid #1a1205;
           border-radius: 50%;
           position: absolute;
-          top: 2px;
-          left: 2px;
+          top: 2.5px;
+          left: 3px;
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
         .light-switch-btn.on .light-switch-knob {
-          transform: translateX(22px);
-          background: #000;
+          transform: translateX(20px);
+          background: linear-gradient(135deg, #dfc38a, #fae7b5);
         }
 
         @media (max-width: 800px) {

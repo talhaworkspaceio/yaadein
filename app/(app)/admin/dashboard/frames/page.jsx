@@ -22,9 +22,37 @@ const DEFAULT_SIZES = [
   { label: "24x36", displayLabel: '24" x 36"', priceDelta: 8000 },
 ];
 
+// Frames are cut to standard photographic ratios, so the admin picks one by
+// name. The decimal is what gets stored — every consumer passes it straight to
+// CSS aspect-ratio — so existing frames keep working untouched.
+const ASPECT_RATIOS = [
+  { label: '2:3 — Portrait', value: 0.6667, orientation: "portrait" },
+  { label: '3:4 — Portrait', value: 0.75, orientation: "portrait" },
+  { label: '4:5 — Portrait', value: 0.8, orientation: "portrait" },
+  { label: '9:16 — Tall Portrait', value: 0.5625, orientation: "portrait" },
+  { label: '1:1 — Square', value: 1, orientation: "square" },
+  { label: '5:4 — Landscape', value: 1.25, orientation: "landscape" },
+  { label: '4:3 — Landscape', value: 1.3333, orientation: "landscape" },
+  { label: '3:2 — Landscape', value: 1.5, orientation: "landscape" },
+  { label: '16:9 — Wide Landscape', value: 1.7778, orientation: "landscape" },
+];
+
+/** Snap a stored decimal onto the nearest standard ratio, so 0.667 reads as 2:3. */
+const closestRatio = (value) => {
+  const n = parseFloat(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  let best = null;
+  for (const r of ASPECT_RATIOS) {
+    const diff = Math.abs(r.value - n);
+    if (!best || diff < best.diff) best = { ratio: r, diff };
+  }
+  // Within 1.5% counts as that ratio; anything else is a genuine custom value.
+  return best && best.diff / best.ratio.value <= 0.015 ? best.ratio : null;
+};
+
 const INITIAL_FORM = {
   id: "", name: "", price: "Rs. ", category: "", color: "#8B5E3C", desc: "", tag: "",
-  orientation: "portrait", imageUrl: "", thumbnailUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 1.0,
+  orientation: "portrait", imageUrl: "", thumbnailUrl: "", paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, aspectRatio: 0.6667,
   stock: 10,
   featured: false,
   sizes: [...DEFAULT_SIZES],
@@ -732,7 +760,23 @@ export default function FramesPage() {
                       <option value="landscape">Landscape</option>
                     </select>
                   </div>
-                  <div className="form-group"><label>Aspect Ratio</label><input required type="number" step="any" className="form-control" name="aspectRatio" value={formData.aspectRatio || ""} onChange={handleFormChange} placeholder="0.6667" /></div>
+                  <div className="form-group">
+                    <label>Aspect Ratio</label>
+                    <select
+                      required
+                      className="form-control"
+                      value={closestRatio(formData.aspectRatio)?.value ?? "custom"}
+                      onChange={(e) => {
+                        if (e.target.value === "custom") return;
+                        setFormData(prev => ({ ...prev, aspectRatio: parseFloat(e.target.value) }));
+                      }}
+                    >
+                      {ASPECT_RATIOS.map(r => <option key={r.label} value={r.value}>{r.label}</option>)}
+                      {!closestRatio(formData.aspectRatio) && (
+                        <option value="custom">Custom ({formData.aspectRatio || "not set"})</option>
+                      )}
+                    </select>
+                  </div>
                 </div>
               </div>
 

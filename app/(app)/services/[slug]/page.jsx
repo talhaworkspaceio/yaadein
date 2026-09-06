@@ -1557,22 +1557,56 @@ export default function ServiceDetailPage({ params }) {
           color: #2c1e11;
         }
 
+        /* A real call to action, not a text link: this is the only way to buy a
+           custom size, so it needs the weight of a button. Resets the browser's
+           default button chrome, which was showing through as a grey box. */
         .custom-quote-link {
+          -webkit-appearance: none;
+          appearance: none;
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          margin-top: 7px;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          margin-top: 12px;
+          padding: 10px 16px;
           font-family: var(--font-typewriter);
-          font-size: 11px;
+          font-size: 11.5px;
           font-weight: 700;
-          color: #8b1e1e;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-          transition: opacity 0.2s ease;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          text-decoration: none;
+          color: #f6efe3;
+          background: linear-gradient(180deg, #a02626 0%, #8b1e1e 100%);
+          border: 1px solid #6d1616;
+          border-radius: 6px;
+          cursor: pointer;
+          box-shadow: 0 2px 0 #6d1616, 0 4px 10px rgba(60, 12, 12, 0.28);
+          transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+
+        .custom-quote-link span {
+          font-size: 14px;
+          line-height: 1;
+          transition: transform 0.2s ease;
         }
 
         .custom-quote-link:hover {
-          opacity: 0.72;
+          filter: brightness(1.08);
+          box-shadow: 0 3px 0 #6d1616, 0 7px 16px rgba(60, 12, 12, 0.34);
+          transform: translateY(-1px);
+        }
+
+        .custom-quote-link:hover span { transform: translateX(3px); }
+
+        .custom-quote-link:active {
+          transform: translateY(1px);
+          box-shadow: 0 1px 0 #6d1616, 0 2px 6px rgba(60, 12, 12, 0.3);
+        }
+
+        .custom-quote-link:focus-visible {
+          outline: 2px solid #8b1e1e;
+          outline-offset: 2px;
         }
 
         .product-desc-text {
@@ -1723,11 +1757,13 @@ export default function ServiceDetailPage({ params }) {
           padding: 8px 18px;
           border-radius: 999px;
           z-index: 30;
+          margin-top: 10px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.5);
           transition: border-color 0.3s ease;
-          width: fit-content;
         }
-        .light-control-panel:hover { border-color: rgba(212, 175, 55, 0.5); }
+        .light-control-panel:hover {
+          border-color: rgba(212, 175, 55, 0.5);
+        }
         .light-control-label {
           font-family: var(--font-typewriter);
           font-size: 11px;

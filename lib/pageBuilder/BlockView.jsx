@@ -443,20 +443,32 @@ function StudioLamp({ block, ctx, device }) {
 
 function LightSwitch({ block, ctx }) {
   const on = ctx.lightOn !== false;
+  // Matches the catalog page's studio switch exactly, so a builder page and a
+  // coded page show the same control.
   return (
     <div
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 14,
-        background: "rgba(20, 15, 10, 0.8)",
-        border: "1px solid rgba(181, 139, 92, 0.3)",
-        padding: "8px 20px",
-        borderRadius: 30,
-        boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)",
+        gap: 12,
+        background: "rgba(20, 17, 14, 0.6)",
+        border: "1.5px solid rgba(212, 175, 55, 0.25)",
+        padding: "8px 18px",
+        borderRadius: 999,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+        transition: "border-color 0.3s ease",
       }}
     >
-      <span style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.15em", color: "var(--accent, #B58B5C)", textTransform: "uppercase", fontWeight: 700 }}>
+      <span
+        style={{
+          fontFamily: "var(--font-typewriter)",
+          fontSize: 11,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "#dfc38a",
+          userSelect: "none",
+        }}
+      >
         {block.label || "Studio Light"}
       </span>
       <button
@@ -467,29 +479,33 @@ function LightSwitch({ block, ctx }) {
         }}
         aria-label="Toggle Studio Light"
         style={{
-          width: 44,
-          height: 22,
-          background: on ? "var(--accent, #B58B5C)" : "#1c150c",
-          border: "1px solid var(--border2, rgba(181,139,92,0.35))",
-          borderRadius: 12,
+          width: 46,
+          height: 24,
+          background: on ? "#5e461b" : "#1a1205",
+          border: `1.5px solid ${on ? "#dfc38a" : "#5e461b"}`,
+          borderRadius: 999,
           position: "relative",
           cursor: "pointer",
-          transition: "background .3s ease",
           padding: 0,
+          outline: "none",
+          boxShadow: on ? "0 0 8px rgba(212, 175, 55, 0.4)" : "none",
+          transition: "all 0.3s ease",
         }}
       >
         <span
           style={{
             width: 16,
             height: 16,
-            background: on ? "#000" : "#fff",
+            background: on
+              ? "linear-gradient(135deg, #dfc38a, #fae7b5)"
+              : "linear-gradient(135deg, #8f723b, #dfc38a)",
+            border: "1px solid #1a1205",
             borderRadius: "50%",
             position: "absolute",
-            top: 2,
-            left: 2,
-            transform: on ? "translateX(22px)" : "translateX(0)",
-            transition: "transform .3s cubic-bezier(.4,0,.2,1)",
-            boxShadow: "0 1px 3px rgba(0,0,0,.4)",
+            top: 2.5,
+            left: 3,
+            transform: on ? "translateX(20px)" : "translateX(0)",
+            transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
       </button>

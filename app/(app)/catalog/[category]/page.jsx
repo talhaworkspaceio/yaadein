@@ -569,6 +569,8 @@ export default function CategoryPage({ params }) {
           border: 1.5px solid rgba(212, 175, 55, 0.25);
           padding: 8px 18px;
           border-radius: 999px;
+          z-index: 30;
+          margin-top: 10px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.5);
           transition: border-color 0.3s ease;
         }
@@ -1414,6 +1416,15 @@ export default function CategoryPage({ params }) {
 
                   {(() => {
                     const isGame = isBoardGame(p);
+                    // Every frame records the inset of its mat opening as a percentage
+                    // of the frame image. Fall back to the studio's standard profile.
+                    const framePadNum = (v, fallback) => (v !== undefined && v !== null && Number(v) > 0 ? Number(v) : fallback);
+                    const framePad = {
+                      top: framePadNum(p.paddingTop, 4.5),
+                      left: framePadNum(p.paddingLeft, 6.8),
+                      bottom: framePadNum(p.paddingBottom, 4.5),
+                      right: framePadNum(p.paddingRight, 6.8),
+                    };
                     const getProductPreviewImage = (prod) => {
                       if (prod.thumbnailUrl) return prod.thumbnailUrl;
                       return prod.orientation === "landscape" ? "/images/nature.jpg" : "/images/dummyImg.jpg";
@@ -1478,7 +1489,18 @@ export default function CategoryPage({ params }) {
                                 className="card-frame-inner"
                                 style={{
                                   position: "absolute",
-                                  inset: 0,
+                                  // Photos are meant to run under the moulding — the frame overlay is a
+                                  // transparent-window image laid on top, so the crop is the mount. Board
+                                  // games are the exception: the whole board has to stay visible, so those
+                                  // sit inside the frame's mat opening instead.
+                                  ...(isGame
+                                    ? {
+                                        top: `${framePad.top}%`,
+                                        left: `${framePad.left}%`,
+                                        bottom: `${framePad.bottom}%`,
+                                        right: `${framePad.right}%`,
+                                      }
+                                    : { inset: 0 }),
                                   zIndex: 2,
                                   background: "#2D2822",
                                   boxShadow: "inset 0 0 10px rgba(0,0,0,0.8)",
